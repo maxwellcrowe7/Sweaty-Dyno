@@ -11,8 +11,8 @@
    Never put the service_role key here; that one bypasses RLS.
    ============================================================ */
 export const SUPABASE = {
-  url: '',      // e.g. https://abcdefghijklm.supabase.co
-  anonKey: '',  // Project Settings -> API -> Project API keys -> anon public
+  url: 'https://vxykjkuqhtfrzfktymja.supabase.co',
+  anonKey: 'sb_publishable_oq2u0mXKoALbSCFTWu-iJQ_q1dO_zmB',
 };
 
 export const isConfigured = () => Boolean(SUPABASE.url && SUPABASE.anonKey);

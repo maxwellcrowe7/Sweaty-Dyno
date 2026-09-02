@@ -6,6 +6,7 @@
 <title>Sweaty Dyno · Dynasty League</title>
 <meta name="description" content="Bank, empire pot, minigames, rookie drafts, trades and stats for the Sweaty Dyno dynasty league.">
 <meta name="theme-color" content="#0A0D11">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23FF6B2C'/><text x='16' y='23' font-family='Helvetica,Arial' font-size='17' font-weight='bold' text-anchor='middle' fill='%23160800'>SD</text></svg>">
@@ -518,8 +519,8 @@ __M["js/config.js"] = (function () {
    Never put the service_role key here; that one bypasses RLS.
    ============================================================ */
 const SUPABASE = {
-  url: '',      // e.g. https://abcdefghijklm.supabase.co
-  anonKey: '',  // Project Settings -> API -> Project API keys -> anon public
+  url: 'https://vxykjkuqhtfrzfktymja.supabase.co',
+  anonKey: 'sb_publishable_oq2u0mXKoALbSCFTWu-iJQ_q1dO_zmB',
 };
 const isConfigured = () => Boolean(SUPABASE.url && SUPABASE.anonKey);
 
@@ -884,15 +885,42 @@ class Store {
   constructor(adapter) { this.a = adapter; this.subs = new Set(); }
 
   async init() {
-    await this.a.load();
-    this.a.onAuth?.(() => this.emit());   // re-render when the commish signs in/out
+    if (this.a.live) this.cloud = this.a;          // keep the client for auth either way
+    try {
+      await this.a.load();
+    } catch (err) {
+      if (!this.cloud) throw err;
+      // Supabase is configured but not usable yet (schema not run, table not
+      // seeded, grants missing). Fall back to the bundled JSON so the tool
+      // still works, and let Admin explain + offer to publish.
+      this.cloudError = err.message;
+      this.a = new JsonAdapter();
+      await this.a.load();
+    }
+    this.cloud?.onAuth?.(() => this.emit());       // re-render when the commish signs in/out
     return this;
   }
 
-  /** True when writes go straight to Supabase rather than a local overlay. */
+  /** True when reads and writes go straight to Supabase. */
   get live() { return Boolean(this.a.live); }
-  get auth() { return this.live ? this.a : null; }
-  get backend() { return this.live ? 'supabase' : 'local'; }
+  /** The Supabase client, present whenever config.js is filled in. */
+  get auth() { return this.cloud ?? null; }
+  get backend() { return this.live ? 'supabase' : this.cloud ? 'local-fallback' : 'local'; }
+
+  /** Push every local file up to Supabase. Requires an allowlisted sign-in. */
+  async publishToCloud(onStep = () => {}) {
+    if (!this.cloud) throw new Error('Supabase is not configured.');
+    if (!this.cloud.signedIn) throw new Error('Sign in as commissioner first.');
+    for (const f of FILES) {
+      onStep(f);
+      await this.cloud.set(f, this.get(f));
+    }
+    await this.cloud.load();
+    this.a = this.cloud;
+    this.cloudError = null;
+    try { localStorage.removeItem(LS_KEY); } catch {}
+    this.emit();
+  }
   get(k) { return this.a.get(k); }
   dirtyKeys() { return this.a.dirtyKeys?.() ?? []; }
   async revert() { await this.a.revert?.(); this.emit(); }
@@ -909,11 +937,11 @@ class Store {
      signed-in user made them. Without it, this is a local convenience
      switch only — the honest framing is "this browser", not "security". */
   get isAdmin() {
-    if (this.live) return this.a.signedIn;
+    if (this.cloud) return this.cloud.signedIn;
     return localStorage.getItem(LS_ADMIN) === '1';
   }
   setAdmin(on) {
-    if (this.live) return;   // Supabase mode: sign in / out instead
+    if (this.cloud) return;   // Supabase mode: sign in / out instead
     on ? localStorage.setItem(LS_ADMIN, '1') : localStorage.removeItem(LS_ADMIN);
     this.emit();
   }
@@ -1092,7 +1120,8 @@ class Store {
     if (!ids.length) out.push({ level: 'info', text: 'No Sleeper league ID set yet — stat sync is disabled.' });
     const d = this.dirtyKeys();
     if (d.length) out.push({ level: 'edit', text: `Unexported local changes in: ${d.join(', ')}.` });
-    if (!this.live) out.push({ level: 'info', text: 'Running on the JSON files. Add your Supabase keys in js/config.js to save changes live.' });
+    if (this.cloudError) out.push({ level: 'warn', text: `Supabase is configured but not serving data yet: ${this.cloudError}` });
+    else if (!this.live) out.push({ level: 'info', text: 'Running on the JSON files. Add your Supabase keys in js/config.js to save changes live.' });
     return out;
   }
 
@@ -2541,20 +2570,30 @@ function render(db) {
   const st = db.get('stats');
 
   const live = db.live;
+  const cloud = Boolean(db.auth);
+  const cloudErr = db.cloudError;
   const user = db.auth?.user ?? null;
 
   return `
-  ${live ? `
+  ${cloud ? `
   <div class="card">
     <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>Commissioner</h3><div class="spacer"></div>
       <span class="chip ${admin ? 'mint' : ''}">${admin ? 'Signed in' : 'Viewing'}</span></div>
     <div class="card-bd">
+      ${cloudErr ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+        <div><b>Not reading from Supabase yet.</b><br>
+        <span style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(cloudErr)}</span><br><br>
+        Showing the built-in data meanwhile. Sign in below and hit <b>Publish</b> to upload it.</div></div>` : ''}
       ${admin ? `
         <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
           Signed in as <b style="color:var(--ink)">${esc(user?.email ?? 'commissioner')}</b>.
-          Edit controls are on across the app and every change saves to the database immediately &mdash;
-          the league sees it on their next refresh.
+          ${live ? `Edit controls are on across the app and every change saves to the database immediately &mdash;
+                    the league sees it on their next refresh.`
+                 : `Editing is still local until the data is published.`}
         </div>
+        ${!live ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
+          ${icon('down')} Publish local data to Supabase</button>
+          <div data-pubout class="s dim" style="font-size:12px;margin-bottom:11px"></div>` : ''}
         <button class="btn" data-signout>${icon('lock')} Sign out</button>
       ` : `
         <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
@@ -2697,6 +2736,19 @@ function mount(root, db) {
     } catch (ex) {
       err.textContent = ex.message;
       btn.disabled = false; btn.innerHTML = 'Sign in';
+    }
+  });
+
+  root.querySelector('[data-publish]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const out = root.querySelector('[data-pubout]');
+    btn.disabled = true;
+    try {
+      await db.publishToCloud((f) => { out.textContent = `Uploading ${f}.json…`; });
+      toast('League published to Supabase');
+    } catch (ex) {
+      out.innerHTML = `<span style="color:var(--red)">${esc(ex.message)}</span>`;
+      btn.disabled = false;
     }
   });
 

@@ -56,15 +56,42 @@ class Store {
   constructor(adapter) { this.a = adapter; this.subs = new Set(); }
 
   async init() {
-    await this.a.load();
-    this.a.onAuth?.(() => this.emit());   // re-render when the commish signs in/out
+    if (this.a.live) this.cloud = this.a;          // keep the client for auth either way
+    try {
+      await this.a.load();
+    } catch (err) {
+      if (!this.cloud) throw err;
+      // Supabase is configured but not usable yet (schema not run, table not
+      // seeded, grants missing). Fall back to the bundled JSON so the tool
+      // still works, and let Admin explain + offer to publish.
+      this.cloudError = err.message;
+      this.a = new JsonAdapter();
+      await this.a.load();
+    }
+    this.cloud?.onAuth?.(() => this.emit());       // re-render when the commish signs in/out
     return this;
   }
 
-  /** True when writes go straight to Supabase rather than a local overlay. */
+  /** True when reads and writes go straight to Supabase. */
   get live() { return Boolean(this.a.live); }
-  get auth() { return this.live ? this.a : null; }
-  get backend() { return this.live ? 'supabase' : 'local'; }
+  /** The Supabase client, present whenever config.js is filled in. */
+  get auth() { return this.cloud ?? null; }
+  get backend() { return this.live ? 'supabase' : this.cloud ? 'local-fallback' : 'local'; }
+
+  /** Push every local file up to Supabase. Requires an allowlisted sign-in. */
+  async publishToCloud(onStep = () => {}) {
+    if (!this.cloud) throw new Error('Supabase is not configured.');
+    if (!this.cloud.signedIn) throw new Error('Sign in as commissioner first.');
+    for (const f of FILES) {
+      onStep(f);
+      await this.cloud.set(f, this.get(f));
+    }
+    await this.cloud.load();
+    this.a = this.cloud;
+    this.cloudError = null;
+    try { localStorage.removeItem(LS_KEY); } catch {}
+    this.emit();
+  }
   get(k) { return this.a.get(k); }
   dirtyKeys() { return this.a.dirtyKeys?.() ?? []; }
   async revert() { await this.a.revert?.(); this.emit(); }
@@ -81,11 +108,11 @@ class Store {
      signed-in user made them. Without it, this is a local convenience
      switch only — the honest framing is "this browser", not "security". */
   get isAdmin() {
-    if (this.live) return this.a.signedIn;
+    if (this.cloud) return this.cloud.signedIn;
     return localStorage.getItem(LS_ADMIN) === '1';
   }
   setAdmin(on) {
-    if (this.live) return;   // Supabase mode: sign in / out instead
+    if (this.cloud) return;   // Supabase mode: sign in / out instead
     on ? localStorage.setItem(LS_ADMIN, '1') : localStorage.removeItem(LS_ADMIN);
     this.emit();
   }
@@ -264,7 +291,8 @@ class Store {
     if (!ids.length) out.push({ level: 'info', text: 'No Sleeper league ID set yet — stat sync is disabled.' });
     const d = this.dirtyKeys();
     if (d.length) out.push({ level: 'edit', text: `Unexported local changes in: ${d.join(', ')}.` });
-    if (!this.live) out.push({ level: 'info', text: 'Running on the JSON files. Add your Supabase keys in js/config.js to save changes live.' });
+    if (this.cloudError) out.push({ level: 'warn', text: `Supabase is configured but not serving data yet: ${this.cloudError}` });
+    else if (!this.live) out.push({ level: 'info', text: 'Running on the JSON files. Add your Supabase keys in js/config.js to save changes live.' });
     return out;
   }
 

@@ -108,6 +108,20 @@ create policy sweaty_dyno_admins_read on public.sweaty_dyno_admins
   for select to authenticated using (public.sweaty_dyno_is_admin());
 
 
+-- ---------- table grants ----------
+-- RLS decides WHICH ROWS a role may touch; these grants decide whether the
+-- role may touch the table at all. Tables created from the SQL Editor do not
+-- get them automatically, and without them every request 401s with
+-- "permission denied for table".
+grant usage on schema public to anon, authenticated;
+
+grant select           on public.sweaty_dyno_data    to anon, authenticated;
+grant insert, update   on public.sweaty_dyno_data    to authenticated;
+grant select           on public.sweaty_dyno_history to anon, authenticated;
+grant select           on public.sweaty_dyno_admins  to authenticated;
+grant execute on function public.sweaty_dyno_is_admin() to anon, authenticated;
+
+
 -- ============================================================
 -- STEP 2 — make yourself the commissioner.
 -- Change the email to the one you sign into Supabase with, then run:

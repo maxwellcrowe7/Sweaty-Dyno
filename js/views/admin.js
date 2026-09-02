@@ -14,20 +14,30 @@ export function render(db) {
   const st = db.get('stats');
 
   const live = db.live;
+  const cloud = Boolean(db.auth);
+  const cloudErr = db.cloudError;
   const user = db.auth?.user ?? null;
 
   return `
-  ${live ? `
+  ${cloud ? `
   <div class="card">
     <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>Commissioner</h3><div class="spacer"></div>
       <span class="chip ${admin ? 'mint' : ''}">${admin ? 'Signed in' : 'Viewing'}</span></div>
     <div class="card-bd">
+      ${cloudErr ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+        <div><b>Not reading from Supabase yet.</b><br>
+        <span style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(cloudErr)}</span><br><br>
+        Showing the built-in data meanwhile. Sign in below and hit <b>Publish</b> to upload it.</div></div>` : ''}
       ${admin ? `
         <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
           Signed in as <b style="color:var(--ink)">${esc(user?.email ?? 'commissioner')}</b>.
-          Edit controls are on across the app and every change saves to the database immediately &mdash;
-          the league sees it on their next refresh.
+          ${live ? `Edit controls are on across the app and every change saves to the database immediately &mdash;
+                    the league sees it on their next refresh.`
+                 : `Editing is still local until the data is published.`}
         </div>
+        ${!live ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
+          ${icon('down')} Publish local data to Supabase</button>
+          <div data-pubout class="s dim" style="font-size:12px;margin-bottom:11px"></div>` : ''}
         <button class="btn" data-signout>${icon('lock')} Sign out</button>
       ` : `
         <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
@@ -171,6 +181,19 @@ export function mount(root, db) {
     } catch (ex) {
       err.textContent = ex.message;
       btn.disabled = false; btn.innerHTML = 'Sign in';
+    }
+  });
+
+  root.querySelector('[data-publish]')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const out = root.querySelector('[data-pubout]');
+    btn.disabled = true;
+    try {
+      await db.publishToCloud((f) => { out.textContent = `Uploading ${f}.json…`; });
+      toast('League published to Supabase');
+    } catch (ex) {
+      out.innerHTML = `<span style="color:var(--red)">${esc(ex.message)}</span>`;
+      btn.disabled = false;
     }
   });
 
