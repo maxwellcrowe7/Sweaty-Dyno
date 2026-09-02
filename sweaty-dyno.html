@@ -534,7 +534,7 @@ __M["js/supabase.js"] = (function () {
    ============================================================ */
 const { SUPABASE } = __M["js/config.js"];
 const SESSION_KEY = 'sweatydyno:session:v1';
-const TABLE = 'league_data';
+const TABLE = 'sweaty_dyno_data';
 
 const readSession = () => {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
@@ -642,7 +642,7 @@ class Supabase {
     const res = await fetch(`${this.url}/rest/v1/${TABLE}?select=key,value`, { headers: this._headers });
     if (!res.ok) await fail(res, 'Loading the league');
     const rows = await res.json();
-    if (!rows.length) throw new Error('The league_data table is empty — run tools/seed_supabase.py first.');
+    if (!rows.length) throw new Error('The sweaty_dyno_data table is empty — run tools/seed_supabase.py first.');
     this.data = Object.fromEntries(rows.map((r) => [r.key, r.value]));
     return this.data;
   }

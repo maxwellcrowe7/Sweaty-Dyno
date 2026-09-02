@@ -188,25 +188,30 @@ Nothing breaks if you never set this up.
 
 ### One-time setup
 
-1. **Create a project** at [supabase.com](https://supabase.com) (free tier is plenty).
+Designed to drop into an existing shared Supabase project. Every object is prefixed
+`sweaty_dyno_`, write access is an explicit allowlist rather than "anyone signed in",
+and no project-wide settings change — so your other tools are untouched.
 
-2. **Create the schema** — SQL Editor → paste all of `supabase/schema.sql` → Run.
-   That makes the `league_data` table, the RLS policies, and a history table that
-   snapshots every row before it changes.
+1. **Run the schema** — SQL Editor → paste `supabase/schema.sql`.
+   Before running, change `CHANGE-ME@example.com` near the bottom to the email you
+   sign into Supabase with. Then Run. Safe to re-run.
 
-3. **Create your account** — Authentication → Users → *Add user* → email + password,
-   and tick **Auto Confirm**. Then Authentication → Providers → Email → turn
-   **"Enable sign ups" OFF**. That leaves exactly one account: yours.
+2. **Confirm you're the commissioner** — uncomment and run the check query at the
+   bottom of the file. It should return exactly one row: your email.
 
-4. **Seed the data:**
+3. **Seed the data:**
    ```bash
+   cd "/Users/mtcrowe/Desktop/Sweaty Dyno"
    export SUPABASE_URL=https://YOURPROJECT.supabase.co
    export SUPABASE_SERVICE_KEY=...        # Settings -> API -> service_role
    python3 tools/seed_supabase.py
    ```
 
-5. **Point the app at it** — put the URL and the **anon** key in `js/config.js`, then
-   `python3 tools/build.py`.
+4. **Point the app at it** — put the URL and the **anon** key in `js/config.js`, then:
+   ```bash
+   python3 tools/build.py
+   git add -A && git commit -m "Connect Supabase" && git push
+   ```
 
 ### Which key goes where
 
@@ -225,6 +230,16 @@ the policies in `schema.sql`, so read those before loosening anything.
 - The league sees changes on their next refresh
 - *Export* becomes an occasional offline backup rather than the save mechanism
 - `python3 tools/seed_supabase.py --pull` downloads the live data back into `data/`
+
+### Safety notes for a shared project
+
+- Tables: `sweaty_dyno_data`, `sweaty_dyno_history`, `sweaty_dyno_admins`. Nothing else
+  in your project is read, written, or altered.
+- Writes require your user id to be in `sweaty_dyno_admins`. Being signed into the
+  project is not enough, so other tools can keep sign-ups on.
+- There is no delete policy — rows are only ever upserted.
+- Every change snapshots the previous value into `sweaty_dyno_history` first, so a bad
+  edit is recoverable (rollback query is at the bottom of `schema.sql`).
 
 ## Layout
 

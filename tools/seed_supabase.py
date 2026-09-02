@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Push data/*.json into the Supabase `league_data` table.
+Push data/*.json into the Supabase `sweaty_dyno_data` table.
 
     export SUPABASE_URL=https://xxxx.supabase.co
     export SUPABASE_SERVICE_KEY=...          # Settings -> API -> service_role
@@ -43,7 +43,7 @@ def main():
         sys.exit('Set SUPABASE_URL and SUPABASE_SERVICE_KEY first (see the docstring).')
 
     if '--pull' in sys.argv:
-        rows = req('GET', '/rest/v1/league_data?select=key,value')
+        rows = req('GET', '/rest/v1/sweaty_dyno_data?select=key,value')
         for r in rows:
             (D / f"{r['key']}.json").write_text(
                 json.dumps(r['value'], indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
@@ -63,9 +63,9 @@ def main():
         print('\nDry run — nothing sent.')
         return
 
-    req('POST', '/rest/v1/league_data?on_conflict=key', payload,
+    req('POST', '/rest/v1/sweaty_dyno_data?on_conflict=key', payload,
         {'Prefer': 'resolution=merge-duplicates,return=minimal'})
-    rows = req('GET', '/rest/v1/league_data?select=key,updated_at')
+    rows = req('GET', '/rest/v1/sweaty_dyno_data?select=key,updated_at')
     print(f'\nUploaded {len(payload)} files. Table now holds {len(rows)} rows:')
     for r in sorted(rows, key=lambda x: x['key']):
         print(f"  {r['key']:<10} {r['updated_at']}")
