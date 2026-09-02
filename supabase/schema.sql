@@ -124,7 +124,12 @@ grant execute on function public.sweaty_dyno_is_admin() to anon, authenticated;
 
 -- ============================================================
 -- STEP 2 — make yourself the commissioner.
--- Change the email to the one you sign into Supabase with, then run:
+--
+-- IMPORTANT: this needs a user inside THIS PROJECT, which is not the same
+-- thing as your supabase.com dashboard login. Create one first:
+--   Authentication -> Users -> Add user -> email + password,
+--   and tick "Auto Confirm User".
+-- Then put that email below and run this block.
 -- ============================================================
 insert into public.sweaty_dyno_admins (user_id, note)
 select id, 'commissioner'
