@@ -1,0 +1,283 @@
+{
+  "_README": "One entry per week per season. `name:null` means the week's minigame has not been set yet. `results` maps place -> {team, value, note}; `value` is the free-text stat/player that won it. Payout maps place -> dollars; set 2nd/3rd to 0 for winner-take-all. The guillotine is a separate multi-week object.",
+  "defaults": {
+    "weeklyPayout": {
+      "1": 10,
+      "2": 0,
+      "3": 0
+    },
+    "weeks": 14,
+    "guillotineWeek": 9
+  },
+  "seasons": {
+    "2025": {
+      "games": [],
+      "guillotine": null,
+      "legacy": {
+        "note": "2025 minigames were tracked only as season totals in the original spreadsheet — week-by-week results were not recorded. These totals are what reconciles against the bank ($170 paid).",
+        "totalsByTeam": {
+          "4": 30,
+          "10": 30,
+          "7": 20,
+          "5": 10,
+          "2": 20,
+          "3": 10,
+          "9": 30,
+          "6": 20
+        },
+        "total": 170
+      }
+    },
+    "2026": {
+      "games": [
+        {
+          "id": "2026-w01",
+          "week": 1,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w02",
+          "week": 2,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w03",
+          "week": 3,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w04",
+          "week": 4,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w05",
+          "week": 5,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w06",
+          "week": 6,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w07",
+          "week": 7,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w08",
+          "week": 8,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w10",
+          "week": 10,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w11",
+          "week": 11,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w12",
+          "week": 12,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w13",
+          "week": 13,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w14",
+          "week": 14,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "scheduled",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        }
+      ],
+      "guillotine": {
+        "id": "2026-guillotine",
+        "week": 9,
+        "name": "Guillotine",
+        "startWeek": 9,
+        "rules": "Starting week 9, the lowest-scoring team still in the pool is chopped each week. Last manager standing takes the pot.",
+        "payout": {
+          "1": 30
+        },
+        "status": "scheduled",
+        "entrants": [
+          4,
+          10,
+          7,
+          5,
+          2,
+          3,
+          9,
+          8,
+          1,
+          6
+        ],
+        "eliminations": [],
+        "winner": null
+      },
+      "legacy": null
+    }
+  }
+}

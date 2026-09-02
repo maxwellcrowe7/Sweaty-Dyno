@@ -1,0 +1,22 @@
+{
+  "_README": "Optional position map used only for colour-coding chips in the draft board and trade cards. Positions are best-effort and safe to edit; an unknown player simply renders with a neutral chip.",
+  "positions": {
+    "Ashton Jeanty":"RB","Omarion Hampton":"RB","TreVeyon Henderson":"RB","Tetairoa McMillan":"WR","Kaleb Johnson":"RB",
+    "Quinshon Judkins":"RB","RJ Harvey":"RB","Travis Hunter":"WR","Tyler Warren":"TE","Emeka Egbuka":"WR",
+    "Colston Loveland":"TE","Matthew Golden":"WR","Tre Harris":"WR","Cam Skattebo":"RB","Cameron Ward":"QB",
+    "Luther Burden":"WR","Jayden Higgins":"WR","Jaydon Blue":"RB","Jack Bech":"WR","Bhayshul Tuten":"RB",
+    "Jaylin Noel":"WR","Kyle Williams":"WR","Dylan Sampson":"RB","Devin Neal":"RB","Jaxson Dart":"QB",
+    "Jalen Royals":"WR","Jimmy Horn":"WR","Jordan James":"RB","Jalen Milroe":"QB","Ollie Gordon":"RB",
+    "Jeremiyah Love":"RB","Carnell Tate":"WR","Jordyn Tyson":"WR","Makai Lemon":"WR","KC Concepcion":"WR",
+    "Jadarian Price":"RB","Kenyon Sadiq":"TE","Fernando Mendoza":"QB","Omar Cooper":"WR","Eli Stowers":"TE",
+    "Denzel Boston":"WR","Jonah Coleman":"RB","Emmett Johnson":"RB","Chris Bell":"WR","Germie Bernard":"WR",
+    "Elijah Sarratt":"WR","De'Zhaun Stribling":"WR","Chris Brazzell":"WR","Ty Simpson":"QB","Skyler Bell":"WR",
+    "Antonio Williams":"WR","Kaytron Allen":"RB","Zachariah Branch":"WR","Nicholas Singleton":"RB","Ted Hurst":"WR",
+    "Malachi Fields":"WR","Mike Washington":"RB","Ja'Kobi Lane":"WR","Brenen Thompson":"WR","Demond Claiborne":"RB",
+    "Kareem Hunt":"RB","Bam Knight":"RB","Roschon Johnson":"RB","Breece Hall":"RB","Hassan Haskins":"RB",
+    "Rashee Rice":"WR","Mark Andrews":"TE","Rhamondre Stevenson":"RB","Jacory Croskey-Merritt":"RB",
+    "Oronde Gadsden":"TE","Harold Fannin":"TE","Shedeur Sanders":"QB","Tory Horton":"WR","Woody Marks":"RB",
+    "Kyle Monangai":"RB","Isaac TeSlaa":"WR","Chimere Dike":"WR","Terrance Ferguson":"TE","Pat Bryant":"WR",
+    "Daniel Jones":"QB","Chris Rodriguez":"RB"
+  }
+}

@@ -1,0 +1,9 @@
+.DS_Store
+node_modules/
+
+# Local Supabase credentials — the service_role key must never be committed
+.env
+.env.*
+
+# Original spreadsheet (source data already lives in data/*.json)
+*.xlsx

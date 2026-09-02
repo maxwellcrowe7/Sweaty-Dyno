@@ -1,0 +1,74 @@
+{
+  "name": "Sweaty Dyno",
+  "tagline": "Dynasty · Est. 2025",
+  "seasons": [
+    2025,
+    2026,
+    2027,
+    2028,
+    2029,
+    2030
+  ],
+  "currentSeason": 2026,
+  "buyIn": {
+    "2025": 50,
+    "2026": 50,
+    "2027": 50,
+    "2028": 50,
+    "2029": 50,
+    "2030": 50
+  },
+  "empireContribution": {
+    "2025": 150,
+    "2026": 150,
+    "2027": 150,
+    "2028": 150,
+    "2029": 150,
+    "2030": 150
+  },
+  "empirePointsScale": [
+    {
+      "place": 1,
+      "points": 20,
+      "label": "Champion"
+    },
+    {
+      "place": 2,
+      "points": 10,
+      "label": "Runner-up"
+    },
+    {
+      "place": 3,
+      "points": 5,
+      "label": "Semifinalist"
+    },
+    {
+      "place": 4,
+      "points": 5,
+      "label": "Semifinalist"
+    },
+    {
+      "place": 5,
+      "points": 3,
+      "label": "Quarterfinalist"
+    },
+    {
+      "place": 6,
+      "points": 3,
+      "label": "Quarterfinalist"
+    }
+  ],
+  "empireRule": "The Empire Pot rolls over every season, funded by an annual set-aside from buy-ins. It is claimed by the first manager to reach the Empire threshold. Empire Points are earned by finishing position each season.",
+  "empireThreshold": 50,
+  "sleeper": {
+    "leagueIds": {
+      "2025": "1221508258016014336",
+      "2026": "1314450842367041536",
+      "2027": "",
+      "2028": "",
+      "2029": "",
+      "2030": ""
+    },
+    "note": "Sleeper league_id per season, from the league URL: sleeper.com/leagues/<league_id>/team. Each season's league exposes previous_league_id, which is how the 2025 id was found."
+  }
+}

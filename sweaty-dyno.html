@@ -1,0 +1,2976 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sweaty Dyno · Dynasty League</title>
+<meta name="description" content="Bank, empire pot, minigames, rookie drafts, trades and stats for the Sweaty Dyno dynasty league.">
+<meta name="theme-color" content="#0A0D11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23FF6B2C'/><text x='16' y='23' font-family='Helvetica,Arial' font-size='17' font-weight='bold' text-anchor='middle' fill='%23160800'>SD</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* ============================================================
+   SWEATY DYNO — visual system
+   Dark telemetry / broadcast aesthetic. Mobile-first.
+   ============================================================ */
+
+:root{
+  /* ground — a wider value range so cards read as separate planes */
+  --bg:#0E131A;
+  --bg-2:#141B24;
+  --surface:#1B232E;
+  --surface-2:#242E3B;
+  --surface-3:#303B4A;
+  --line:#38445600;
+  --line:#374355;
+  --line-soft:#28323F;
+
+  /* ink */
+  --ink:#EDF2F8;
+  --ink-2:#B4C1D1;
+  --ink-3:#7C8BA0;
+
+  /* signal */
+  --heat:#FF6B2C;        /* primary — the dyno needle */
+  --heat-dim:#7A3216;
+  --mint:#3DDC97;        /* money in / good */
+  --gold:#F5C451;        /* champion / empire */
+  --violet:#9C8CFA;      /* empire pot */
+  --red:#FF4D5E;         /* owed / out */
+  --blue:#5AC8FA;
+
+  /* position chips */
+  --qb:#F5695F; --rb:#3DDC97; --wr:#5AC8FA; --te:#F5A94C; --pk:#9C8CFA;
+
+  --r-sm:8px; --r:12px; --r-lg:18px; --r-xl:24px;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -8px rgba(0,0,0,.6);
+  --tab-h:64px;
+
+  --f-display:"Barlow Condensed",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Inter",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--f-body); font-size:15px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+  overflow-x:hidden;
+}
+/* faint carbon weave + top heat bloom */
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(110% 55% at 50% -8%, rgba(255,107,44,.13), transparent 62%),
+    radial-gradient(70% 45% at 100% 12%, rgba(156,140,250,.09), transparent 65%),
+    radial-gradient(80% 50% at 0% 68%, rgba(61,220,151,.055), transparent 68%),
+    linear-gradient(180deg, rgba(255,255,255,.022), transparent 34%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.016) 0 1px, transparent 1px 5px);
+}
+h1,h2,h3,h4{margin:0; font-family:var(--f-display); font-weight:700; letter-spacing:.01em; line-height:1.1}
+a{color:inherit}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+input,select,textarea{font:inherit; color:inherit; font-variant-numeric:tabular-nums}
+table{border-collapse:collapse; width:100%}
+
+.ic{width:18px;height:18px;flex:none;stroke-width:2}
+.num{font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1}
+.mono{font-family:var(--f-display); font-weight:600; letter-spacing:.02em}
+.dim{color:var(--ink-2)} .dimmer{color:var(--ink-3)}
+.pos{color:var(--mint)} .neg{color:var(--red)}
+.center{text-align:center} .right{text-align:right}
+.hide{display:none !important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------- shell ---------- */
+.app{position:relative; z-index:1; min-height:100dvh; display:flex; flex-direction:column}
+
+.topbar{
+  position:sticky; top:0; z-index:40;
+  display:flex; align-items:center; gap:12px;
+  padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  background:linear-gradient(180deg, rgba(14,19,26,.96), rgba(14,19,26,.80));
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line-soft);
+}
+.brand{display:flex; align-items:center; gap:10px; min-width:0}
+.brand .mark{
+  width:34px;height:34px;border-radius:10px;flex:none;
+  background:linear-gradient(145deg,var(--heat),#C43D0E);
+  display:grid;place-items:center; font-family:var(--f-display); font-weight:700;
+  font-size:19px; color:#12070208; color:#160800; letter-spacing:-.02em;
+  box-shadow:0 0 0 1px rgba(255,255,255,.10) inset, 0 6px 18px -6px rgba(255,107,44,.7);
+}
+.brand .txt{min-width:0}
+.brand h1{font-size:21px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap}
+.brand small{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); margin-top:1px}
+
+.season-pick{
+  margin-left:auto; display:flex; align-items:center; gap:6px;
+  background:var(--surface); border:1px solid var(--line); border-radius:999px;
+  padding:6px 6px 6px 12px;
+}
+.season-pick label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.season-pick select{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
+  padding:4px 8px; font-family:var(--f-display); font-weight:700; font-size:15px; letter-spacing:.03em;
+}
+
+main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) + 28px); max-width:1180px; width:100%; margin:0 auto}
+
+/* ---------- nav ---------- */
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:50;
+  display:grid; grid-template-columns:repeat(5,1fr);
+  background:rgba(18,24,32,.94); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  border-top:1px solid var(--line-soft);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.tabbar button{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  height:var(--tab-h); color:var(--ink-3); position:relative;
+  transition:color .16s;
+}
+.tabbar button span{font-size:10px; letter-spacing:.08em; text-transform:uppercase; font-weight:600}
+.tabbar button svg{width:21px;height:21px;stroke-width:1.9}
+.tabbar button[aria-current="page"]{color:var(--heat)}
+.tabbar button[aria-current="page"]::before{
+  content:""; position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:26px; height:2px; background:var(--heat); border-radius:0 0 3px 3px;
+  box-shadow:0 0 12px var(--heat);
+}
+.sidenav{display:none}
+
+/* "More" sheet */
+.sheet-backdrop{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet-backdrop.open{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed; left:0;right:0;bottom:0; z-index:61;
+  background:var(--surface); border-top:1px solid var(--line);
+  border-radius:var(--r-xl) var(--r-xl) 0 0; padding:10px 14px calc(env(safe-area-inset-bottom) + 18px);
+  transform:translateY(102%); transition:transform .26s cubic-bezier(.2,.8,.2,1);
+}
+.sheet.open{transform:translateY(0)}
+.sheet .grab{width:38px;height:4px;border-radius:99px;background:var(--surface-3);margin:6px auto 14px}
+.sheet a,.sheet button.sheet-item{
+  display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  padding:14px 12px; border-radius:var(--r); text-decoration:none;
+  font-weight:600; letter-spacing:.01em;
+}
+.sheet button.sheet-item:active{background:var(--surface-2)}
+.sheet button.sheet-item svg{width:20px;height:20px;color:var(--ink-3);stroke-width:1.9}
+.sheet button.sheet-item[aria-current="page"]{background:var(--surface-2); color:var(--heat)}
+.sheet button.sheet-item[aria-current="page"] svg{color:var(--heat)}
+
+/* ---------- primitives ---------- */
+.card{
+  position:relative;
+  background:linear-gradient(180deg,var(--surface),var(--bg-2));
+  border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow);
+}
+.card::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 38%);
+}
+.card > *{position:relative}
+.card + .card{margin-top:14px}
+.card-hd{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px; border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg,rgba(255,255,255,.035),transparent);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+}
+.card-hd h2,.card-hd h3{font-size:16px; text-transform:uppercase; letter-spacing:.07em}
+.card-hd .sub{font-size:11px;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase}
+.card-hd .spacer{margin-left:auto}
+.card-bd{padding:16px}
+.card-bd.flush{padding:0}
+
+.section-title{
+  font-family:var(--f-display); font-size:12px; font-weight:700;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3);
+  margin:26px 0 10px; display:flex; align-items:center; gap:10px;
+}
+.section-title::before{content:"";width:14px;height:2px;border-radius:2px;background:var(--heat);opacity:.75;flex:none}
+.section-title::after{content:"";flex:1;height:1px;
+  background:linear-gradient(90deg,var(--line),transparent)}
+
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface-2); color:var(--ink-2); white-space:nowrap;
+}
+.chip.heat{color:var(--heat);border-color:rgba(255,107,44,.35);background:rgba(255,107,44,.10)}
+.chip.mint{color:var(--mint);border-color:rgba(61,220,151,.3);background:rgba(61,220,151,.09)}
+.chip.gold{color:var(--gold);border-color:rgba(245,196,81,.32);background:rgba(245,196,81,.10)}
+.chip.violet{color:var(--violet);border-color:rgba(156,140,250,.32);background:rgba(156,140,250,.10)}
+.chip.red{color:var(--red);border-color:rgba(255,77,94,.32);background:rgba(255,77,94,.10)}
+.chip.ghost{background:transparent}
+.chip.plain{text-transform:none;letter-spacing:.01em;font-weight:600;font-size:11.5px}
+
+.pos-chip{
+  display:inline-grid;place-items:center; width:26px;height:17px;border-radius:4px;
+  font-family:var(--f-display);font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  color:#080C10; flex:none;
+}
+.pos-QB{background:var(--qb)} .pos-RB{background:var(--rb)} .pos-WR{background:var(--wr)}
+.pos-TE{background:var(--te)} .pos-K{background:var(--pk)}
+.pos-none{background:var(--surface-3); color:var(--ink-3)}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:9px 14px;border-radius:var(--r-sm);border:1px solid var(--line);
+  background:var(--surface-2); font-size:13px;font-weight:600;letter-spacing:.02em;
+  transition:background .14s,border-color .14s;
+}
+.btn:active{background:var(--surface-3)}
+.btn svg{width:15px;height:15px;stroke-width:2}
+.btn.primary{background:var(--heat);border-color:var(--heat);color:#160800}
+.btn.primary:active{background:#E85D22}
+.btn.sm{padding:6px 10px;font-size:12px}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.4;pointer-events:none}
+
+/* team identity dot — hue derived from team number */
+.tdot{width:9px;height:9px;border-radius:3px;flex:none;box-shadow:0 0 8px -1px currentColor}
+.tname{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.tname b{font-weight:600}
+.tnum{
+  font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.06em; background:var(--surface-2); border:1px solid var(--line);
+  border-radius:4px; padding:1px 4px; flex:none;
+}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.hero{display:flex;flex-direction:column;gap:14px}
+.tile{
+  --tint:255,255,255;
+  background:
+    linear-gradient(165deg, rgba(var(--tint),.17), rgba(var(--tint),.05) 44%, transparent 76%),
+    linear-gradient(165deg,var(--surface),var(--bg-2));
+  border:1px solid var(--line); border-radius:var(--r); padding:13px 14px; position:relative; overflow:hidden;
+}
+.tile::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+  background:linear-gradient(90deg, rgb(var(--tint)), rgba(var(--tint),.12));opacity:.85}
+.tile::after{content:"";position:absolute;inset:0;border-radius:var(--r);pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 42%)}
+.tile.bare{background:none;border:none;padding:0}
+.tile.bare::before,.tile.bare::after{display:none}
+.tile.accent{--tint:255,107,44}
+.tile.mint{--tint:61,220,151}
+.tile.gold{--tint:245,196,81}
+.tile.violet{--tint:156,140,250}
+.tile.red{--tint:255,77,94}
+.tile:not(.accent):not(.mint):not(.gold):not(.violet):not(.red){--tint:132,166,214}
+.tile .k{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.tile .v{font-family:var(--f-display);font-size:30px;font-weight:700;line-height:1.05;margin-top:5px;letter-spacing:.005em}
+.tile .m{font-size:11px;color:var(--ink-3);margin-top:3px}
+.tile.accent .v{color:var(--heat)} .tile.mint .v{color:var(--mint)}
+.tile.gold .v{color:var(--gold)} .tile.violet .v{color:var(--violet)}
+.tile.red .v{color:var(--red)}
+
+/* data rows */
+.rows{display:flex;flex-direction:column}
+.row{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--line-soft);
+}
+.row:last-child{border-bottom:none}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .s{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.row .val{font-family:var(--f-display);font-size:19px;font-weight:700;flex:none}
+
+/* meter */
+.meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
+.meter > i{display:block;height:100%;border-radius:99px;background:var(--heat);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.meter.mint > i{background:var(--mint)} .meter.violet > i{background:linear-gradient(90deg,var(--violet),#C9BDFF)}
+.meter.gold > i{background:var(--gold)}
+
+/* tables */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.dt{font-size:13px; min-width:100%}
+table.dt th{
+  text-align:left;font-family:var(--f-display);font-size:11px;font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
+  padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;
+  position:sticky;top:0;background:var(--bg-2);z-index:1;
+}
+table.dt td{padding:10px 12px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+table.dt tbody tr:last-child td{border-bottom:none}
+table.dt tbody tr.total td{border-top:1px solid var(--line);font-weight:700;background:rgba(255,255,255,.022)}
+table.dt td.n,table.dt th.n{text-align:right;font-variant-numeric:tabular-nums}
+table.dt td.sticky,table.dt th.sticky{
+  position:sticky;left:0;background:var(--bg-2);z-index:2;
+  box-shadow:1px 0 0 var(--line-soft);
+}
+table.dt th.sticky{z-index:3}
+
+/* empty state */
+.empty{padding:34px 20px;text-align:center;color:var(--ink-3)}
+.empty svg{width:34px;height:34px;stroke-width:1.4;color:var(--surface-3);margin-bottom:10px}
+.empty p{margin:0 0 4px;font-weight:600;color:var(--ink-2);font-size:14px}
+.empty small{font-size:12px;line-height:1.6;display:block;max-width:34ch;margin:0 auto}
+
+/* banner */
+.banner{
+  display:flex;gap:11px;align-items:flex-start;padding:12px 14px;border-radius:var(--r);
+  background:rgba(255,107,44,.07);border:1px solid rgba(255,107,44,.26);font-size:12.5px;line-height:1.5;
+}
+.banner svg{width:17px;height:17px;color:var(--heat);flex:none;margin-top:1px;stroke-width:2}
+.banner b{color:var(--heat)}
+
+/* ---------- gauge (dashboard hero) ---------- */
+.gauge-card{position:relative;overflow:hidden;padding:20px 16px 18px;text-align:center}
+.gauge-card::before{
+  content:"";position:absolute;left:50%;top:-40%;transform:translateX(-50%);
+  width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,107,44,.16),transparent 62%);pointer-events:none;
+}
+.gauge{position:relative;width:230px;max-width:82vw;margin:0 auto;display:block}
+.gauge-val{
+  position:absolute;left:0;right:0;top:52%;transform:translateY(-50%);text-align:center;pointer-events:none;
+}
+.gauge-val .big{font-family:var(--f-display);font-size:44px;font-weight:700;line-height:1;letter-spacing:-.01em}
+.gauge-val .lbl{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-top:5px;font-weight:700}
+.gauge-legend{display:flex;justify-content:center;gap:18px;margin-top:2px;flex-wrap:wrap}
+.gauge-legend div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-2)}
+.gauge-legend i{width:8px;height:8px;border-radius:2px;display:block}
+
+/* ---------- draft board ---------- */
+.board{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 8px}
+.board-grid{display:grid;gap:7px;padding:0 16px 4px;min-width:max-content}
+.board-head{
+  display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:flex-end;
+  padding:8px 6px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);
+}
+.board-head .sl{font-family:var(--f-display);font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.1em}
+.board-head .nm{font-size:11.5px;font-weight:700;white-space:nowrap}
+.pick{
+  width:132px;padding:8px 9px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--line);
+  display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;
+}
+.pick .no{font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);letter-spacing:.08em}
+.pick .pl{font-size:12.5px;font-weight:600;line-height:1.25}
+.pick .via{
+  font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
+  color:var(--heat);display:flex;align-items:center;gap:4px;
+}
+.pick.traded{border-color:rgba(255,107,44,.34)}
+.pick.traded::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:2.5px;background:var(--heat);
+}
+.pick .top{display:flex;align-items:center;gap:6px}
+.pick.blank{background:repeating-linear-gradient(45deg,var(--surface) 0 6px,transparent 6px 12px);opacity:.5}
+
+/* ---------- trades ---------- */
+.trade{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.trade + .trade{margin-top:10px}
+.trade-hd{display:flex;align-items:center;gap:9px;padding:10px 13px;background:var(--surface-2);border-bottom:1px solid var(--line-soft)}
+.trade-hd .d{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+.trade-body{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line-soft)}
+.trade-side{background:var(--surface);padding:11px 13px}
+.trade-side .who{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.trade-side .who b{font-size:13.5px}
+.trade-side .who .arrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.trade-side ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px}
+.trade-side li{display:flex;align-items:center;gap:7px;font-size:13px}
+.trade-side li .pk{color:var(--ink-2);font-style:italic}
+.cond{padding:11px 13px;background:rgba(156,140,250,.06);border-top:1px solid var(--line-soft);font-size:12.5px;line-height:1.55}
+.cond .lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);font-weight:700;margin-bottom:4px}
+.cond .out{margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);color:var(--ink-2)}
+
+/* ---------- guillotine ---------- */
+.guillo{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border-radius:var(--r);overflow:hidden}
+.guillo .g-row{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--surface)}
+.guillo .g-row.out{background:var(--bg-2)}
+.guillo .g-row.out .tname b{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:1.5px;color:var(--ink-3)}
+.guillo .wk{font-family:var(--f-display);font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--ink-3);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:2px 6px;flex:none}
+.guillo .g-row.alive .wk{color:var(--mint);border-color:rgba(61,220,151,.3);background:rgba(61,220,151,.08)}
+
+/* ---------- forms / editor ---------- */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.field input,.field select,.field textarea{
+  background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:15px; width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
+.field textarea{resize:vertical;min-height:66px;line-height:1.5}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+.toggle{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+.toggle input{position:absolute;opacity:0;pointer-events:none}
+.toggle .tr{width:38px;height:22px;border-radius:99px;background:var(--surface-3);border:1px solid var(--line);
+  position:relative;transition:background .18s;flex:none}
+.toggle .tr::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+  background:var(--ink-2);transition:transform .18s,background .18s}
+.toggle input:checked + .tr{background:var(--heat);border-color:var(--heat)}
+.toggle input:checked + .tr::after{transform:translateX(16px);background:#160800}
+
+/* pill switcher */
+.pills{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 6px;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pills button{
+  padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+  font-size:12.5px;font-weight:600;white-space:nowrap;color:var(--ink-2);
+}
+.pills button[aria-pressed="true"]{background:var(--heat);border-color:var(--heat);color:#160800}
+
+/* modal */
+.modal-bd{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.66);backdrop-filter:blur(4px);
+  display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-bd.open{opacity:1;pointer-events:auto}
+.modal{
+  width:100%;max-width:560px;max-height:88dvh;overflow-y:auto;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl) var(--r-xl) 0 0;
+  transform:translateY(20px);transition:transform .24s cubic-bezier(.2,.8,.2,1);
+  padding:0 0 calc(env(safe-area-inset-bottom) + 16px);
+}
+.modal-bd.open .modal{transform:translateY(0)}
+.modal-hd{display:flex;align-items:center;gap:10px;padding:16px 18px 12px;position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line-soft);z-index:2}
+.modal-hd h3{font-size:17px;text-transform:uppercase;letter-spacing:.06em}
+.modal-bd2{padding:16px 18px}
+.modal-ft{display:flex;gap:9px;padding:0 18px;margin-top:4px}
+.modal-ft .btn{flex:1}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px);
+  transform:translate(-50%,14px);z-index:90;
+  background:var(--surface-3);border:1px solid var(--line);border-radius:999px;
+  padding:9px 17px;font-size:13px;font-weight:600;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- desktop ---------- */
+@media (min-width:900px){
+  :root{--tab-h:0px}
+  .app{flex-direction:row}
+  .tabbar{display:none}
+  .sidenav{
+    display:flex;flex-direction:column;gap:2px;width:216px;flex:none;
+    padding:16px 12px;border-right:1px solid var(--line-soft);
+    position:sticky;top:0;height:100dvh;background:var(--bg-2);
+  }
+  .sidenav .brand{padding:6px 8px 20px}
+  .sidenav button{
+    display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r-sm);
+    font-size:13.5px;font-weight:600;color:var(--ink-2);text-align:left;
+  }
+  .sidenav button svg{width:18px;height:18px;stroke-width:1.9;color:var(--ink-3)}
+  .sidenav button:hover{background:var(--surface)}
+  .sidenav button[aria-current="page"]{background:rgba(255,107,44,.12);color:var(--heat)}
+  .sidenav button[aria-current="page"] svg{color:var(--heat)}
+  .col{display:flex;flex-direction:column;flex:1;min-width:0}
+  .topbar .brand{display:none}
+  .topbar{justify-content:flex-end}
+  main{padding:22px 28px 60px}
+  .tiles{grid-template-columns:repeat(4,1fr);gap:12px}
+  .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
+  .hero .tiles{grid-template-columns:repeat(2,1fr)}
+  .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
+  .sidenav .brand small{white-space:nowrap;letter-spacing:.11em;font-size:9.5px}
+  .sidenav .brand h1{font-size:19px}
+  .trade-body{grid-template-columns:1fr 1fr}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  .two .card + .card{margin-top:0}
+  .modal-bd{align-items:center}
+  .modal{border-radius:var(--r-xl);max-height:82dvh}
+  .toast{bottom:26px}
+}
+@media (max-width:899px){ .sidenav{display:none} }
+@media (prefers-reduced-motion:reduce){ *{transition:none !important;animation:none !important} }
+
+</style>
+</head>
+<body>
+<noscript><div style="padding:24px;color:#EAF0F6;font-family:system-ui">
+  Sweaty Dyno needs JavaScript to render the league data.</div></noscript>
+<script>
+/* Single-file build -- generated by tools/build.py. Do not edit by hand;
+   edit js/, css/ and data/ then rerun the build. */
+window.__SD_DATA = {"league":{"name":"Sweaty Dyno","tagline":"Dynasty · Est. 2025","seasons":[2025,2026,2027,2028,2029,2030],"currentSeason":2026,"buyIn":{"2025":50,"2026":50,"2027":50,"2028":50,"2029":50,"2030":50},"empireContribution":{"2025":150,"2026":150,"2027":150,"2028":150,"2029":150,"2030":150},"empirePointsScale":[{"place":1,"points":20,"label":"Champion"},{"place":2,"points":10,"label":"Runner-up"},{"place":3,"points":5,"label":"Semifinalist"},{"place":4,"points":5,"label":"Semifinalist"},{"place":5,"points":3,"label":"Quarterfinalist"},{"place":6,"points":3,"label":"Quarterfinalist"}],"empireRule":"The Empire Pot rolls over every season, funded by an annual set-aside from buy-ins. It is claimed by the first manager to reach the Empire threshold. Empire Points are earned by finishing position each season.","empireThreshold":50,"sleeper":{"leagueIds":{"2025":"1221508258016014336","2026":"1314450842367041536","2027":"","2028":"","2029":"","2030":""},"note":"Sleeper league_id per season, from the league URL: sleeper.com/leagues/<league_id>/team. Each season's league exposes previous_league_id, which is how the 2025 id was found."}},"managers":{"_README":"TEAM NUMBERS ARE THE PERMANENT KEY. A team keeps its history through ownership changes. To reassign a team, add an entry to that team's `ownership` array with a `fromSeason` -- do NOT edit past entries. To renumber teams wholesale, edit TARGET in tools/remap_teams.py and run it.","managers":[{"id":"andrew","name":"Andrew","aliases":["Andrew","Andrew Nissen","Andrewnissen1","Nissen"],"sleeperUserId":"844305947303243776","sleeperUsername":"Andrewnissen1","usernameConfirmed":true,"fullName":"Andrew Nissen"},{"id":"matt","name":"Matt","aliases":["3bnet","Ebnet","Matt","Matt Ebnet"],"sleeperUserId":"718948222990622720","sleeperUsername":"3bnet","usernameConfirmed":true,"fullName":"Matt Ebnet"},{"id":"sam","name":"Sam","aliases":["Kutina","Sam","Sam Kutina","kuti"],"sleeperUserId":"869763754424983552","sleeperUsername":"kuti","usernameConfirmed":true,"fullName":"Sam Kutina"},{"id":"damon","name":"Damon","aliases":["Damon","Damon Weierke","Weierke","dweierke34"],"sleeperUserId":"857503027475656704","sleeperUsername":"dweierke34","usernameConfirmed":true,"fullName":"Damon Weierke"},{"id":"neal","name":"Neal","aliases":["Bhakta","Neal","Neal Bhakta","Nealb17"],"sleeperUserId":"869756757285781504","sleeperUsername":"Nealb17","usernameConfirmed":true,"fullName":"Neal Bhakta"},{"id":"alex","name":"Alex","aliases":["Alex","Alex Crowe","Crowe","alexrcrowe"],"sleeperUserId":"737104291222937600","sleeperUsername":"alexrcrowe","usernameConfirmed":true,"fullName":"Alex Crowe"},{"id":"tyler","name":"Tyler","aliases":["Gopherkid14","Tyler","Tyler Waterson","Waterson"],"sleeperUserId":"869758787958099968","sleeperUsername":"Gopherkid14","usernameConfirmed":true,"fullName":"Tyler Waterson"},{"id":"tanner","name":"Tanner","aliases":["Menge","Tanner","Tanner Menge","Tanner2431"],"sleeperUserId":"733051981551271936","sleeperUsername":"Tanner2431","usernameConfirmed":true,"fullName":"Tanner Menge"},{"id":"noah","name":"Noah","aliases":["Goossen","Noah","Noah Goossen","NoahG621"],"sleeperUserId":"879824429373603840","sleeperUsername":"NoahG621","usernameConfirmed":true,"fullName":"Noah Goossen"},{"id":"max","name":"Max","aliases":["Crowe","Max","Max Crowe","maxcrowe"],"sleeperUserId":"859271870711709696","sleeperUsername":"maxcrowe","usernameConfirmed":true,"fullName":"Max Crowe"}],"unresolvedAliases":[],"teams":[{"number":1,"name":null,"ownership":[{"managerId":"noah","fromSeason":2025,"toSeason":null}]},{"number":2,"name":null,"ownership":[{"managerId":"neal","fromSeason":2025,"toSeason":null}]},{"number":3,"name":null,"ownership":[{"managerId":"alex","fromSeason":2025,"toSeason":null}]},{"number":4,"name":null,"ownership":[{"managerId":"andrew","fromSeason":2025,"toSeason":null}]},{"number":5,"name":null,"ownership":[{"managerId":"damon","fromSeason":2025,"toSeason":null}]},{"number":6,"name":null,"ownership":[{"managerId":"max","fromSeason":2025,"toSeason":null}]},{"number":7,"name":null,"ownership":[{"managerId":"sam","fromSeason":2025,"toSeason":null}]},{"number":8,"name":null,"ownership":[{"managerId":"tanner","fromSeason":2025,"toSeason":null}]},{"number":9,"name":null,"ownership":[{"managerId":"tyler","fromSeason":2025,"toSeason":null}]},{"number":10,"name":null,"ownership":[{"managerId":"matt","fromSeason":2025,"toSeason":null}]}]},"bank":{"_README":"Payouts with category 'empire' have team:null and paid:false — they are set-asides that stay in the physical bank until the Empire Pot is claimed. Bank cash = payins collected - payouts actually paid.","payins":[{"season":2025,"team":4,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":10,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":7,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":5,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":2,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":3,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":9,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":8,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":1,"amount":50,"paid":true,"date":null,"note":null},{"season":2025,"team":6,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":4,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":10,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":7,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":5,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":2,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":3,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":9,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":8,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":1,"amount":50,"paid":true,"date":null,"note":null},{"season":2026,"team":6,"amount":50,"paid":true,"date":null,"note":null},{"season":2027,"team":4,"amount":50,"paid":true,"date":"2025-09-02","note":"Matt paid on Andrew's behalf (9/2/25)"},{"season":2027,"team":10,"amount":50,"paid":false,"date":null,"note":null},{"season":2027,"team":7,"amount":50,"paid":false,"date":null,"note":null},{"season":2027,"team":5,"amount":50,"paid":false,"date":null,"note":null},{"season":2027,"team":2,"amount":50,"paid":false,"date":null,"note":null},{"season":2027,"team":3,"amount":50,"paid":false,"date":null,"note":null},{"season":2027,"team":9,"amount":50,"paid":false,"date":null,"note":null},{"season":2027,"team":8,"amount":50,"paid":true,"date":null,"note":null},{"season":2027,"team":1,"amount":50,"paid":false,"date":null,"note":null},{"season":2027,"team":6,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":4,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":10,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":7,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":5,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":2,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":3,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":9,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":8,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":1,"amount":50,"paid":false,"date":null,"note":null},{"season":2028,"team":6,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":4,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":10,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":7,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":5,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":2,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":3,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":9,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":8,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":1,"amount":50,"paid":false,"date":null,"note":null},{"season":2029,"team":6,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":4,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":10,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":7,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":5,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":2,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":3,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":9,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":8,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":1,"amount":50,"paid":false,"date":null,"note":null},{"season":2030,"team":6,"amount":50,"paid":false,"date":null,"note":null}],"payouts":[{"id":"po-2025-mg-1","season":2025,"team":4,"category":"minigame","amount":30,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-mg-2","season":2025,"team":10,"category":"minigame","amount":30,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-mg-3","season":2025,"team":7,"category":"minigame","amount":20,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-mg-4","season":2025,"team":5,"category":"minigame","amount":10,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-mg-5","season":2025,"team":2,"category":"minigame","amount":20,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-mg-6","season":2025,"team":3,"category":"minigame","amount":10,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-mg-7","season":2025,"team":9,"category":"minigame","amount":30,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-mg-8","season":2025,"team":6,"category":"minigame","amount":20,"label":"Minigame winnings","paid":true,"date":null,"note":null},{"id":"po-2025-pl-1","season":2025,"team":6,"category":"placement","amount":100,"label":"1st place","place":1,"paid":true,"date":null,"note":null},{"id":"po-2025-pl-2","season":2025,"team":8,"category":"placement","amount":50,"label":"2nd place","place":2,"paid":true,"date":null,"note":null},{"id":"po-2025-emp-1","season":2025,"team":null,"category":"empire","amount":150,"label":"Rolling pot set-aside","paid":false,"date":null,"note":"Stays in the physical bank until the Empire Pot is claimed."},{"id":"po-2026-emp-1","season":2026,"team":null,"category":"empire","amount":150,"label":"Rolling pot set-aside","paid":false,"date":null,"note":"Stays in the physical bank until the Empire Pot is claimed."}],"empirePoints":[{"season":2025,"team":6,"points":20,"note":"Champion"},{"season":2025,"team":8,"points":10,"note":"Runner-up"},{"season":2025,"team":4,"points":5,"note":"Semifinalist"},{"season":2025,"team":9,"points":5,"note":"Semifinalist"},{"season":2025,"team":7,"points":3,"note":"Quarterfinalist"},{"season":2025,"team":3,"points":3,"note":"Quarterfinalist"},{"season":2025,"team":10,"points":0,"note":null},{"season":2025,"team":5,"points":0,"note":null},{"season":2025,"team":2,"points":0,"note":null},{"season":2025,"team":1,"points":0,"note":null}],"finishes":[{"season":2025,"place":1,"team":6},{"season":2025,"place":2,"team":8}],"empirePot":{"claimedBy":null,"claimedSeason":null}},"minigames":{"_README":"One entry per week per season. `name:null` means the week's minigame has not been set yet. `results` maps place -> {team, value, note}; `value` is the free-text stat/player that won it. Payout maps place -> dollars; set 2nd/3rd to 0 for winner-take-all. The guillotine is a separate multi-week object.","defaults":{"weeklyPayout":{"1":10,"2":0,"3":0},"weeks":14,"guillotineWeek":9},"seasons":{"2025":{"games":[],"guillotine":null,"legacy":{"note":"2025 minigames were tracked only as season totals in the original spreadsheet — week-by-week results were not recorded. These totals are what reconciles against the bank ($170 paid).","totalsByTeam":{"4":30,"10":30,"7":20,"5":10,"2":20,"3":10,"9":30,"6":20},"total":170}},"2026":{"games":[{"id":"2026-w01","week":1,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w02","week":2,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w03","week":3,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w04","week":4,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w05","week":5,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w06","week":6,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w07","week":7,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w08","week":8,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w10","week":10,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w11","week":11,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w12","week":12,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w13","week":13,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}},{"id":"2026-w14","week":14,"name":null,"rules":null,"payout":{"1":10,"2":0,"3":0},"status":"scheduled","results":{"1":null,"2":null,"3":null}}],"guillotine":{"id":"2026-guillotine","week":9,"name":"Guillotine","startWeek":9,"rules":"Starting week 9, the lowest-scoring team still in the pool is chopped each week. Last manager standing takes the pot.","payout":{"1":30},"status":"scheduled","entrants":[4,10,7,5,2,3,9,8,1,6],"eliminations":[],"winner":null},"legacy":null}}},"drafts":{"_README":"slotTeam = team that originally owned the pick slot. pickedBy = team that actually made the selection. traded=true when they differ.","rookie":{"2025":{"order":[7,8,9,5,1,4,2,3,6,10],"rounds":3,"picks":[{"round":1,"slot":1,"pick":"1.01","slotTeam":7,"pickedBy":7,"player":"Ashton Jeanty","traded":false},{"round":1,"slot":2,"pick":"1.02","slotTeam":8,"pickedBy":5,"player":"Omarion Hampton","traded":true},{"round":1,"slot":3,"pick":"1.03","slotTeam":9,"pickedBy":2,"player":"TreVeyon Henderson","traded":true},{"round":1,"slot":4,"pick":"1.04","slotTeam":5,"pickedBy":5,"player":"Tetairoa McMillan","traded":false},{"round":1,"slot":5,"pick":"1.05","slotTeam":1,"pickedBy":10,"player":"Kaleb Johnson","traded":true},{"round":1,"slot":6,"pick":"1.06","slotTeam":4,"pickedBy":10,"player":"Quinshon Judkins","traded":true},{"round":1,"slot":7,"pick":"1.07","slotTeam":2,"pickedBy":10,"player":"RJ Harvey","traded":true},{"round":1,"slot":8,"pick":"1.08","slotTeam":3,"pickedBy":10,"player":"Travis Hunter","traded":true},{"round":1,"slot":9,"pick":"1.09","slotTeam":6,"pickedBy":1,"player":"Tyler Warren","traded":true},{"round":1,"slot":10,"pick":"1.10","slotTeam":10,"pickedBy":6,"player":"Emeka Egbuka","traded":true},{"round":2,"slot":1,"pick":"2.01","slotTeam":7,"pickedBy":3,"player":"Colston Loveland","traded":true},{"round":2,"slot":2,"pick":"2.02","slotTeam":8,"pickedBy":9,"player":"Matthew Golden","traded":true},{"round":2,"slot":3,"pick":"2.03","slotTeam":9,"pickedBy":3,"player":"Tre Harris","traded":true},{"round":2,"slot":4,"pick":"2.04","slotTeam":5,"pickedBy":6,"player":"Cam Skattebo","traded":true},{"round":2,"slot":5,"pick":"2.05","slotTeam":1,"pickedBy":9,"player":"Cameron Ward","traded":true},{"round":2,"slot":6,"pick":"2.06","slotTeam":4,"pickedBy":5,"player":"Luther Burden","traded":true},{"round":2,"slot":7,"pick":"2.07","slotTeam":2,"pickedBy":7,"player":"Jayden Higgins","traded":true},{"round":2,"slot":8,"pick":"2.08","slotTeam":3,"pickedBy":10,"player":"Jaydon Blue","traded":true},{"round":2,"slot":9,"pick":"2.09","slotTeam":6,"pickedBy":1,"player":"Jack Bech","traded":true},{"round":2,"slot":10,"pick":"2.10","slotTeam":10,"pickedBy":6,"player":"Bhayshul Tuten","traded":true},{"round":3,"slot":1,"pick":"3.01","slotTeam":7,"pickedBy":2,"player":"Jaylin Noel","traded":true},{"round":3,"slot":2,"pick":"3.02","slotTeam":8,"pickedBy":10,"player":"Kyle Williams","traded":true},{"round":3,"slot":3,"pick":"3.03","slotTeam":9,"pickedBy":10,"player":"Dylan Sampson","traded":true},{"round":3,"slot":4,"pick":"3.04","slotTeam":5,"pickedBy":4,"player":"Devin Neal","traded":true},{"round":3,"slot":5,"pick":"3.05","slotTeam":1,"pickedBy":4,"player":"Jaxson Dart","traded":true},{"round":3,"slot":6,"pick":"3.06","slotTeam":4,"pickedBy":6,"player":"Jalen Royals","traded":true},{"round":3,"slot":7,"pick":"3.07","slotTeam":2,"pickedBy":2,"player":"Jimmy Horn","traded":false},{"round":3,"slot":8,"pick":"3.08","slotTeam":3,"pickedBy":5,"player":"Jordan James","traded":true},{"round":3,"slot":9,"pick":"3.09","slotTeam":6,"pickedBy":3,"player":"Jalen Milroe","traded":true},{"round":3,"slot":10,"pick":"3.10","slotTeam":10,"pickedBy":9,"player":"Ollie Gordon","traded":true}]},"2026":{"order":[1,10,2,5,3,7,9,4,8,6],"rounds":3,"picks":[{"round":1,"slot":1,"pick":"1.01","slotTeam":1,"pickedBy":1,"player":"Jeremiyah Love","traded":false},{"round":1,"slot":2,"pick":"1.02","slotTeam":10,"pickedBy":10,"player":"Carnell Tate","traded":false},{"round":1,"slot":3,"pick":"1.03","slotTeam":2,"pickedBy":2,"player":"Jordyn Tyson","traded":false},{"round":1,"slot":4,"pick":"1.04","slotTeam":5,"pickedBy":5,"player":"Makai Lemon","traded":false},{"round":1,"slot":5,"pick":"1.05","slotTeam":3,"pickedBy":1,"player":"KC Concepcion","traded":true},{"round":1,"slot":6,"pick":"1.06","slotTeam":7,"pickedBy":7,"player":"Jadarian Price","traded":false},{"round":1,"slot":7,"pick":"1.07","slotTeam":9,"pickedBy":9,"player":"Kenyon Sadiq","traded":false},{"round":1,"slot":8,"pick":"1.08","slotTeam":4,"pickedBy":4,"player":"Fernando Mendoza","traded":false},{"round":1,"slot":9,"pick":"1.09","slotTeam":8,"pickedBy":10,"player":"Omar Cooper","traded":true},{"round":1,"slot":10,"pick":"1.10","slotTeam":6,"pickedBy":10,"player":"Eli Stowers","traded":true},{"round":2,"slot":1,"pick":"2.01","slotTeam":1,"pickedBy":1,"player":"Denzel Boston","traded":false},{"round":2,"slot":2,"pick":"2.02","slotTeam":10,"pickedBy":10,"player":"Jonah Coleman","traded":false},{"round":2,"slot":3,"pick":"2.03","slotTeam":2,"pickedBy":2,"player":"Emmett Johnson","traded":false},{"round":2,"slot":4,"pick":"2.04","slotTeam":5,"pickedBy":5,"player":"Chris Bell","traded":false},{"round":2,"slot":5,"pick":"2.05","slotTeam":3,"pickedBy":5,"player":"Germie Bernard","traded":true},{"round":2,"slot":6,"pick":"2.06","slotTeam":7,"pickedBy":7,"player":"Elijah Sarratt","traded":false},{"round":2,"slot":7,"pick":"2.07","slotTeam":9,"pickedBy":9,"player":"De'Zhaun Stribling","traded":false},{"round":2,"slot":8,"pick":"2.08","slotTeam":4,"pickedBy":10,"player":"Chris Brazzell","traded":true},{"round":2,"slot":9,"pick":"2.09","slotTeam":8,"pickedBy":8,"player":"Ty Simpson","traded":false},{"round":2,"slot":10,"pick":"2.10","slotTeam":6,"pickedBy":6,"player":"Skyler Bell","traded":false},{"round":3,"slot":1,"pick":"3.01","slotTeam":1,"pickedBy":5,"player":"Antonio Williams","traded":true},{"round":3,"slot":2,"pick":"3.02","slotTeam":10,"pickedBy":5,"player":"Kaytron Allen","traded":true},{"round":3,"slot":3,"pick":"3.03","slotTeam":2,"pickedBy":2,"player":"Zachariah Branch","traded":false},{"round":3,"slot":4,"pick":"3.04","slotTeam":5,"pickedBy":3,"player":"Nicholas Singleton","traded":true},{"round":3,"slot":5,"pick":"3.05","slotTeam":3,"pickedBy":3,"player":"Ted Hurst","traded":false},{"round":3,"slot":6,"pick":"3.06","slotTeam":7,"pickedBy":7,"player":"Malachi Fields","traded":false},{"round":3,"slot":7,"pick":"3.07","slotTeam":9,"pickedBy":9,"player":"Mike Washington","traded":false},{"round":3,"slot":8,"pick":"3.08","slotTeam":4,"pickedBy":4,"player":"Ja'Kobi Lane","traded":false},{"round":3,"slot":9,"pick":"3.09","slotTeam":8,"pickedBy":8,"player":"Brenen Thompson","traded":false},{"round":3,"slot":10,"pick":"3.10","slotTeam":6,"pickedBy":6,"player":"Demond Claiborne","traded":false}]}}},"trades":{"_README":"A trade is a list of sides; each side is what that team RECEIVES. team:null with an alias means the participant has not been mapped to a team number yet (see managers.json > unresolvedAliases). Conditional trades carry status: open | met | expired.","trades":[{"id":"2025-01","season":2025,"date":"2025-07-10","sides":[{"team":6,"receives":["$10 FAAB"]},{"team":5,"receives":["Kareem Hunt"]}],"note":null},{"id":"2025-02","season":2025,"date":"2025-08-15","sides":[{"team":6,"receives":["2026 3rd (Noah)"]},{"team":1,"receives":["Roschon Johnson"]}],"note":null},{"id":"2025-03","season":2025,"date":"2025-10-15","sides":[{"team":3,"receives":["Breece Hall"]},{"team":1,"receives":["Hassan Haskins","2026 1st (Alex)"]}],"note":null},{"id":"2025-04","season":2025,"date":"2025-10-26","sides":[{"team":6,"receives":["Rashee Rice"]},{"team":10,"receives":["2026 1st (Max)","2027 1st (Max)"]}],"note":null},{"id":"2025-05","season":2025,"date":"2025-11-08","sides":[{"team":4,"receives":["Mark Andrews","Rhamondre Stevenson"]},{"team":10,"receives":["2026 2nd (Andrew)"]}],"note":null},{"id":"2025-06","season":2025,"date":"2025-12-07","sides":[{"team":5,"receives":["2026 3rd (Noah)"]},{"team":6,"receives":["Kareem Hunt","Bam Knight"]}],"note":"Settled outcome of conditional trade cond-2025-01.","conditionalId":"cond-2025-01"}],"conditionalTrades":[{"id":"cond-2025-01","season":2025,"date":"2025-12-07","status":"met","sides":[{"team":6,"receives":["Kareem Hunt","Bam Knight"]},{"team":5,"receives":["2026 3rd (maxcrowe)"]}],"condition":"If Max reaches the finals, the 2026 3rd (maxcrowe) will turn into 2026 3rd (NoahG621).","deadline":"2025-12-28","deadlineLabel":"End of the 2025 playoffs","resolvedDate":"2025-12-28","outcome":"Condition met — Max reached the finals, so the pick converted to the 2026 3rd (NoahG621).","settledTradeId":"2025-06"}],"waivers":[{"n":1,"season":2025,"date":"2025-07-12","team":6,"player":"Jacory Croskey-Merritt","faab":6},{"n":2,"season":2025,"date":"2025-07-12","team":3,"player":"Oronde Gadsden","faab":26},{"n":3,"season":2025,"date":"2025-07-12","team":6,"player":"Harold Fannin","faab":17},{"n":4,"season":2025,"date":"2025-07-12","team":9,"player":"Shedeur Sanders","faab":0},{"n":5,"season":2025,"date":"2025-07-12","team":9,"player":"Tory Horton","faab":10},{"n":6,"season":2025,"date":"2025-07-12","team":10,"player":"Woody Marks","faab":5},{"n":7,"season":2025,"date":"2025-07-12","team":10,"player":"Kyle Monangai","faab":25},{"n":8,"season":2025,"date":"2025-07-26","team":5,"player":"Isaac TeSlaa","faab":9},{"n":9,"season":2025,"date":"2025-07-26","team":5,"player":"Chimere Dike","faab":25},{"n":10,"season":2025,"date":"2025-08-09","team":6,"player":"Terrance Ferguson","faab":0},{"n":11,"season":2025,"date":"2025-08-30","team":3,"player":"Pat Bryant","faab":0},{"n":12,"season":2025,"date":"2025-09-10","team":9,"player":"Daniel Jones","faab":0},{"n":13,"season":2025,"date":"2025-09-17","team":2,"player":"Chris Rodriguez","faab":9}]},"stats":{"_README":"`weekly` = points for by team by week (the source for every derived stat). `maxPF` = season Max Points For per team, imported from Sleeper or entered by hand. Sleeper sync appends to `weekly` and recomputes totals.","regularSeasonWeeks":14,"maxPF":[{"season":2025,"team":1,"points":2056.85},{"season":2025,"team":2,"points":2132.2},{"season":2025,"team":3,"points":2272.3},{"season":2025,"team":4,"points":2538.45},{"season":2025,"team":5,"points":2188.0},{"season":2025,"team":6,"points":2441.45},{"season":2025,"team":7,"points":2413.75},{"season":2025,"team":8,"points":2320.8},{"season":2025,"team":9,"points":2520.95},{"season":2025,"team":10,"points":2057.3}],"weekly":[{"season":2025,"week":1,"team":1,"points":130.5,"maxPoints":172.35,"opponent":null,"result":null},{"season":2025,"week":1,"team":2,"points":166.9,"maxPoints":173.6,"opponent":null,"result":null},{"season":2025,"week":1,"team":3,"points":140.0,"maxPoints":155.75,"opponent":null,"result":null},{"season":2025,"week":1,"team":4,"points":143.05,"maxPoints":185.95,"opponent":null,"result":null},{"season":2025,"week":1,"team":5,"points":115.0,"maxPoints":126.2,"opponent":null,"result":null},{"season":2025,"week":1,"team":6,"points":123.3,"maxPoints":150.5,"opponent":null,"result":null},{"season":2025,"week":1,"team":7,"points":105.3,"maxPoints":169.6,"opponent":null,"result":null},{"season":2025,"week":1,"team":8,"points":133.7,"maxPoints":174.0,"opponent":null,"result":null},{"season":2025,"week":1,"team":9,"points":160.95,"maxPoints":185.35,"opponent":null,"result":null},{"season":2025,"week":1,"team":10,"points":99.35,"maxPoints":112.6,"opponent":null,"result":null},{"season":2025,"week":2,"team":1,"points":73.4,"maxPoints":163.5,"opponent":null,"result":null},{"season":2025,"week":2,"team":2,"points":104.4,"maxPoints":146.15,"opponent":null,"result":null},{"season":2025,"week":2,"team":3,"points":151.5,"maxPoints":172.8,"opponent":null,"result":null},{"season":2025,"week":2,"team":4,"points":182.7,"maxPoints":211.95,"opponent":null,"result":null},{"season":2025,"week":2,"team":5,"points":117.6,"maxPoints":139.8,"opponent":null,"result":null},{"season":2025,"week":2,"team":6,"points":135.7,"maxPoints":172.45,"opponent":null,"result":null},{"season":2025,"week":2,"team":7,"points":120.05,"maxPoints":169.6,"opponent":null,"result":null},{"season":2025,"week":2,"team":8,"points":125.9,"maxPoints":163.7,"opponent":null,"result":null},{"season":2025,"week":2,"team":9,"points":167.35,"maxPoints":206.45,"opponent":null,"result":null},{"season":2025,"week":2,"team":10,"points":136.35,"maxPoints":147.45,"opponent":null,"result":null},{"season":2025,"week":3,"team":1,"points":123.55,"maxPoints":134.95,"opponent":null,"result":null},{"season":2025,"week":3,"team":2,"points":121.65,"maxPoints":137.25,"opponent":null,"result":null},{"season":2025,"week":3,"team":3,"points":151.55,"maxPoints":162.35,"opponent":null,"result":null},{"season":2025,"week":3,"team":4,"points":139.75,"maxPoints":209.9,"opponent":null,"result":null},{"season":2025,"week":3,"team":5,"points":114.2,"maxPoints":165.15,"opponent":null,"result":null},{"season":2025,"week":3,"team":6,"points":136.0,"maxPoints":161.1,"opponent":null,"result":null},{"season":2025,"week":3,"team":7,"points":143.75,"maxPoints":175.6,"opponent":null,"result":null},{"season":2025,"week":3,"team":8,"points":145.15,"maxPoints":157.65,"opponent":null,"result":null},{"season":2025,"week":3,"team":9,"points":149.25,"maxPoints":169.95,"opponent":null,"result":null},{"season":2025,"week":3,"team":10,"points":120.6,"maxPoints":142.65,"opponent":null,"result":null},{"season":2025,"week":4,"team":1,"points":175.2,"maxPoints":187.4,"opponent":null,"result":null},{"season":2025,"week":4,"team":2,"points":132.95,"maxPoints":162.95,"opponent":null,"result":null},{"season":2025,"week":4,"team":3,"points":121.0,"maxPoints":140.3,"opponent":null,"result":null},{"season":2025,"week":4,"team":4,"points":164.4,"maxPoints":207.6,"opponent":null,"result":null},{"season":2025,"week":4,"team":5,"points":147.45,"maxPoints":177.05,"opponent":null,"result":null},{"season":2025,"week":4,"team":6,"points":206.6,"maxPoints":207.1,"opponent":null,"result":null},{"season":2025,"week":4,"team":7,"points":148.15,"maxPoints":167.15,"opponent":null,"result":null},{"season":2025,"week":4,"team":8,"points":142.85,"maxPoints":154.75,"opponent":null,"result":null},{"season":2025,"week":4,"team":9,"points":163.85,"maxPoints":180.25,"opponent":null,"result":null},{"season":2025,"week":4,"team":10,"points":119.75,"maxPoints":187.85,"opponent":null,"result":null},{"season":2025,"week":5,"team":1,"points":103.9,"maxPoints":163.4,"opponent":null,"result":null},{"season":2025,"week":5,"team":2,"points":128.7,"maxPoints":140.3,"opponent":null,"result":null},{"season":2025,"week":5,"team":3,"points":111.15,"maxPoints":114.45,"opponent":null,"result":null},{"season":2025,"week":5,"team":4,"points":139.2,"maxPoints":179.35,"opponent":null,"result":null},{"season":2025,"week":5,"team":5,"points":147.15,"maxPoints":157.45,"opponent":null,"result":null},{"season":2025,"week":5,"team":6,"points":204.1,"maxPoints":214.8,"opponent":null,"result":null},{"season":2025,"week":5,"team":7,"points":175.15,"maxPoints":225.9,"opponent":null,"result":null},{"season":2025,"week":5,"team":8,"points":139.55,"maxPoints":165.75,"opponent":null,"result":null},{"season":2025,"week":5,"team":9,"points":183.5,"maxPoints":186.4,"opponent":null,"result":null},{"season":2025,"week":5,"team":10,"points":124.7,"maxPoints":158.85,"opponent":null,"result":null},{"season":2025,"week":6,"team":1,"points":123.35,"maxPoints":147.45,"opponent":null,"result":null},{"season":2025,"week":6,"team":2,"points":124.2,"maxPoints":128.8,"opponent":null,"result":null},{"season":2025,"week":6,"team":3,"points":122.85,"maxPoints":131.85,"opponent":null,"result":null},{"season":2025,"week":6,"team":4,"points":154.75,"maxPoints":171.45,"opponent":null,"result":null},{"season":2025,"week":6,"team":5,"points":138.5,"maxPoints":162.6,"opponent":null,"result":null},{"season":2025,"week":6,"team":6,"points":185.7,"maxPoints":216.7,"opponent":null,"result":null},{"season":2025,"week":6,"team":7,"points":113.55,"maxPoints":171.0,"opponent":null,"result":null},{"season":2025,"week":6,"team":8,"points":119.5,"maxPoints":146.1,"opponent":null,"result":null},{"season":2025,"week":6,"team":9,"points":172.35,"maxPoints":209.9,"opponent":null,"result":null},{"season":2025,"week":6,"team":10,"points":78.05,"maxPoints":97.75,"opponent":null,"result":null},{"season":2025,"week":7,"team":1,"points":130.3,"maxPoints":147.7,"opponent":null,"result":null},{"season":2025,"week":7,"team":2,"points":134.5,"maxPoints":166.6,"opponent":null,"result":null},{"season":2025,"week":7,"team":3,"points":205.7,"maxPoints":226.1,"opponent":null,"result":null},{"season":2025,"week":7,"team":4,"points":163.15,"maxPoints":176.55,"opponent":null,"result":null},{"season":2025,"week":7,"team":5,"points":115.15,"maxPoints":126.25,"opponent":null,"result":null},{"season":2025,"week":7,"team":6,"points":111.7,"maxPoints":148.15,"opponent":null,"result":null},{"season":2025,"week":7,"team":7,"points":130.75,"maxPoints":211.8,"opponent":null,"result":null},{"season":2025,"week":7,"team":8,"points":147.8,"maxPoints":180.1,"opponent":null,"result":null},{"season":2025,"week":7,"team":9,"points":158.15,"maxPoints":190.05,"opponent":null,"result":null},{"season":2025,"week":7,"team":10,"points":141.7,"maxPoints":214.4,"opponent":null,"result":null},{"season":2025,"week":8,"team":1,"points":106.9,"maxPoints":117.8,"opponent":null,"result":null},{"season":2025,"week":8,"team":2,"points":183.6,"maxPoints":194.0,"opponent":null,"result":null},{"season":2025,"week":8,"team":3,"points":148.6,"maxPoints":165.3,"opponent":null,"result":null},{"season":2025,"week":8,"team":4,"points":157.0,"maxPoints":163.9,"opponent":null,"result":null},{"season":2025,"week":8,"team":5,"points":161.0,"maxPoints":181.7,"opponent":null,"result":null},{"season":2025,"week":8,"team":6,"points":114.7,"maxPoints":131.6,"opponent":null,"result":null},{"season":2025,"week":8,"team":7,"points":145.95,"maxPoints":180.15,"opponent":null,"result":null},{"season":2025,"week":8,"team":8,"points":169.3,"maxPoints":171.7,"opponent":null,"result":null},{"season":2025,"week":8,"team":9,"points":144.9,"maxPoints":181.2,"opponent":null,"result":null},{"season":2025,"week":8,"team":10,"points":97.35,"maxPoints":143.75,"opponent":null,"result":null},{"season":2025,"week":9,"team":1,"points":103.45,"maxPoints":154.15,"opponent":null,"result":null},{"season":2025,"week":9,"team":2,"points":119.05,"maxPoints":163.4,"opponent":null,"result":null},{"season":2025,"week":9,"team":3,"points":166.0,"maxPoints":173.1,"opponent":null,"result":null},{"season":2025,"week":9,"team":4,"points":141.95,"maxPoints":179.8,"opponent":null,"result":null},{"season":2025,"week":9,"team":5,"points":112.9,"maxPoints":176.0,"opponent":null,"result":null},{"season":2025,"week":9,"team":6,"points":152.75,"maxPoints":182.35,"opponent":null,"result":null},{"season":2025,"week":9,"team":7,"points":126.45,"maxPoints":144.95,"opponent":null,"result":null},{"season":2025,"week":9,"team":8,"points":124.3,"maxPoints":150.4,"opponent":null,"result":null},{"season":2025,"week":9,"team":9,"points":128.4,"maxPoints":189.8,"opponent":null,"result":null},{"season":2025,"week":9,"team":10,"points":130.8,"maxPoints":144.9,"opponent":null,"result":null},{"season":2025,"week":10,"team":1,"points":121.05,"maxPoints":131.45,"opponent":null,"result":null},{"season":2025,"week":10,"team":2,"points":128.1,"maxPoints":168.3,"opponent":null,"result":null},{"season":2025,"week":10,"team":3,"points":132.05,"maxPoints":164.85,"opponent":null,"result":null},{"season":2025,"week":10,"team":4,"points":131.9,"maxPoints":143.8,"opponent":null,"result":null},{"season":2025,"week":10,"team":5,"points":117.7,"maxPoints":171.0,"opponent":null,"result":null},{"season":2025,"week":10,"team":6,"points":144.3,"maxPoints":153.6,"opponent":null,"result":null},{"season":2025,"week":10,"team":7,"points":190.4,"maxPoints":204.05,"opponent":null,"result":null},{"season":2025,"week":10,"team":8,"points":120.5,"maxPoints":142.5,"opponent":null,"result":null},{"season":2025,"week":10,"team":9,"points":170.8,"maxPoints":189.7,"opponent":null,"result":null},{"season":2025,"week":10,"team":10,"points":130.9,"maxPoints":153.7,"opponent":null,"result":null},{"season":2025,"week":11,"team":1,"points":91.3,"maxPoints":123.8,"opponent":null,"result":null},{"season":2025,"week":11,"team":2,"points":110.7,"maxPoints":138.65,"opponent":null,"result":null},{"season":2025,"week":11,"team":3,"points":113.95,"maxPoints":161.65,"opponent":null,"result":null},{"season":2025,"week":11,"team":4,"points":178.4,"maxPoints":232.1,"opponent":null,"result":null},{"season":2025,"week":11,"team":5,"points":125.35,"maxPoints":140.15,"opponent":null,"result":null},{"season":2025,"week":11,"team":6,"points":168.4,"maxPoints":192.2,"opponent":null,"result":null},{"season":2025,"week":11,"team":7,"points":84.1,"maxPoints":157.65,"opponent":null,"result":null},{"season":2025,"week":11,"team":8,"points":147.85,"maxPoints":158.45,"opponent":null,"result":null},{"season":2025,"week":11,"team":9,"points":174.6,"maxPoints":187.7,"opponent":null,"result":null},{"season":2025,"week":11,"team":10,"points":86.95,"maxPoints":96.35,"opponent":null,"result":null},{"season":2025,"week":12,"team":1,"points":107.15,"maxPoints":127.2,"opponent":null,"result":null},{"season":2025,"week":12,"team":2,"points":97.55,"maxPoints":132.25,"opponent":null,"result":null},{"season":2025,"week":12,"team":3,"points":178.9,"maxPoints":181.8,"opponent":null,"result":null},{"season":2025,"week":12,"team":4,"points":144.35,"maxPoints":151.25,"opponent":null,"result":null},{"season":2025,"week":12,"team":5,"points":126.5,"maxPoints":161.85,"opponent":null,"result":null},{"season":2025,"week":12,"team":6,"points":169.35,"maxPoints":183.25,"opponent":null,"result":null},{"season":2025,"week":12,"team":7,"points":129.2,"maxPoints":144.5,"opponent":null,"result":null},{"season":2025,"week":12,"team":8,"points":182.15,"maxPoints":191.35,"opponent":null,"result":null},{"season":2025,"week":12,"team":9,"points":92.75,"maxPoints":132.6,"opponent":null,"result":null},{"season":2025,"week":12,"team":10,"points":133.75,"maxPoints":146.25,"opponent":null,"result":null},{"season":2025,"week":13,"team":1,"points":105.35,"maxPoints":146.95,"opponent":null,"result":null},{"season":2025,"week":13,"team":2,"points":87.45,"maxPoints":121.85,"opponent":null,"result":null},{"season":2025,"week":13,"team":3,"points":168.2,"maxPoints":198.65,"opponent":null,"result":null},{"season":2025,"week":13,"team":4,"points":179.25,"maxPoints":198.1,"opponent":null,"result":null},{"season":2025,"week":13,"team":5,"points":133.7,"maxPoints":169.1,"opponent":null,"result":null},{"season":2025,"week":13,"team":6,"points":155.6,"maxPoints":164.1,"opponent":null,"result":null},{"season":2025,"week":13,"team":7,"points":103.55,"maxPoints":149.95,"opponent":null,"result":null},{"season":2025,"week":13,"team":8,"points":146.25,"maxPoints":175.45,"opponent":null,"result":null},{"season":2025,"week":13,"team":9,"points":116.95,"maxPoints":144.15,"opponent":null,"result":null},{"season":2025,"week":13,"team":10,"points":147.1,"maxPoints":167.0,"opponent":null,"result":null},{"season":2025,"week":14,"team":1,"points":107.95,"maxPoints":138.75,"opponent":null,"result":null},{"season":2025,"week":14,"team":2,"points":145.3,"maxPoints":158.1,"opponent":null,"result":null},{"season":2025,"week":14,"team":3,"points":118.35,"maxPoints":123.35,"opponent":null,"result":null},{"season":2025,"week":14,"team":4,"points":112.15,"maxPoints":126.75,"opponent":null,"result":null},{"season":2025,"week":14,"team":5,"points":94.8,"maxPoints":133.7,"opponent":null,"result":null},{"season":2025,"week":14,"team":6,"points":127.4,"maxPoints":163.55,"opponent":null,"result":null},{"season":2025,"week":14,"team":7,"points":115.85,"maxPoints":141.85,"opponent":null,"result":null},{"season":2025,"week":14,"team":8,"points":175.25,"maxPoints":188.9,"opponent":null,"result":null},{"season":2025,"week":14,"team":9,"points":134.75,"maxPoints":167.45,"opponent":null,"result":null},{"season":2025,"week":14,"team":10,"points":139.8,"maxPoints":143.8,"opponent":null,"result":null}],"lastSleeperSync":"2026-09-01 22:15"},"players":{"_README":"Optional position map used only for colour-coding chips in the draft board and trade cards. Positions are best-effort and safe to edit; an unknown player simply renders with a neutral chip.","positions":{"Ashton Jeanty":"RB","Omarion Hampton":"RB","TreVeyon Henderson":"RB","Tetairoa McMillan":"WR","Kaleb Johnson":"RB","Quinshon Judkins":"RB","RJ Harvey":"RB","Travis Hunter":"WR","Tyler Warren":"TE","Emeka Egbuka":"WR","Colston Loveland":"TE","Matthew Golden":"WR","Tre Harris":"WR","Cam Skattebo":"RB","Cameron Ward":"QB","Luther Burden":"WR","Jayden Higgins":"WR","Jaydon Blue":"RB","Jack Bech":"WR","Bhayshul Tuten":"RB","Jaylin Noel":"WR","Kyle Williams":"WR","Dylan Sampson":"RB","Devin Neal":"RB","Jaxson Dart":"QB","Jalen Royals":"WR","Jimmy Horn":"WR","Jordan James":"RB","Jalen Milroe":"QB","Ollie Gordon":"RB","Jeremiyah Love":"RB","Carnell Tate":"WR","Jordyn Tyson":"WR","Makai Lemon":"WR","KC Concepcion":"WR","Jadarian Price":"RB","Kenyon Sadiq":"TE","Fernando Mendoza":"QB","Omar Cooper":"WR","Eli Stowers":"TE","Denzel Boston":"WR","Jonah Coleman":"RB","Emmett Johnson":"RB","Chris Bell":"WR","Germie Bernard":"WR","Elijah Sarratt":"WR","De'Zhaun Stribling":"WR","Chris Brazzell":"WR","Ty Simpson":"QB","Skyler Bell":"WR","Antonio Williams":"WR","Kaytron Allen":"RB","Zachariah Branch":"WR","Nicholas Singleton":"RB","Ted Hurst":"WR","Malachi Fields":"WR","Mike Washington":"RB","Ja'Kobi Lane":"WR","Brenen Thompson":"WR","Demond Claiborne":"RB","Kareem Hunt":"RB","Bam Knight":"RB","Roschon Johnson":"RB","Breece Hall":"RB","Hassan Haskins":"RB","Rashee Rice":"WR","Mark Andrews":"TE","Rhamondre Stevenson":"RB","Jacory Croskey-Merritt":"RB","Oronde Gadsden":"TE","Harold Fannin":"TE","Shedeur Sanders":"QB","Tory Horton":"WR","Woody Marks":"RB","Kyle Monangai":"RB","Isaac TeSlaa":"WR","Chimere Dike":"WR","Terrance Ferguson":"TE","Pat Bryant":"WR","Daniel Jones":"QB","Chris Rodriguez":"RB"}}};
+var __M = {};
+/* ===== js/config.js ===== */
+__M["js/config.js"] = (function () {
+/* ============================================================
+   BACKEND CONFIG
+
+   Leave `url` blank and the app runs entirely off the JSON files in
+   /data — which is exactly how it works today. Fill both in and it
+   switches to Supabase: everyone reads live data, and signing in as
+   commissioner writes straight to the database with no export step.
+
+   The anon key is DESIGNED to be public — it only grants what your
+   RLS policies allow, which here is read-only. Committing it is fine.
+   Never put the service_role key here; that one bypasses RLS.
+   ============================================================ */
+const SUPABASE = {
+  url: '',      // e.g. https://abcdefghijklm.supabase.co
+  anonKey: '',  // Project Settings -> API -> Project API keys -> anon public
+};
+const isConfigured = () => Boolean(SUPABASE.url && SUPABASE.anonKey);
+
+return { SUPABASE, isConfigured };
+})();
+
+/* ===== js/supabase.js ===== */
+__M["js/supabase.js"] = (function () {
+/* ============================================================
+   SUPABASE — auth (GoTrue) + data (PostgREST), over plain fetch.
+   No SDK, no build step, nothing to install.
+   ============================================================ */
+const { SUPABASE } = __M["js/config.js"];
+const SESSION_KEY = 'sweatydyno:session:v1';
+const TABLE = 'league_data';
+
+const readSession = () => {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+  catch { return null; }
+};
+const writeSession = (s) => {
+  try { s ? localStorage.setItem(SESSION_KEY, JSON.stringify(s)) : localStorage.removeItem(SESSION_KEY); }
+  catch { /* private mode */ }
+};
+
+/** Surface Supabase's own error text rather than a bare status code. */
+async function fail(res, what) {
+  let detail = '';
+  try {
+    const b = await res.json();
+    detail = b.error_description || b.msg || b.message || b.error || b.hint || '';
+  } catch { /* non-JSON body */ }
+  throw new Error(detail || `${what} failed (${res.status})`);
+}
+class Supabase {
+  constructor({ url, anonKey } = SUPABASE) {
+    this.url = String(url || '').replace(/\/+$/, '');
+    this.key = anonKey;
+    this.session = readSession();
+    this.data = {};
+    this._listeners = new Set();
+  }
+
+  /* ---------- auth ---------- */
+
+  get user() { return this.session?.user ?? null; }
+  get signedIn() { return Boolean(this.session?.access_token) && !this._expired(0); }
+
+  onAuth(fn) { this._listeners.add(fn); return () => this._listeners.delete(fn); }
+  _emit() { this._listeners.forEach((f) => f(this.signedIn)); }
+
+  _expired(skewSeconds = 60) {
+    const at = this.session?.expires_at;
+    return !at || Date.now() / 1000 > at - skewSeconds;
+  }
+
+  _store(body) {
+    this.session = {
+      access_token: body.access_token,
+      refresh_token: body.refresh_token,
+      expires_at: body.expires_at ?? Math.floor(Date.now() / 1000) + (body.expires_in || 3600),
+      user: body.user ? { id: body.user.id, email: body.user.email } : this.session?.user ?? null,
+    };
+    writeSession(this.session);
+    this._emit();
+    return this.session;
+  }
+
+  async signIn(email, password) {
+    const res = await fetch(`${this.url}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: this.key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) await fail(res, 'Sign in');
+    return this._store(await res.json());
+  }
+
+  async signOut() {
+    const token = this.session?.access_token;
+    this.session = null; writeSession(null); this._emit();
+    if (token) {
+      // best effort — the local session is already gone either way
+      fetch(`${this.url}/auth/v1/logout`, {
+        method: 'POST',
+        headers: { apikey: this.key, Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+  }
+
+  /** Refresh a nearly-expired token; returns false if the session is unusable. */
+  async ensureFresh() {
+    if (!this.session?.refresh_token) return false;
+    if (!this._expired()) return true;
+    try {
+      const res = await fetch(`${this.url}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { apikey: this.key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: this.session.refresh_token }),
+      });
+      if (!res.ok) throw new Error('refresh rejected');
+      this._store(await res.json());
+      return true;
+    } catch {
+      this.session = null; writeSession(null); this._emit();
+      return false;
+    }
+  }
+
+  /* ---------- adapter interface (matches JsonAdapter) ---------- */
+
+  get _headers() {
+    const h = { apikey: this.key, 'Content-Type': 'application/json' };
+    h.Authorization = `Bearer ${this.signedIn ? this.session.access_token : this.key}`;
+    return h;
+  }
+
+  async load() {
+    if (this.session) await this.ensureFresh();
+    const res = await fetch(`${this.url}/rest/v1/${TABLE}?select=key,value`, { headers: this._headers });
+    if (!res.ok) await fail(res, 'Loading the league');
+    const rows = await res.json();
+    if (!rows.length) throw new Error('The league_data table is empty — run tools/seed_supabase.py first.');
+    this.data = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    return this.data;
+  }
+
+  get(key) { return this.data[key]; }
+
+  async set(key, value) {
+    if (!this.signedIn && !(await this.ensureFresh()))
+      throw new Error('Sign in as commissioner to save changes.');
+    this.data[key] = value;
+    const res = await fetch(`${this.url}/rest/v1/${TABLE}?on_conflict=key`, {
+      method: 'POST',
+      headers: { ...this._headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify([{ key, value }]),
+    });
+    if (!res.ok) await fail(res, 'Saving');
+  }
+
+  /** Supabase saves immediately, so nothing is ever pending locally. */
+  dirtyKeys() { return []; }
+  async revert() { await this.load(); }
+  get live() { return true; }
+}
+
+return { Supabase };
+})();
+
+/* ===== js/util.js ===== */
+__M["js/util.js"] = (function () {
+// ---------- tiny DOM helpers ----------
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+/** Escape untrusted text before it goes anywhere near innerHTML. */
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const el = (tag, attrs = {}, html = '') => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k.startsWith('on') && typeof v === 'function') n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  if (html) n.innerHTML = html;
+  return n;
+};
+
+// ---------- formatting ----------
+const money = (n, { sign = false, cents = false } = {}) => {
+  const v = Number(n) || 0;
+  const s = v.toLocaleString('en-US', {
+    style: 'currency', currency: 'USD',
+    minimumFractionDigits: cents ? 2 : 0, maximumFractionDigits: cents ? 2 : 0,
+  });
+  return sign && v > 0 ? '+' + s : s;
+};
+const pts = (n) => (Number(n) || 0).toLocaleString('en-US',
+  { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const num = (n) => (Number(n) || 0).toLocaleString('en-US');
+
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+/** Parse as calendar-local, not UTC, so "2025-07-10" never slips to the 9th. */
+const fmtDate = (iso, { year = false } = {}) => {
+  if (!iso) return '--';
+  const [y, m, d] = String(iso).split('-').map(Number);
+  if (!y || !m || !d) return String(iso);
+  return `${MON[m - 1]} ${d}${year ? ', ' + y : ''}`;
+};
+const ordinal = (n) => {
+  const v = Number(n), s = ['th','st','nd','rd'], k = v % 100;
+  return v + (s[(k - 20) % 10] || s[k] || s[0]);
+};
+
+// ---------- team identity ----------
+/** Stable, evenly-spaced hue per team number so colours never collide. */
+const teamHue = (n) => (((Number(n) || 0) - 1) * 137.508) % 360;
+const teamColor = (n) => n ? `hsl(${teamHue(n).toFixed(1)} 72% 62%)` : 'var(--ink-3)';
+const dot = (n) =>
+  `<i class="tdot" style="background:${teamColor(n)};color:${teamColor(n)}"></i>`;
+
+/** Renders a team as: [colour dot] Name [T#]. `t` may be null (unmapped alias). */
+const teamTag = (t, { num: showNum = true, alias = null } = {}) => {
+  if (!t) return `<span class="tname"><i class="tdot" style="background:var(--surface-3)"></i>
+    <b class="dim">${esc(alias || 'Unassigned')}</b><span class="tnum">?</span></span>`;
+  return `<span class="tname">${dot(t.number)}<b>${esc(t.manager)}</b>${
+    showNum ? `<span class="tnum">T${t.number}</span>` : ''}</span>`;
+};
+const posChip = (pos) =>
+  `<span class="pos-chip pos-${pos ? esc(pos) : 'none'}">${pos ? esc(pos) : '--'}</span>`;
+
+// ---------- icons (Lucide-style, 24x24 stroke) ----------
+const I = {
+  home:'M3 10.2 12 3l9 7.2M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5',
+  wallet:'M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6M16 12.5h.01',
+  trophy:'M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 14v6',
+  board:'M4 4h16v16H4zM4 9.5h16M9.5 9.5V20M15 9.5V20',
+  swap:'M7 4 3 8l4 4M3 8h13a4 4 0 0 1 0 8H9M17 20l4-4-4-4',
+  chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
+  crown:'M3 17h18M4 7l4 4 4-6 4 6 4-4-1.5 10h-13z',
+  users:'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.87M16 2.1a4 4 0 0 1 0 7.75',
+  more:'M5 12h.01M12 12h.01M19 12h.01',
+  cog:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.3a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H3.3a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3.3a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.5 2.7h.2a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1Z',
+  alert:'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z',
+  check:'M20 6 9 17l-5-5',
+  plus:'M12 5v14M5 12h14',
+  pencil:'m18 2 4 4-13 13H5v-4L18 2Z',
+  down:'M12 3v13M6 11l6 6 6-6M4 21h16',
+  sync:'M3 12a9 9 0 0 1 15-6.7L21 8M21 4v4h-4M21 12a9 9 0 0 1-15 6.7L3 16M3 20v-4h4',
+  blade:'m4 3 10 10M20 3 10 13M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  dice:'M4 4h16v16H4zM8.5 8.5h.01M15.5 15.5h.01M12 12h.01',
+  x:'M18 6 6 18M6 6l12 12',
+  lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
+  clock:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2',
+  inbox:'M4 13h4l2 3h4l2-3h4M4 13 6.6 5.2A2 2 0 0 1 8.5 4h7a2 2 0 0 1 1.9 1.2L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5Z',
+};
+const icon = (name, cls = '') =>
+  `<svg class="ic ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${I[name] || I.dice}"/></svg>`;
+
+// ---------- misc ----------
+const toast = (msg) => {
+  let t = $('#toast');
+  if (!t) { t = el('div', { id: 'toast', class: 'toast' }); document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2200);
+};
+const empty = (title, sub, ic = 'inbox') =>
+  `<div class="empty">${icon(ic)}<p>${esc(title)}</p><small>${esc(sub)}</small></div>`;
+const sum = (arr, f = (x) => x) => arr.reduce((a, b) => a + (Number(f(b)) || 0), 0);
+const by = (arr, f) => arr.reduce((m, x) => ((m[f(x)] ||= []).push(x), m), {});
+
+/* ---------- modal ----------
+   openModal({title, body, confirm, onConfirm}) -> resolves when closed.
+   `body` is an HTML string; the <form> inside is serialised and handed to onConfirm. */
+function openModal({ title, body, confirm = 'Save', danger = false, onConfirm = null }) {
+  const bd = el('div', { class: 'modal-bd' });
+  bd.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="modal-hd">
+        <h3>${esc(title)}</h3><div class="spacer" style="margin-left:auto"></div>
+        <button class="btn sm ghost" data-close aria-label="Close">${icon('x')}</button>
+      </div>
+      <form class="modal-bd2">${body}</form>
+      ${onConfirm ? `<div class="modal-ft">
+        <button class="btn" data-close type="button">Cancel</button>
+        <button class="btn primary" data-ok type="button">${esc(confirm)}</button></div>` : ''}
+    </div>`;
+  document.body.appendChild(bd);
+  requestAnimationFrame(() => bd.classList.add('open'));
+
+  const close = () => { bd.classList.remove('open'); setTimeout(() => bd.remove(), 220); };
+  bd.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
+  bd.addEventListener('click', (e) => { if (e.target === bd) close(); });
+  document.addEventListener('keydown', function esckey(e) {
+    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esckey); }
+  });
+
+  const form = bd.querySelector('form');
+  bd.querySelector('[data-ok]')?.addEventListener('click', async () => {
+    const data = {};
+    for (const f of form.elements) {
+      if (!f.name) continue;
+      data[f.name] = f.type === 'checkbox' ? f.checked : f.value;
+    }
+    const ok = await onConfirm(data);
+    if (ok !== false) close();
+  });
+  form.addEventListener('submit', (e) => { e.preventDefault(); bd.querySelector('[data-ok]')?.click(); });
+  setTimeout(() => form.querySelector('input,select,textarea')?.focus(), 260);
+  return { close, root: bd };
+}
+
+/** <option> list of teams for a select. */
+const teamOptions = (teams, sel = '', blank = '— none —') =>
+  `<option value="">${esc(blank)}</option>` + teams.map((t) =>
+    `<option value="${t.number}" ${String(sel) === String(t.number) ? 'selected' : ''}>T${t.number} · ${esc(t.manager)}</option>`).join('');
+
+return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, dot, teamTag, posChip, icon, toast, empty, sum, by, openModal, teamOptions };
+})();
+
+/* ===== js/db.js ===== */
+__M["js/db.js"] = (function () {
+/* ============================================================
+   DATA LAYER
+   Every read and write in the app goes through this module, so
+   swapping the JSON+localStorage adapter for Supabase later is a
+   change to ONE file. See the SupabaseAdapter stub at the bottom.
+   ============================================================ */
+const { SUPABASE, isConfigured } = __M["js/config.js"];
+const { Supabase } = __M["js/supabase.js"];
+const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players'];
+const LS_KEY = 'sweatydyno:overlay:v1';
+const LS_ADMIN = 'sweatydyno:admin';
+
+/* ---------- adapter: static JSON + localStorage overlay ---------- */
+class JsonAdapter {
+  constructor(base = 'data') { this.base = base; this.data = {}; this.overlay = {}; }
+
+  async load() {
+    // Single-file build inlines the data, so there is nothing to fetch.
+    if (globalThis.__SD_DATA) {
+      this.data = structuredClone(globalThis.__SD_DATA);
+      try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { this.overlay = {}; }
+      for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
+      return this.data;
+    }
+    const bust = `?v=${Date.now()}`;
+    const loaded = await Promise.all(FILES.map(async (f) => {
+      const res = await fetch(`${this.base}/${f}.json${bust}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load ${f}.json (${res.status})`);
+      return [f, await res.json()];
+    }));
+    this.data = Object.fromEntries(loaded);
+    try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
+    catch { this.overlay = {}; }
+    for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
+    return this.data;
+  }
+
+  get(key) { return this.data[key]; }
+
+  async set(key, value) {
+    this.data[key] = value;
+    this.overlay[key] = value;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(this.overlay)); }
+    catch (e) { console.warn('Local save failed', e); }
+  }
+
+  /** Unsaved-to-git changes living only in this browser. */
+  dirtyKeys() { return Object.keys(this.overlay); }
+  async revert() { this.overlay = {}; try { localStorage.removeItem(LS_KEY); } catch {} await this.load(); }
+}
+
+/* ---------- store ---------- */
+class Store {
+  constructor(adapter) { this.a = adapter; this.subs = new Set(); }
+
+  async init() {
+    await this.a.load();
+    this.a.onAuth?.(() => this.emit());   // re-render when the commish signs in/out
+    return this;
+  }
+
+  /** True when writes go straight to Supabase rather than a local overlay. */
+  get live() { return Boolean(this.a.live); }
+  get auth() { return this.live ? this.a : null; }
+  get backend() { return this.live ? 'supabase' : 'local'; }
+  get(k) { return this.a.get(k); }
+  dirtyKeys() { return this.a.dirtyKeys?.() ?? []; }
+  async revert() { await this.a.revert?.(); this.emit(); }
+
+  async set(k, v) { await this.a.set(k, v); this.emit(); }
+  /** Mutate a file in place: db.update('bank', b => { b.payouts.push(x) }) */
+  async update(k, fn) { const d = structuredClone(this.get(k)); fn(d); await this.set(k, d); return d; }
+
+  on(fn) { this.subs.add(fn); return () => this.subs.delete(fn); }
+  emit() { this.subs.forEach((f) => f()); }
+
+  /* ---------- edit mode ----------
+     With Supabase the gate is real: writes are refused by RLS unless a
+     signed-in user made them. Without it, this is a local convenience
+     switch only — the honest framing is "this browser", not "security". */
+  get isAdmin() {
+    if (this.live) return this.a.signedIn;
+    return localStorage.getItem(LS_ADMIN) === '1';
+  }
+  setAdmin(on) {
+    if (this.live) return;   // Supabase mode: sign in / out instead
+    on ? localStorage.setItem(LS_ADMIN, '1') : localStorage.removeItem(LS_ADMIN);
+    this.emit();
+  }
+
+  /* ================= derived selectors ================= */
+
+  get league() { return this.get('league'); }
+  get seasons() { return this.league.seasons; }
+
+  managerById(id) { return this.get('managers').managers.find((m) => m.id === id) || null; }
+
+  /** Every team, with the manager who owned it in `season`. */
+  teams(season = this.season) {
+    return this.get('managers').teams.map((t) => {
+      const own = [...t.ownership]
+        .filter((o) => o.fromSeason <= season && (o.toSeason == null || o.toSeason >= season))
+        .sort((a, b) => b.fromSeason - a.fromSeason)[0] || t.ownership.at(-1);
+      const m = own ? this.managerById(own.managerId) : null;
+      return {
+        number: t.number,
+        name: t.name || (m ? `${m.name}` : `Team ${t.number}`),
+        manager: m ? m.name : `Team ${t.number}`,
+        fullName: m ? (m.fullName || m.name) : `Team ${t.number}`,
+        sleeper: m?.sleeperUsername ?? null,
+        managerId: m?.id ?? null,
+        abandoned: !own,
+        ownership: t.ownership,
+      };
+    });
+  }
+  team(n, season = this.season) { return n == null ? null : this.teams(season).find((t) => t.number === Number(n)) || null; }
+
+  /** Current view season — set by the app shell, defaults to league config. */
+  get season() { return this._season ?? this.league.currentSeason; }
+  set season(s) { this._season = Number(s); this.emit(); }
+
+  /* ---------- bank ---------- */
+  bank(season = null) {
+    const b = this.get('bank');
+    const inSeason = (x) => season == null || x.season === season;
+    const payins = b.payins.filter(inSeason);
+    const payouts = b.payouts.filter(inSeason);
+    const collected = payins.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
+    const outstanding = payins.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+    const cur = this.league.currentSeason;
+    const owedNow = payins.filter((p) => !p.paid && p.season <= cur).reduce((a, p) => a + p.amount, 0);
+    const disbursed = payouts.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
+    const earmarked = payouts.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+    const byCat = {};
+    for (const p of payouts) byCat[p.category] = (byCat[p.category] || 0) + p.amount;
+    return {
+      payins, payouts, collected, outstanding, disbursed, earmarked,
+      owedNow, future: outstanding - owedNow,
+      cash: collected - disbursed,          // what should physically be in the bank
+      free: collected - disbursed - earmarked, // cash not spoken for by the empire pot
+      byCat,
+    };
+  }
+
+  /** Per-team ledger across all time (or one season). */
+  ledger(season = null) {
+    const b = this.get('bank');
+    return this.teams().map((t) => {
+      const ins = b.payins.filter((p) => p.team === t.number && (season == null || p.season === season));
+      const outs = b.payouts.filter((p) => p.team === t.number && (season == null || p.season === season));
+      const paidIn = ins.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
+      const owes = ins.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+      const owesNow = ins.filter((p) => !p.paid && p.season <= this.league.currentSeason).reduce((a, p) => a + p.amount, 0);
+      const won = outs.reduce((a, p) => a + p.amount, 0);
+      const cat = {};
+      for (const p of outs) cat[p.category] = (cat[p.category] || 0) + p.amount;
+      return { ...t, paidIn, owes, owesNow, won, net: won - paidIn, cat, seasonsPaid: ins.filter(p => p.paid).length };
+    });
+  }
+
+  /* ---------- empire ---------- */
+  empire() {
+    const b = this.get('bank'), L = this.league;
+    const pot = b.payouts.filter((p) => p.category === 'empire').reduce((a, p) => a + p.amount, 0);
+    const contributions = this.seasons.map((s) => ({
+      season: s,
+      amount: b.payouts.filter((p) => p.category === 'empire' && p.season === s).reduce((a, p) => a + p.amount, 0),
+    }));
+    const board = this.teams().map((t) => {
+      const rows = b.empirePoints.filter((e) => e.team === t.number);
+      const bySeason = Object.fromEntries(this.seasons.map((s) =>
+        [s, rows.filter((r) => r.season === s).reduce((a, r) => a + r.points, 0)]));
+      const total = Object.values(bySeason).reduce((a, x) => a + x, 0);
+      return { ...t, bySeason, total, pct: L.empireThreshold ? Math.min(1, total / L.empireThreshold) : 0 };
+    }).sort((a, b2) => b2.total - a.total || a.number - b2.number);
+    return { pot, contributions, board, threshold: L.empireThreshold, claimed: b.empirePot?.claimedBy ?? null };
+  }
+
+  /* ---------- minigames ---------- */
+  minigames(season = this.season) {
+    const s = this.get('minigames').seasons[String(season)];
+    return s || { games: [], guillotine: null, legacy: null };
+  }
+  minigameSpend(season = this.season) {
+    const s = this.minigames(season);
+    const won = (g) => Object.entries(g.results || {})
+      .filter(([, r]) => r?.team).reduce((a, [pl]) => a + (Number(g.payout?.[pl]) || 0), 0);
+    const paid = s.games.reduce((a, g) => a + won(g), 0)
+      + (s.guillotine?.winner ? (Number(s.guillotine.payout?.['1']) || 0) : 0);
+    const committed = s.games.reduce((a, g) => a + Object.values(g.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0), 0)
+      + Object.values(s.guillotine?.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0);
+    return { paid: paid + (s.legacy?.total || 0), committed, remaining: committed - paid };
+  }
+
+  /* ---------- stats ---------- */
+  stats(season = this.season) {
+    const st = this.get('stats');
+    const weekly = st.weekly.filter((w) => w.season === season);
+    const weeks = [...new Set(weekly.map((w) => w.week))].sort((a, b) => a - b);
+    const rows = this.teams(season).map((t) => {
+      const mine = weekly.filter((w) => w.team === t.number);
+      const total = mine.reduce((a, w) => a + w.points, 0);
+      const maxpf = st.maxPF.find((m) => m.season === season && m.team === t.number)?.points ?? null;
+      const scores = mine.map((w) => w.points);
+      const ceil = mine.filter((w) => w.maxPoints != null);
+      const maxTotal = ceil.reduce((a, w) => a + w.maxPoints, 0);
+      // Max PF is a whole-season figure, so the ratio is only meaningful once the
+      // weekly log actually covers the season. Partial data would report nonsense.
+      const fullSeason = mine.length >= (st.regularSeasonWeeks || 14);
+      return {
+        ...t, total, maxPF: maxpf, games: mine.length, fullSeason,
+        avg: mine.length ? total / mine.length : null,
+        high: scores.length ? Math.max(...scores) : null,
+        low: scores.length ? Math.min(...scores) : null,
+        efficiency: fullSeason && maxpf && total ? total / maxpf : null,
+        maxTotal: ceil.length ? Math.round(maxTotal * 100) / 100 : null,
+        left: ceil.length ? Math.round((maxTotal - total) * 100) / 100 : null,
+        byWeek: Object.fromEntries(mine.map((w) => [w.week, w.points])),
+        byWeekMax: Object.fromEntries(ceil.map((w) => [w.week, w.maxPoints])),
+      };
+    });
+    return { weeks, rows, weekly, hasData: weekly.length > 0,
+             hasMaxPF: rows.some((r) => r.maxPF != null),
+             hasEfficiency: rows.some((r) => r.efficiency != null),
+             hasCeiling: rows.some((r) => r.maxTotal != null),
+             regularSeasonWeeks: st.regularSeasonWeeks || 14 };
+  }
+
+  /* ---------- drafts / trades ---------- */
+  draft(season = this.season) { return this.get('drafts').rookie[String(season)] || null; }
+  draftSeasons() { return Object.keys(this.get('drafts').rookie).map(Number).sort((a, b) => b - a); }
+  position(player) { return this.get('players').positions[player] || null; }
+
+  trades(season = null) {
+    const t = this.get('trades');
+    const f = (x) => season == null || x.season === season;
+    return {
+      trades: t.trades.filter(f).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')),
+      conditional: t.conditionalTrades.filter(f),
+      waivers: t.waivers.filter(f).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.n - a.n),
+    };
+  }
+
+  /** Conditional status, re-evaluated against today so "expired" is never stale. */
+  conditionalStatus(c) {
+    if (c.status === 'met') return { key: 'met', label: 'Condition met', chip: 'mint' };
+    if (c.status === 'expired') return { key: 'expired', label: 'Expired', chip: 'red' };
+    if (c.deadline && new Date(c.deadline) < new Date())
+      return { key: 'expired', label: 'Deadline passed', chip: 'red' };
+    return { key: 'open', label: 'Open', chip: 'gold' };
+  }
+
+  /* ---------- health checks surfaced in Admin ---------- */
+  issues() {
+    const out = [];
+    const mg = this.get('managers');
+    if (mg._placeholder || mg._unconfirmed) out.push({ level: 'warn', text: 'Team numbers are still provisional. Confirm TARGET in tools/remap_teams.py and re-run it.' });
+    for (const a of mg.unresolvedAliases || [])
+      if (!a.managerId) out.push({ level: 'warn', text: `Alias "${a.alias}" is not mapped to a manager (seen in ${a.seenIn.join(', ')}).` });
+    const ids = Object.values(this.league.sleeper.leagueIds).filter(Boolean);
+    if (!ids.length) out.push({ level: 'info', text: 'No Sleeper league ID set yet — stat sync is disabled.' });
+    const d = this.dirtyKeys();
+    if (d.length) out.push({ level: 'edit', text: `Unexported local changes in: ${d.join(', ')}.` });
+    if (!this.live) out.push({ level: 'info', text: 'Running on the JSON files. Add your Supabase keys in js/config.js to save changes live.' });
+    return out;
+  }
+
+  /* ---------- export for committing back to the repo ---------- */
+  exportFiles() {
+    return FILES.map((f) => ({ name: `${f}.json`, json: JSON.stringify(this.get(f), null, 2) }));
+  }
+}
+const db = new Store(isConfigured() ? new Supabase(SUPABASE) : new JsonAdapter());
+
+/* ============================================================
+   The Supabase adapter lives in js/supabase.js. Point js/config.js at
+   your project and the store above switches to it automatically — no
+   view code changes, because every read and write goes through here.
+   ============================================================ */
+
+return { db };
+})();
+
+/* ===== js/sleeper.js ===== */
+__M["js/sleeper.js"] = (function () {
+/* ============================================================
+   SLEEPER API CLIENT
+   Sleeper's read API is public, keyless and CORS-open, so this
+   works from GitHub Pages with no proxy and no secrets.
+   Docs: https://docs.sleeper.com
+   ============================================================ */
+
+const API = 'https://api.sleeper.app/v1';
+
+const get = async (path) => {
+  const r = await fetch(`${API}${path}`);
+  if (!r.ok) throw new Error(`Sleeper ${path} -> ${r.status}`);
+  return r.json();
+};
+const nflState = () => get('/state/nfl');
+const league   = (id) => get(`/league/${id}`);
+const users    = (id) => get(`/league/${id}/users`);
+const rosters  = (id) => get(`/league/${id}/rosters`);
+const matchups = (id, wk) => get(`/league/${id}/matchups/${wk}`);
+
+/* Full player dictionary is ~5 MB — fetched at most once per page load,
+   held in memory only, and needed just for the Max-PF optimal lineup. */
+let _players = null;
+const players = async () => (_players ||= await get('/players/nfl'));
+const playersCached = () => _players;
+
+/* ---------- roster -> team number ---------- */
+
+/**
+ * Build rosterId -> teamNumber using saved sleeperUserId, falling back to a
+ * name match against each manager's aliases. Returns the map plus any
+ * Sleeper users it could not place, so the UI can ask for help.
+ */
+async function buildRosterMap(leagueId, managersFile, teamsForSeason) {
+  const [us, rs] = await Promise.all([users(leagueId), rosters(leagueId)]);
+  const byUser = new Map();
+  const unmatched = [];
+
+  for (const u of us) {
+    const saved = managersFile.managers.find((m) => m.sleeperUserId === u.user_id);
+    if (saved) { byUser.set(u.user_id, saved.id); continue; }
+    const cands = [u.display_name, u.username, u.metadata?.team_name].filter(Boolean).map((s) => s.toLowerCase());
+    const hit = managersFile.managers.find((m) =>
+      [m.name, ...(m.aliases || []), m.sleeperUsername].filter(Boolean)
+        .some((a) => cands.some((c) => c === a.toLowerCase() || c.includes(a.toLowerCase()))));
+    if (hit) byUser.set(u.user_id, hit.id);
+    else unmatched.push({ userId: u.user_id, name: u.display_name || u.username, team: u.metadata?.team_name || null });
+  }
+
+  const teamOf = (mid) => teamsForSeason.find((t) => t.managerId === mid)?.number ?? null;
+  const rosterToTeam = {};
+  for (const r of rs) {
+    const mid = byUser.get(r.owner_id);
+    const tn = mid ? teamOf(mid) : null;
+    if (tn) rosterToTeam[r.roster_id] = tn;
+  }
+  return { rosterToTeam, unmatched, users: us, rosters: rs };
+}
+
+/* ---------- weekly points ---------- */
+async function fetchWeek(leagueId, week, rosterToTeam) {
+  const ms = await matchups(leagueId, week);
+  return ms
+    .filter((m) => rosterToTeam[m.roster_id] && m.points != null)
+    .map((m) => ({
+      team: rosterToTeam[m.roster_id],
+      week,
+      points: Math.round(m.points * 100) / 100,
+      rosterId: m.roster_id,
+      matchupId: m.matchup_id ?? null,
+      playersPoints: m.players_points || null,
+      starters: m.starters || null,
+    }));
+}
+
+/* ---------- optimal lineup (Max PF) ---------- */
+
+const FLEX = {
+  FLEX: ['RB', 'WR', 'TE'],
+  WRRB_FLEX: ['RB', 'WR'],
+  REC_FLEX: ['WR', 'TE'],
+  SUPER_FLEX: ['QB', 'RB', 'WR', 'TE'],
+  IDP_FLEX: ['DL', 'LB', 'DB'],
+};
+const SKIP = new Set(['BN', 'IR', 'TAXI']);
+
+/**
+ * Best possible score from everyone rostered that week.
+ * Slots are filled most-constrained first (fixed positions, then the
+ * narrowest flex, then the widest), taking the top scorer each time.
+ */
+function optimalScore(playersPoints, slots, posOf) {
+  if (!playersPoints || !slots) return null;
+  const pool = Object.entries(playersPoints)
+    .map(([pid, p]) => ({ pid, p: Number(p) || 0, pos: posOf(pid) }))
+    .filter((x) => x.pos)
+    .sort((a, b) => b.p - a.p);
+
+  const open = slots.filter((s) => !SKIP.has(s))
+    .map((s) => ({ slot: s, accepts: FLEX[s] || [s] }))
+    .sort((a, b) => a.accepts.length - b.accepts.length);
+
+  const used = new Set();
+  let total = 0;
+  const lineup = [];
+  for (const s of open) {
+    const pick = pool.find((x) => !used.has(x.pid) && s.accepts.includes(x.pos));
+    if (!pick) continue;
+    used.add(pick.pid); total += pick.p;
+    lineup.push({ slot: s.slot, ...pick });
+  }
+  return { total: Math.round(total * 100) / 100, lineup };
+}
+
+/**
+ * Season Max PF per team = sum of each week's optimal lineup.
+ * Downloads the player dictionary once; call only when the user asks for it.
+ */
+async function fetchMaxPF(leagueId, weeks, rosterToTeam, onProgress = () => {}) {
+  const lg = await league(leagueId);
+  const slots = lg.roster_positions || [];
+  onProgress('Loading player list (~5 MB, once)…');
+  const pl = await players();
+  const posOf = (pid) => {
+    const p = pl[pid];
+    if (!p) return null;
+    return p.position || (Array.isArray(p.fantasy_positions) ? p.fantasy_positions[0] : null);
+  };
+
+  const totals = {};
+  for (const wk of weeks) {
+    onProgress(`Week ${wk}…`);
+    const ms = await matchups(leagueId, wk);
+    for (const m of ms) {
+      const tn = rosterToTeam[m.roster_id];
+      if (!tn || !m.players_points) continue;
+      const best = optimalScore(m.players_points, slots, posOf);
+      if (best) totals[tn] = Math.round(((totals[tn] || 0) + best.total) * 100) / 100;
+    }
+  }
+  return totals;
+}
+
+/** Completed regular-season weeks for a season, per Sleeper's own clock. */
+async function completedWeeks(season, regularSeasonWeeks = 14) {
+  const st = await nflState();
+  const cur = Number(st.week) || 0;
+  const done = String(st.season) === String(season) ? Math.max(0, cur - 1) : regularSeasonWeeks;
+  return Array.from({ length: Math.min(done, regularSeasonWeeks) }, (_, i) => i + 1);
+}
+
+return { nflState, league, users, rosters, matchups, players, playersCached, buildRosterMap, fetchWeek, optimalScore, fetchMaxPF, completedWeeks };
+})();
+
+/* ===== js/views/dashboard.js ===== */
+__M["js/views/dashboard.js"] = (function () {
+const { money, esc, icon, teamTag, empty, fmtDate, pts } = __M["js/util.js"];
+const polar = (cx, cy, r, deg) => {
+  const a = ((deg - 90) * Math.PI) / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+};
+const arc = (cx, cy, r, a0, a1) => {
+  if (a1 - a0 >= 359.99) a1 = a0 + 359.99;
+  const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1);
+  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+};
+
+/** Two-segment arc gauge: how much of the bank is free vs. locked in the empire pot. */
+function gauge(free, locked) {
+  const total = free + locked;
+  const A0 = 145, SPAN = 250;
+  const seg = (v) => (total > 0 ? (v / total) * SPAN : 0);
+  const fA = seg(free), lA = seg(locked);
+  return `
+  <svg class="gauge" viewBox="0 0 200 168" role="img"
+       aria-label="Bank cash ${money(total)}: ${money(free)} free, ${money(locked)} empire pot">
+    <defs>
+      <linearGradient id="gf" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#3DDC97"/><stop offset="100%" stop-color="#2AB27B"/>
+      </linearGradient>
+      <linearGradient id="gl" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#9C8CFA"/><stop offset="100%" stop-color="#C9BDFF"/>
+      </linearGradient>
+    </defs>
+    <path d="${arc(100, 100, 78, A0, A0 + SPAN)}" stroke="#303B4A" stroke-width="13" fill="none" stroke-linecap="round"/>
+    ${lA > 0.4 ? `<path d="${arc(100, 100, 78, A0 + fA, A0 + fA + lA)}" stroke="url(#gl)" stroke-width="13" fill="none" stroke-linecap="round"/>` : ''}
+    ${fA > 0.4 ? `<path d="${arc(100, 100, 78, A0, A0 + fA)}" stroke="url(#gf)" stroke-width="13" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(61,220,151,.45))"/>` : ''}
+    ${Array.from({ length: 11 }, (_, i) => {
+      const a = A0 + (SPAN / 10) * i;
+      const [x0, y0] = polar(100, 100, 62, a), [x1, y1] = polar(100, 100, i % 5 ? 57 : 53, a);
+      return `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"
+                stroke="${i % 5 ? '#374355' : '#54637A'}" stroke-width="${i % 5 ? 1 : 1.6}" stroke-linecap="round"/>`;
+    }).join('')}
+  </svg>`;
+}
+function render(db) {
+  const S = db.season;
+  const all = db.bank();
+  const emp = db.empire();
+  const led = db.ledger();
+  const owing = led.filter((t) => t.owesNow > 0).sort((a, b) => b.owesNow - a.owesNow);
+  const { trades, conditional } = db.trades();
+  const openCond = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
+  const mg = db.minigames(S);
+  const nextGame = mg.games.find((g) => g.status !== 'final');
+  const spend = db.minigameSpend(S);
+  const st = db.stats(S);
+  const leader = emp.board[0];
+
+  const seasonBank = db.bank(S);
+  const paidThis = seasonBank.payins.filter((p) => p.paid).length;
+
+  return `
+  <div class="hero">
+  <div class="card gauge-card">
+    <div style="position:relative">
+      ${gauge(all.free, all.earmarked)}
+      <div class="gauge-val">
+        <div class="big">${money(all.cash)}</div>
+        <div class="lbl">In the bank</div>
+      </div>
+    </div>
+    <div class="gauge-legend">
+      <div><i style="background:#3DDC97"></i> ${money(all.free)} free</div>
+      <div><i style="background:#9C8CFA"></i> ${money(all.earmarked)} empire pot</div>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile mint"><div class="k">Collected</div><div class="v">${money(all.collected)}</div>
+      <div class="m">all seasons</div></div>
+    <div class="tile ${all.owedNow ? 'red' : ''}"><div class="k">Owed now</div><div class="v">${money(all.owedNow)}</div>
+      <div class="m">${all.future ? money(all.future) + ' in future seasons' : 'nothing outstanding'}</div></div>
+    <div class="tile accent"><div class="k">Paid out</div><div class="v">${money(all.disbursed)}</div>
+      <div class="m">to managers</div></div>
+    <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(emp.pot)}</div>
+      <div class="m">${emp.claimed ? 'claimed' : 'unclaimed'}</div></div>
+  </div>
+  </div>
+
+  ${owing.length ? `
+  <div class="section-title">Dues outstanding</div>
+  <div class="card"><div class="card-bd flush"><div class="rows">
+    ${owing.slice(0, 5).map((t) => `
+      <div class="row">
+        ${teamTag(t)}
+        <div class="grow"></div>
+        <div class="val neg">${money(t.owesNow)}</div>
+      </div>`).join('')}
+  </div></div>
+    ${owing.length > 5 ? `<div class="card-bd" style="padding-top:0"><button class="btn sm ghost" data-go="bank">See all ${owing.length} &rsaquo;</button></div>` : ''}
+  </div>` : `
+  <div class="section-title">Dues</div>
+  <div class="card"><div class="card-bd">
+    <div class="banner" style="background:rgba(61,220,151,.07);border-color:rgba(61,220,151,.26)">
+      ${icon('check')}<div>Everyone is square through ${db.league.currentSeason}. <b style="color:var(--mint)">${money(all.collected)}</b> collected so far${all.future ? `, with ${money(all.future)} of buy-ins still scheduled.` : '.'}</div>
+    </div>
+  </div></div>`}
+
+  <div class="section-title">Empire race</div>
+  <div class="card">
+    <div class="card-hd">
+      <h3>Closest to the pot</h3>
+      <div class="spacer"></div>
+      <span class="chip violet">${money(emp.pot)} · ${emp.threshold} pts to win</span>
+    </div>
+    <div class="card-bd flush"><div class="rows">
+      ${emp.board.slice(0, 4).map((t, i) => `
+        <div class="row">
+          <div style="width:18px;font-family:var(--f-display);font-weight:700;color:${i === 0 ? 'var(--gold)' : 'var(--ink-3)'};font-size:15px">${i + 1}</div>
+          <div class="grow">
+            <div class="t">${teamTag(t)}</div>
+            <div class="meter violet" style="margin-top:7px"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div>
+          </div>
+          <div class="val" style="color:var(--violet)">${t.total}</div>
+        </div>`).join('')}
+    </div></div>
+  </div>
+
+  <div class="two" style="margin-top:14px">
+    <div class="card">
+      <div class="card-hd"><h3>${S} minigames</h3><div class="spacer"></div>
+        <span class="chip">${money(spend.paid)} / ${money(spend.committed)}</span></div>
+      <div class="card-bd">
+        ${nextGame ? `
+          <div class="row" style="padding:0 0 12px;border-bottom:1px solid var(--line-soft)">
+            <span class="chip heat">Week ${nextGame.week}</span>
+            <div class="grow"><div class="t">${nextGame.name ? esc(nextGame.name) : 'Minigame not set'}</div>
+              <div class="s">${money(nextGame.payout?.['1'] || 0)} to the winner</div></div>
+          </div>` : ''}
+        <div class="meter" style="margin-top:12px"><i style="width:${spend.committed ? Math.min(100, (spend.paid / spend.committed) * 100).toFixed(1) : 0}%"></i></div>
+        <div class="s dim" style="margin-top:8px;font-size:12px">
+          ${money(spend.remaining)} of the ${S} minigame budget still to be won.
+          ${mg.guillotine ? `Guillotine drops week ${mg.guillotine.startWeek}.` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd"><h3>${S} dues</h3><div class="spacer"></div>
+        <span class="chip ${paidThis === seasonBank.payins.length ? 'mint' : ''}">${paidThis}/${seasonBank.payins.length} paid</span></div>
+      <div class="card-bd">
+        <div class="tile bare">
+          <div class="k">Season pot</div>
+          <div class="v">${money(seasonBank.collected)}</div>
+          <div class="m">${seasonBank.outstanding ? money(seasonBank.outstanding) + ' still to come in' : 'fully collected'}</div>
+        </div>
+        <div class="meter mint" style="margin-top:12px"><i style="width:${seasonBank.payins.length ? (paidThis / seasonBank.payins.length * 100).toFixed(1) : 0}%"></i></div>
+      </div>
+    </div>
+  </div>
+
+  ${openCond.length ? `
+  <div class="section-title">Open conditions</div>
+  ${openCond.map((c) => {
+    const s = db.conditionalStatus(c);
+    return `<div class="trade">
+      <div class="trade-hd"><span class="chip ${s.chip}">${s.label}</span>
+        <span class="d">${fmtDate(c.date, { year: true })}</span></div>
+      <div class="cond"><div class="lbl">Condition</div>${esc(c.condition)}
+        ${c.deadlineLabel ? `<div class="out">Resolves by ${esc(c.deadlineLabel)}</div>` : ''}</div>
+    </div>`;
+  }).join('')}` : ''}
+
+  <div class="section-title">Latest moves</div>
+  <div class="card"><div class="card-bd flush">
+    ${trades.length ? `<div class="rows">${trades.slice(0, 4).map((t) => {
+      const names = t.sides.map((s) => s.team ? esc(db.team(s.team)?.manager ?? `T${s.team}`) : esc(s.alias || '?'));
+      const items = t.sides.flatMap((s) => s.receives).length;
+      return `<div class="row">
+        <span style="color:var(--ink-3)">${icon('swap')}</span>
+        <div class="grow"><div class="t">${names.join(' &harr; ')}</div>
+          <div class="s">${items} piece${items === 1 ? '' : 's'} &middot; ${fmtDate(t.date, { year: true })}</div></div>
+        ${t.conditionalId ? '<span class="chip violet">Conditional</span>' : ''}
+      </div>`;
+    }).join('')}</div>` : empty('No trades logged', 'Trades you add will show up here newest-first.', 'swap')}
+  </div>
+  ${trades.length > 4 ? `<div class="card-bd" style="padding-top:12px"><button class="btn sm ghost" data-go="trades">All ${trades.length} trades &rsaquo;</button></div>` : ''}
+  </div>
+
+  ${st.hasMaxPF ? `
+  <div class="section-title">Ceiling &middot; Max PF ${S}</div>
+  <div class="card"><div class="card-bd flush"><div class="rows">
+    ${st.rows.filter((r) => r.maxPF != null).sort((a, b) => b.maxPF - a.maxPF).slice(0, 3).map((r, i) => `
+      <div class="row"><span class="chip ${i === 0 ? 'gold' : 'ghost'}">${i + 1}</span>
+        <div class="grow"><div class="t">${teamTag(r)}</div>
+          <div class="s">${r.total ? pts(r.total) + ' actual \u00b7 ' + (r.efficiency * 100).toFixed(1) + '% of ceiling' : 'ceiling only'}</div></div>
+        <div class="val">${pts(r.maxPF)}</div></div>`).join('')}
+  </div></div></div>` : ''}
+  `;
+}
+const mount = (root, db, go) => {
+  root.querySelectorAll('[data-go]').forEach((b) =>
+    b.addEventListener('click', () => go(b.dataset.go)));
+};
+
+return { render, mount };
+})();
+
+/* ===== js/views/bank.js ===== */
+__M["js/views/bank.js"] = (function () {
+const { money, esc, icon, teamTag, dot, empty, toast } = __M["js/util.js"];
+const CATS = {
+  minigame:  { label: 'Minigames', chip: 'heat' },
+  placement: { label: 'Placement', chip: 'gold' },
+  empire:    { label: 'Rolling pot', chip: 'violet' },
+  other:     { label: 'Other', chip: '' },
+};
+function render(db) {
+  const all = db.bank();
+  const led = db.ledger().sort((a, b) => b.net - a.net);
+  const seasons = db.seasons;
+  const teams = db.teams();
+  const bank = db.get('bank');
+  const admin = db.isAdmin;
+
+  /* ---- balance sheet ---- */
+  const sheet = seasons.map((s) => {
+    const b = db.bank(s);
+    return {
+      season: s,
+      inn: b.collected,
+      empire: b.byCat.empire || 0,
+      mini: b.byCat.minigame || 0,
+      place: b.byCat.placement || 0,
+      get surplus() { return this.inn - this.empire - this.mini - this.place; },
+      outstanding: b.outstanding,
+    };
+  });
+
+  return `
+  <div class="tiles">
+    <div class="tile accent"><div class="k">Should be in the bank</div><div class="v">${money(all.cash)}</div>
+      <div class="m">${money(all.collected)} in &minus; ${money(all.disbursed)} out</div></div>
+    <div class="tile violet"><div class="k">Empire locked</div><div class="v">${money(all.earmarked)}</div>
+      <div class="m">stays until claimed</div></div>
+    <div class="tile mint"><div class="k">Free cash</div><div class="v">${money(all.free)}</div>
+      <div class="m">not spoken for</div></div>
+    <div class="tile ${all.owedNow ? 'red' : ''}"><div class="k">Owed now</div><div class="v">${money(all.owedNow)}</div>
+      <div class="m">${money(all.future)} scheduled later</div></div>
+  </div>
+
+  <div class="section-title">Buy-ins</div>
+  <div class="card">
+    <div class="card-hd"><h3>Who's paid</h3><div class="spacer"></div>
+      ${admin ? '<span class="chip heat">Tap a cell to toggle</span>' : `<span class="chip">${money(db.league.buyIn[String(db.season)] || 0)} / season</span>`}</div>
+    <div class="card-bd flush"><div class="tw"><table class="dt">
+      <thead><tr><th class="sticky">Team</th>
+        ${seasons.map((s) => `<th class="n">${s}</th>`).join('')}
+        <th class="n">Paid</th><th class="n">Owes</th></tr></thead>
+      <tbody>
+        ${teams.map((t) => {
+          const rows = seasons.map((s) => bank.payins.find((p) => p.team === t.number && p.season === s));
+          const paid = rows.filter((r) => r?.paid).reduce((a, r) => a + r.amount, 0);
+          const owes = rows.filter((r) => r && !r.paid).reduce((a, r) => a + r.amount, 0);
+          return `<tr><td class="sticky">${teamTag(t)}</td>
+            ${rows.map((r, i) => !r ? '<td class="n dimmer">&ndash;</td>' : `
+              <td class="n" ${admin ? `data-pay="${t.number}:${seasons[i]}" style="cursor:pointer"` : ''}
+                  title="${esc(r.note || '')}">
+                ${r.paid
+                  ? `<span style="color:var(--mint)">${money(r.amount)}</span>`
+                  : `<span style="color:var(--ink-3)">&mdash;</span>`}
+                ${r.note ? '<span style="color:var(--heat)" title="' + esc(r.note) + '">*</span>' : ''}
+              </td>`).join('')}
+            <td class="n" style="font-weight:700">${money(paid)}</td>
+            <td class="n ${owes ? (rows.some((r) => r && !r.paid && r.season <= db.league.currentSeason) ? 'neg' : 'dim') : 'dimmer'}">${owes ? money(owes) : '&mdash;'}</td></tr>`;
+        }).join('')}
+        <tr class="total"><td class="sticky">Total</td>
+          ${seasons.map((s) => `<td class="n">${money(db.bank(s).collected)}</td>`).join('')}
+          <td class="n">${money(all.collected)}</td>
+          <td class="n ${all.outstanding ? 'neg' : ''}">${all.outstanding ? money(all.outstanding) : '&mdash;'}</td></tr>
+      </tbody></table></div></div>
+      ${bank.payins.some((p) => p.note) ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+        ${bank.payins.filter((p) => p.note).map((p) => `<div class="s dim" style="font-size:12px">
+          <b style="color:var(--heat)">*</b> ${p.season} ${esc(db.team(p.team)?.manager ?? '')} &mdash; ${esc(p.note)}</div>`).join('')}
+      </div>` : ''}
+  </div>
+
+  <div class="section-title">Balance sheet</div>
+  <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
+    <thead><tr><th class="sticky">Season</th><th class="n">In</th><th class="n">Empire</th>
+      <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus</th></tr></thead>
+    <tbody>${sheet.map((r) => `
+      <tr><td class="sticky" style="font-weight:700">${r.season}</td>
+        <td class="n">${r.inn ? money(r.inn) : '<span class="dimmer">&mdash;</span>'}</td>
+        <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
+        <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
+        <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
+        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${r.inn || r.mini || r.place ? money(r.surplus) : '&mdash;'}</td></tr>`).join('')}
+      <tr class="total"><td class="sticky">All time</td>
+        <td class="n">${money(all.collected)}</td>
+        <td class="n">${money(all.byCat.empire || 0)}</td>
+        <td class="n">${money(all.byCat.minigame || 0)}</td>
+        <td class="n">${money(all.byCat.placement || 0)}</td>
+        <td class="n ${all.collected - all.disbursed - all.earmarked >= 0 ? 'pos' : 'neg'}">${money(all.free)}</td></tr>
+    </tbody></table></div></div></div>
+
+  <div class="section-title">Manager ledger</div>
+  <div class="card">
+    <div class="card-hd"><h3>Lifetime net</h3><div class="spacer"></div>
+      <span class="chip ghost">winnings &minus; buy-ins</span></div>
+    <div class="card-bd flush"><div class="rows">
+      ${led.map((t) => `
+        <div class="row">
+          <div class="grow">
+            <div class="t">${teamTag(t)}</div>
+            <div class="s">${money(t.paidIn)} in &middot; ${money(t.won)} won${t.owes ? ` &middot; <span class="neg">${money(t.owes)} owed</span>` : ''}</div>
+            <div style="display:flex;gap:4px;margin-top:7px;height:5px;border-radius:99px;overflow:hidden;background:var(--surface-3)">
+              ${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) => `
+                <i style="display:block;height:100%;width:${t.won ? (v / t.won * 100).toFixed(1) : 0}%;background:${
+                  c === 'minigame' ? 'var(--heat)' : c === 'placement' ? 'var(--gold)' : 'var(--violet)'}"></i>`).join('')}
+            </div>
+          </div>
+          <div class="val ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</div>
+        </div>`).join('')}
+    </div></div>
+  </div>
+
+  <div class="section-title">Payouts</div>
+  ${db.seasons.filter((s) => bank.payouts.some((p) => p.season === s)).map((s) => {
+    const ps = bank.payouts.filter((p) => p.season === s);
+    return `<div class="card">
+      <div class="card-hd"><h3>${s}</h3><div class="spacer"></div>
+        <span class="chip">${money(ps.reduce((a, p) => a + p.amount, 0))}</span></div>
+      <div class="card-bd flush"><div class="rows">
+        ${ps.sort((a, b) => b.amount - a.amount).map((p) => {
+          const c = CATS[p.category] || CATS.other;
+          return `<div class="row">
+            <span class="chip ${c.chip}">${c.label}</span>
+            <div class="grow">
+              <div class="t">${p.team ? teamTag(db.team(p.team)) : '<span class="dim">Rolls into the empire pot</span>'}</div>
+              <div class="s">${esc(p.label || '')}${p.note ? ' &middot; ' + esc(p.note) : ''}</div>
+            </div>
+            <div class="val" style="color:${p.paid ? '' : 'var(--violet)'}">${money(p.amount)}</div>
+          </div>`;
+        }).join('')}
+      </div></div></div>`;
+  }).join('') || empty('No payouts recorded', 'Payouts appear here as you log minigame and placement winners.', 'wallet')}
+  `;
+}
+function mount(root, db) {
+  root.querySelectorAll('[data-pay]').forEach((cell) => cell.addEventListener('click', async () => {
+    const [team, season] = cell.dataset.pay.split(':').map(Number);
+    await db.update('bank', (b) => {
+      const p = b.payins.find((x) => x.team === team && x.season === season);
+      if (p) p.paid = !p.paid;
+    });
+    const t = db.team(team);
+    const now = db.get('bank').payins.find((x) => x.team === team && x.season === season);
+    toast(`${t.manager} ${season}: ${now.paid ? 'paid' : 'unpaid'}`);
+  }));
+}
+
+return { render, mount };
+})();
+
+/* ===== js/views/minigames.js ===== */
+__M["js/views/minigames.js"] = (function () {
+const { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts } = __M["js/util.js"];
+const PLACES = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
+
+const resultRow = (db, g, place) => {
+  const r = g.results?.[place];
+  const pay = Number(g.payout?.[place]) || 0;
+  if (!r?.team) return pay ? `<div class="row" style="padding:8px 0">
+      <span class="chip ghost">${PLACES[place]}</span>
+      <div class="grow"><div class="s">not decided</div></div>
+      <div class="dimmer" style="font-size:13px">${money(pay)}</div></div>` : '';
+  return `<div class="row" style="padding:8px 0">
+    <span class="chip ${place === '1' ? 'heat' : 'ghost'}">${PLACES[place]}</span>
+    <div class="grow"><div class="t">${teamTag(db.team(r.team))}</div>
+      ${r.value ? `<div class="s">${esc(r.value)}</div>` : ''}</div>
+    <div style="font-family:var(--f-display);font-weight:700;font-size:16px;color:${place === '1' ? 'var(--heat)' : 'var(--ink-2)'}">${money(pay)}</div>
+  </div>`;
+};
+
+function guillotineCard(db, G, S, admin) {
+  if (!G) return '';
+  const gone = new Set(G.eliminations.map((e) => e.team));
+  const alive = G.entrants.filter((t) => !gone.has(t));
+  const order = [...G.eliminations].sort((a, b) => b.week - a.week);
+  return `
+  <div class="card">
+    <div class="card-hd">
+      ${icon('blade')}
+      <div><h3>Guillotine</h3><div class="sub">from week ${G.startWeek}</div></div>
+      <div class="spacer"></div>
+      <span class="chip ${G.winner ? 'gold' : 'heat'}">${money(G.payout?.['1'] || 0)}</span>
+    </div>
+    <div class="card-bd" style="padding-bottom:10px">
+      <div class="s dim" style="font-size:12.5px;line-height:1.55">${esc(G.rules || '')}</div>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+        <div class="meter" style="flex:1"><i style="width:${G.entrants.length ? ((G.entrants.length - alive.length) / (G.entrants.length - 1) * 100).toFixed(1) : 0}%"></i></div>
+        <span class="chip ${alive.length === 1 ? 'gold' : 'mint'}">${alive.length} alive</span>
+      </div>
+    </div>
+    <div class="card-bd flush"><div class="guillo">
+      ${alive.map((t) => `<div class="g-row alive">
+          <span class="wk">IN</span>
+          <div class="grow" style="flex:1">${teamTag(db.team(t))}</div>
+          ${admin && alive.length > 1 ? `<button class="btn sm" data-chop="${t}">Chop</button>` : ''}
+        </div>`).join('')}
+      ${order.map((e) => `<div class="g-row out">
+          <span class="wk">W${e.week}</span>
+          <div class="grow" style="flex:1">${teamTag(db.team(e.team))}</div>
+          <div class="dimmer" style="font-size:12.5px">${e.points != null ? pts(e.points) : ''}</div>
+          ${admin ? `<button class="btn sm ghost" data-unchop="${e.team}" aria-label="Undo">${icon('sync')}</button>` : ''}
+        </div>`).join('')}
+    </div></div>
+    ${alive.length === 1 && !G.winner && admin ? `<div class="card-bd">
+      <button class="btn primary" data-crown="${alive[0]}" style="width:100%">${icon('crown')} Crown ${esc(db.team(alive[0]).manager)}</button></div>` : ''}
+    ${G.winner ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="banner" style="background:rgba(245,196,81,.08);border-color:rgba(245,196,81,.3)">
+        ${icon('crown')}<div>Last one standing: <b style="color:var(--gold)">${esc(db.team(G.winner)?.manager)}</b> takes ${money(G.payout?.['1'] || 0)}.</div></div>
+    </div>` : ''}
+  </div>`;
+}
+function render(db) {
+  const S = db.season;
+  const s = db.minigames(S);
+  const spend = db.minigameSpend(S);
+  const admin = db.isAdmin;
+  const done = s.games.filter((g) => g.status === 'final').length;
+
+  if (s.legacy && !s.games.length) {
+    const totals = Object.entries(s.legacy.totalsByTeam).sort((a, b) => b[1] - a[1]);
+    return `
+    <div class="banner" style="margin-bottom:14px">${icon('alert')}
+      <div>${esc(s.legacy.note)}</div></div>
+    <div class="card">
+      <div class="card-hd"><h3>${S} minigame winnings</h3><div class="spacer"></div>
+        <span class="chip heat">${money(s.legacy.total)}</span></div>
+      <div class="card-bd flush"><div class="rows">
+        ${totals.map(([t, v]) => `<div class="row">
+          <div class="grow">${teamTag(db.team(Number(t)))}</div>
+          <div class="val" style="color:var(--heat)">${money(v)}</div></div>`).join('')}
+      </div></div>
+    </div>`;
+  }
+
+  return `
+  <div class="tiles">
+    <div class="tile accent"><div class="k">Budget</div><div class="v">${money(spend.committed)}</div><div class="m">${S} minigames</div></div>
+    <div class="tile mint"><div class="k">Awarded</div><div class="v">${money(spend.paid)}</div><div class="m">${done} settled</div></div>
+    <div class="tile"><div class="k">Still up</div><div class="v">${money(spend.remaining)}</div><div class="m">${s.games.length - done} to play</div></div>
+    <div class="tile gold"><div class="k">Guillotine</div><div class="v">${money(s.guillotine?.payout?.['1'] || 0)}</div>
+      <div class="m">week ${s.guillotine?.startWeek ?? '--'}</div></div>
+  </div>
+
+  <div class="section-title">Weekly slate</div>
+  ${s.games.length ? s.games.map((g) => {
+    const settled = g.results?.['1']?.team;
+    return `<div class="card" style="margin-bottom:10px">
+      <div class="card-hd">
+        <span class="chip ${settled ? 'mint' : 'ghost'}">WK ${g.week}</span>
+        <div style="min-width:0">
+          <h3 style="font-size:15px;${g.name ? '' : 'color:var(--ink-3)'}">${g.name ? esc(g.name) : 'Not set yet'}</h3>
+          ${g.rules ? `<div class="sub" style="text-transform:none;letter-spacing:0;font-size:11.5px">${esc(g.rules)}</div>` : ''}
+        </div>
+        <div class="spacer"></div>
+        ${admin ? `<button class="btn sm" data-edit="${g.id}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
+      </div>
+      ${settled || Object.values(g.payout || {}).some((v) => v > 0)
+        ? `<div class="card-bd" style="padding-top:4px;padding-bottom:4px">
+            ${['1', '2', '3'].map((p) => resultRow(db, g, p)).join('')}</div>`
+        : ''}
+    </div>`;
+  }).join('') : empty('No slate yet', `Add this season's minigames in Admin, or turn on edit mode to build the schedule week by week.`, 'dice')}
+
+  <div class="section-title">Elimination</div>
+  ${guillotineCard(db, s.guillotine, S, admin)}
+  `;
+}
+function mount(root, db) {
+  const S = db.season;
+  const teams = db.teams(S);
+
+  root.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+    const g = db.minigames(S).games.find((x) => x.id === b.dataset.edit);
+    const r = (p) => g.results?.[p] || {};
+    openModal({
+      title: `Week ${g.week} minigame`,
+      confirm: 'Save week',
+      body: `
+        <div class="field"><label>Minigame</label>
+          <input name="name" value="${esc(g.name || '')}" placeholder="e.g. Closest to the Number"></div>
+        <div class="field"><label>Rules / notes</label>
+          <textarea name="rules" placeholder="How it's won">${esc(g.rules || '')}</textarea></div>
+        <div class="section-title" style="margin-top:6px">Payout</div>
+        <div class="fgrid" style="grid-template-columns:repeat(3,1fr)">
+          ${['1', '2', '3'].map((p) => `<div class="field"><label>${PLACES[p]} $</label>
+            <input name="pay${p}" type="number" min="0" step="1" inputmode="numeric" value="${Number(g.payout?.[p]) || 0}"></div>`).join('')}
+        </div>
+        <div class="section-title" style="margin-top:2px">Result</div>
+        ${['1', '2', '3'].map((p) => `
+          <div class="fgrid" style="grid-template-columns:1fr 1fr">
+            <div class="field"><label>${PLACES[p]}</label>
+              <select name="team${p}">${teamOptions(teams, r(p).team ?? '')}</select></div>
+            <div class="field"><label>What won it</label>
+              <input name="val${p}" value="${esc(r(p).value || '')}" placeholder="player / score / note"></div>
+          </div>`).join('')}`,
+      onConfirm: async (d) => {
+        await db.update('minigames', (m) => {
+          const gg = m.seasons[String(S)].games.find((x) => x.id === g.id);
+          gg.name = d.name.trim() || null;
+          gg.rules = d.rules.trim() || null;
+          gg.payout = { 1: +d.pay1 || 0, 2: +d.pay2 || 0, 3: +d.pay3 || 0 };
+          gg.results = {};
+          for (const p of ['1', '2', '3'])
+            gg.results[p] = d[`team${p}`] ? { team: +d[`team${p}`], value: d[`val${p}`].trim() || null } : null;
+          gg.status = gg.results['1']?.team ? 'final' : 'scheduled';
+        });
+        syncPayouts(db, S);
+        toast(`Week ${g.week} saved`);
+      },
+    });
+  }));
+
+  root.querySelectorAll('[data-chop]').forEach((b) => b.addEventListener('click', () => {
+    const t = Number(b.dataset.chop);
+    const G = db.minigames(S).guillotine;
+    const wk = G.startWeek + G.eliminations.length;
+    openModal({
+      title: `Chop ${db.team(t).manager}`,
+      confirm: 'Chop',
+      body: `<div class="field"><label>Week</label>
+          <input name="week" type="number" inputmode="numeric" value="${wk}"></div>
+        <div class="field"><label>Their score (optional)</label>
+          <input name="points" type="number" step="0.01" inputmode="decimal" placeholder="lowest remaining"></div>
+        <p class="s dim" style="font-size:12.5px;margin:0">Lowest-scoring survivor gets cut. This can be undone.</p>`,
+      onConfirm: async (d) => {
+        await db.update('minigames', (m) => {
+          m.seasons[String(S)].guillotine.eliminations.push(
+            { week: +d.week || wk, team: t, points: d.points ? +d.points : null });
+        });
+        toast(`${db.team(t).manager} chopped`);
+      },
+    });
+  }));
+
+  root.querySelectorAll('[data-unchop]').forEach((b) => b.addEventListener('click', async () => {
+    const t = Number(b.dataset.unchop);
+    await db.update('minigames', (m) => {
+      const G = m.seasons[String(S)].guillotine;
+      G.eliminations = G.eliminations.filter((e) => e.team !== t);
+      if (G.winner === t) G.winner = null;
+    });
+    toast('Back in the pool');
+  }));
+
+  root.querySelectorAll('[data-crown]').forEach((b) => b.addEventListener('click', async () => {
+    const t = Number(b.dataset.crown);
+    await db.update('minigames', (m) => { m.seasons[String(S)].guillotine.winner = t; });
+    syncPayouts(db, S);
+    toast(`${db.team(t).manager} survives`);
+  }));
+}
+
+/**
+ * Rebuild the season's `minigame` payout lines from the minigame results, so the
+ * bank always agrees with what was actually awarded. Legacy seasons are left alone.
+ */
+async function syncPayouts(db, season) {
+  const s = db.minigames(season);
+  if (s.legacy) return;
+  const tally = {};
+  const add = (team, amt) => { if (team && amt) tally[team] = (tally[team] || 0) + amt; };
+  for (const g of s.games)
+    for (const p of ['1', '2', '3']) add(g.results?.[p]?.team, Number(g.payout?.[p]) || 0);
+  if (s.guillotine?.winner) add(s.guillotine.winner, Number(s.guillotine.payout?.['1']) || 0);
+
+  await db.update('bank', (b) => {
+    b.payouts = b.payouts.filter((p) => !(p.season === season && p.category === 'minigame'));
+    for (const [team, amount] of Object.entries(tally))
+      b.payouts.push({
+        id: `po-${season}-mg-${team}`, season, team: +team, category: 'minigame',
+        amount, label: 'Minigame winnings', paid: true, date: null, note: null,
+      });
+  });
+}
+
+return { render, mount, syncPayouts };
+})();
+
+/* ===== js/views/drafts.js ===== */
+__M["js/views/drafts.js"] = (function () {
+const { esc, icon, teamTag, dot, posChip, empty, teamColor } = __M["js/util.js"];
+function render(db, state = {}) {
+  const seasons = db.draftSeasons();
+  if (!seasons.length) return empty('No drafts yet', 'Rookie draft boards will appear here.', 'board');
+  const year = state.draftYear && seasons.includes(state.draftYear) ? state.draftYear : seasons[0];
+  const d = db.draft(year);
+  const teams = db.teams(year);
+  const tOf = (n) => teams.find((t) => t.number === n);
+
+  const traded = d.picks.filter((p) => p.traded);
+  const haul = {};
+  for (const p of d.picks) haul[p.pickedBy] = (haul[p.pickedBy] || 0) + 1;
+  const board = Object.entries(haul).map(([n, c]) => ({ t: tOf(+n), c }))
+    .sort((a, b) => b.c - a.c || a.t.number - b.t.number);
+
+  const cols = d.order.length;
+  return `
+  <div class="pills">
+    ${seasons.map((y) => `<button data-year="${y}" aria-pressed="${y === year}">${y}</button>`).join('')}
+  </div>
+
+  <div class="tiles" style="margin-top:8px">
+    <div class="tile"><div class="k">Picks</div><div class="v">${d.picks.length}</div><div class="m">${d.rounds} rounds</div></div>
+    <div class="tile accent"><div class="k">Traded slots</div><div class="v">${traded.length}</div>
+      <div class="m">${((traded.length / d.picks.length) * 100).toFixed(0)}% changed hands</div></div>
+    <div class="tile mint"><div class="k">Most picks</div><div class="v">${board[0]?.c ?? 0}</div>
+      <div class="m">${esc(board[0]?.t?.manager ?? '')}</div></div>
+    <div class="tile"><div class="k">Own slot</div><div class="v">${d.picks.length - traded.length}</div>
+      <div class="m">picks never traded</div></div>
+  </div>
+
+  <div class="section-title">${year} rookie board</div>
+  <div class="card">
+    <div class="card-hd"><h3>Draft board</h3><div class="spacer"></div>
+      <span class="chip heat">${icon('swap')} traded</span></div>
+    <div class="card-bd flush">
+      <div class="board"><div class="board-grid" style="grid-template-columns:repeat(${cols},132px)">
+        ${d.order.map((n, i) => {
+          const t = tOf(n);
+          return `<div class="board-head" style="border-top:2px solid ${teamColor(n)}">
+            <div class="sl">${String(i + 1).padStart(2, '0')}</div>
+            <div class="nm">${esc(t?.manager ?? 'T' + n)}</div></div>`;
+        }).join('')}
+        ${Array.from({ length: d.rounds }, (_, r) =>
+          d.order.map((_, s) => {
+            const p = d.picks.find((x) => x.round === r + 1 && x.slot === s + 1);
+            if (!p) return `<div class="pick blank"></div>`;
+            const by = tOf(p.pickedBy);
+            const pos = db.position(p.player);
+            return `<div class="pick ${p.traded ? 'traded' : ''}">
+              <div class="top"><span class="no">${p.pick}</span>
+                <div style="flex:1"></div>${posChip(pos)}</div>
+              <div class="pl">${esc(p.player)}</div>
+              ${p.traded ? `<div class="via">${dot(p.pickedBy)} ${esc(by?.manager ?? 'T' + p.pickedBy)}</div>`
+                         : `<div class="via" style="color:var(--ink-3)">&nbsp;</div>`}
+            </div>`;
+          }).join('')).join('')}
+      </div></div>
+    </div>
+    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px">Columns are the original slot owner. An orange bar means the pick was
+      traded — the name underneath is who actually made the selection. Swipe the board sideways.</div>
+    </div>
+  </div>
+
+  <div class="section-title">Who drafted what</div>
+  <div class="card"><div class="card-bd flush"><div class="rows">
+    ${board.map((b) => {
+      const mine = d.picks.filter((p) => p.pickedBy === b.t.number);
+      return `<div class="row">
+        <div class="grow">
+          <div class="t">${teamTag(b.t)}</div>
+          <div class="s" style="white-space:normal;line-height:1.7;margin-top:4px">
+            ${mine.map((p) => `<span class="chip ghost plain" style="margin:0 3px 3px 0"><b style="color:var(--ink-3);font-weight:700">${p.pick}</b> ${esc(p.player)}</span>`).join('')}
+          </div>
+        </div>
+        <div class="val">${b.c}</div>
+      </div>`;
+    }).join('')}
+  </div></div></div>
+  `;
+}
+function mount(root, db, go, setState) {
+  root.querySelectorAll('[data-year]').forEach((b) => b.addEventListener('click', () =>
+    setState({ draftYear: Number(b.dataset.year) })));
+}
+
+return { render, mount };
+})();
+
+/* ===== js/views/trades.js ===== */
+__M["js/views/trades.js"] = (function () {
+const { esc, icon, teamTag, fmtDate, empty, money, posChip, openModal, teamOptions, toast } = __M["js/util.js"];
+const isPick = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
+
+const asset = (db, s) => isPick(s)
+  ? `<li><span class="pos-chip pos-none">PK</span><span class="pk">${esc(s)}</span></li>`
+  : `<li>${posChip(db.position(s))}<span>${esc(s)}</span></li>`;
+
+const side = (db, s) => `
+  <div class="trade-side">
+    <div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
+      <span class="arrow">gets</span></div>
+    <ul>${s.receives.map((x) => asset(db, x)).join('')}</ul>
+  </div>`;
+
+const tradeCard = (db, t, cond = null) => {
+  const st = cond ? db.conditionalStatus(cond) : null;
+  return `<div class="trade">
+    <div class="trade-hd">
+      ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : `<span class="chip ghost">${icon('swap')} Trade</span>`}
+      <div style="flex:1"></div>
+      <span class="d">${fmtDate(t.date, { year: true })}</span>
+    </div>
+    <div class="trade-body">${t.sides.map((s) => side(db, s)).join('')}</div>
+    ${cond ? `<div class="cond">
+      <div class="lbl">Condition</div>${esc(cond.condition)}
+      <div class="out">
+        ${st.key === 'open'
+          ? `${icon('clock')} Resolves by ${esc(cond.deadlineLabel || fmtDate(cond.deadline, { year: true }))}`
+          : `${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome || st.label)}`}
+      </div></div>` : ''}
+    ${t.note && !cond ? `<div class="cond" style="background:rgba(255,255,255,.02)">
+      <div class="lbl" style="color:var(--ink-3)">Note</div>${esc(t.note)}</div>` : ''}
+  </div>`;
+};
+function render(db, state = {}) {
+  const tab = state.tradeTab || 'trades';
+  const { trades, conditional, waivers } = db.trades();
+  const admin = db.isAdmin;
+  const open = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
+  const faab = waivers.reduce((a, w) => a + (w.faab || 0), 0);
+
+  const body = {
+    trades: () => trades.length
+      ? trades.map((t) => tradeCard(db, t, t.conditionalId
+          ? conditional.find((c) => c.id === t.conditionalId) : null)).join('')
+      : empty('No trades yet', 'Log a trade and it lands here, newest first.', 'swap'),
+
+    conditional: () => conditional.length
+      ? conditional.map((c) => tradeCard(db, c, c)).join('')
+      : empty('No conditional trades', 'Trades with strings attached show open, met, or expired.', 'clock'),
+
+    waivers: () => waivers.length ? `
+      <div class="card"><div class="card-bd flush"><div class="rows">
+        ${waivers.map((w) => `<div class="row">
+          <span class="chip ghost">#${w.n}</span>
+          <div class="grow">
+            <div class="t" style="display:flex;align-items:center;gap:7px">${posChip(db.position(w.player))} ${esc(w.player)}</div>
+            <div class="s">${teamTag(w.team ? db.team(w.team) : null, { alias: w.alias, num: false })} &middot; ${fmtDate(w.date, { year: true })}</div>
+          </div>
+          <div class="val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab}</div>
+        </div>`).join('')}
+      </div></div></div>` : empty('No waiver claims', 'FAAB claims you record show up here.', 'inbox'),
+  }[tab]();
+
+  return `
+  <div class="pills">
+    <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades ${trades.length}</button>
+    <button data-tab="conditional" aria-pressed="${tab === 'conditional'}">Conditional ${conditional.length}</button>
+    <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers ${waivers.length}</button>
+  </div>
+
+  ${tab === 'trades' ? `<div class="tiles" style="margin-top:8px">
+    <div class="tile"><div class="k">Trades</div><div class="v">${trades.length}</div><div class="m">all time</div></div>
+    <div class="tile accent"><div class="k">Pieces moved</div><div class="v">${trades.reduce((a, t) => a + t.sides.reduce((x, s) => x + s.receives.length, 0), 0)}</div><div class="m">players + picks</div></div>
+    <div class="tile ${open.length ? 'gold' : ''}"><div class="k">Open conditions</div><div class="v">${open.length}</div><div class="m">awaiting outcome</div></div>
+    <div class="tile mint"><div class="k">FAAB spent</div><div class="v">$${faab}</div><div class="m">${waivers.length} claims</div></div>
+  </div>` : ''}
+
+  ${admin ? `<div style="margin:14px 0 4px"><button class="btn primary" data-new="${tab}" style="width:100%">
+      ${icon('plus')} New ${tab === 'waivers' ? 'waiver claim' : tab === 'conditional' ? 'conditional trade' : 'trade'}</button></div>` : ''}
+
+  <div class="section-title">${tab === 'waivers' ? 'Claims' : 'Log'}</div>
+  ${body}
+  `;
+}
+function mount(root, db, go, setState) {
+  root.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () =>
+    setState({ tradeTab: b.dataset.tab })));
+
+  root.querySelector('[data-new]')?.addEventListener('click', () => {
+    const kind = root.querySelector('[data-new]').dataset.new;
+    const teams = db.teams();
+    const today = new Date().toISOString().slice(0, 10);
+
+    if (kind === 'waivers') {
+      return openModal({
+        title: 'Waiver claim', confirm: 'Add claim',
+        body: `<div class="field"><label>Player</label><input name="player" required placeholder="Player name"></div>
+          <div class="fgrid">
+            <div class="field"><label>Team</label><select name="team">${teamOptions(teams)}</select></div>
+            <div class="field"><label>FAAB $</label><input name="faab" type="number" min="0" inputmode="numeric" value="0"></div>
+          </div>
+          <div class="field"><label>Date</label><input name="date" type="date" value="${today}"></div>`,
+        onConfirm: async (d) => {
+          if (!d.player.trim()) { toast('Player name required'); return false; }
+          await db.update('trades', (t) => {
+            const season = +d.date.slice(0, 4);
+            const n = Math.max(0, ...t.waivers.filter((w) => w.season === season).map((w) => w.n)) + 1;
+            t.waivers.push({ n, season, date: d.date, team: d.team ? +d.team : null, player: d.player.trim(), faab: +d.faab || 0 });
+          });
+          toast('Claim added');
+        },
+      });
+    }
+
+    const isCond = kind === 'conditional';
+    openModal({
+      title: isCond ? 'Conditional trade' : 'New trade',
+      confirm: 'Log it',
+      body: `
+        <div class="field"><label>Date</label><input name="date" type="date" value="${today}"></div>
+        <div class="section-title" style="margin-top:6px">Side A</div>
+        <div class="field"><label>Team</label><select name="a">${teamOptions(teams)}</select></div>
+        <div class="field"><label>Receives &mdash; one per line</label>
+          <textarea name="ar" placeholder="Player Name&#10;2027 1st (Max)"></textarea></div>
+        <div class="section-title">Side B</div>
+        <div class="field"><label>Team</label><select name="b">${teamOptions(teams)}</select></div>
+        <div class="field"><label>Receives &mdash; one per line</label>
+          <textarea name="br" placeholder="Player Name&#10;2027 2nd (Noah)"></textarea></div>
+        ${isCond ? `
+          <div class="section-title">Condition</div>
+          <div class="field"><label>If&hellip; then&hellip;</label>
+            <textarea name="condition" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's."></textarea></div>
+          <div class="fgrid">
+            <div class="field"><label>Deadline</label><input name="deadline" type="date"></div>
+            <div class="field"><label>Deadline label</label><input name="deadlineLabel" placeholder="End of the playoffs"></div>
+          </div>` : `
+          <div class="field"><label>Note (optional)</label><input name="note"></div>`}`,
+      onConfirm: async (d) => {
+        const lines = (s) => s.split('\n').map((x) => x.trim()).filter(Boolean);
+        if (!d.a || !d.b) { toast('Pick both teams'); return false; }
+        if (!lines(d.ar).length && !lines(d.br).length) { toast('Add at least one asset'); return false; }
+        const season = +d.date.slice(0, 4);
+        await db.update('trades', (t) => {
+          const sides = [{ team: +d.a, receives: lines(d.ar) }, { team: +d.b, receives: lines(d.br) }];
+          if (isCond) {
+            t.conditionalTrades.push({
+              id: `cond-${season}-${String(t.conditionalTrades.length + 1).padStart(2, '0')}`,
+              season, date: d.date, status: 'open', sides,
+              condition: d.condition.trim(), deadline: d.deadline || null,
+              deadlineLabel: d.deadlineLabel.trim() || null,
+              resolvedDate: null, outcome: null, settledTradeId: null,
+            });
+          } else {
+            t.trades.push({
+              id: `${season}-${String(t.trades.filter((x) => x.season === season).length + 1).padStart(2, '0')}`,
+              season, date: d.date, sides, note: d.note?.trim() || null,
+            });
+          }
+        });
+        toast(isCond ? 'Conditional logged' : 'Trade logged');
+      },
+    });
+  });
+}
+
+return { render, mount };
+})();
+
+/* ===== js/views/stats.js ===== */
+__M["js/views/stats.js"] = (function () {
+const { esc, icon, teamTag, pts, empty, teamColor, money } = __M["js/util.js"];
+/* ---------------------------------------------------------------
+   Charts here deliberately use ONE accent series over recessive
+   context lines rather than ten categorical hues: ten hues cannot be
+   told apart under colour-vision deficiency, and on a phone the
+   spaghetti is unreadable. Identity is always carried by a label too.
+   --------------------------------------------------------------- */
+
+const PAD = { t: 14, r: 16, b: 26, l: 40 };
+
+function lineChart(rows, weeks, focus, key = 'byWeek') {
+  if (!weeks.length) return '';
+  const W = 640, H = 240;
+  const vals = rows.flatMap((r) => Object.values(r[key]));
+  if (!vals.length) return '';
+  const lo = Math.floor(Math.min(...vals) / 20) * 20 - 10;
+  const hi = Math.ceil(Math.max(...vals) / 20) * 20 + 10;
+  const x = (w) => PAD.l + ((w - weeks[0]) / Math.max(1, weeks.at(-1) - weeks[0])) * (W - PAD.l - PAD.r);
+  const y = (v) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PAD.b);
+  const path = (r) => weeks.filter((w) => r[key][w] != null)
+    .map((w, i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(r[key][w]).toFixed(1)}`).join(' ');
+
+  const ticks = [];
+  for (let i = 0; i <= 4; i++) ticks.push(lo + ((hi - lo) / 4) * i);
+  const f = rows.find((r) => r.number === focus);
+
+  return `
+  <div style="position:relative">
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;touch-action:pan-y"
+         role="img" aria-label="Weekly points by week; ${esc(f?.manager ?? '')} highlighted"
+         data-chart data-w="${W}" data-lo="${lo}" data-hi="${hi}">
+      ${ticks.map((t) => `
+        <line x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"
+              stroke="#28323F" stroke-width="1"/>
+        <text x="${PAD.l - 8}" y="${(y(t) + 3.5).toFixed(1)}" text-anchor="end"
+              fill="#7C8BA0" font-size="10" font-family="Inter,sans-serif">${Math.round(t)}</text>`).join('')}
+      ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - 8}" text-anchor="middle"
+              fill="#7C8BA0" font-size="10" font-family="Inter,sans-serif">${w}</text>`).join('')}
+      ${rows.filter((r) => r.number !== focus).map((r) =>
+        `<path d="${path(r)}" fill="none" stroke="#3A4657" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
+      ${f ? `<path d="${path(f)}" fill="none" stroke="var(--heat)" stroke-width="2.5"
+              stroke-linejoin="round" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(255,107,44,.4))"/>
+        ${weeks.filter((w) => f[key][w] != null).map((w) => `
+          <circle cx="${x(w).toFixed(1)}" cy="${y(f[key][w]).toFixed(1)}" r="4"
+                  fill="var(--heat)" stroke="#141B24" stroke-width="2"/>`).join('')}` : ''}
+      <line data-cross x1="0" x2="0" y1="${PAD.t}" y2="${H - PAD.b}" stroke="#5A6A80" stroke-width="1"
+            stroke-dasharray="3 3" opacity="0"/>
+    </svg>
+    <div data-tip style="position:absolute;pointer-events:none;opacity:0;transition:opacity .12s;
+      background:var(--surface-3);border:1px solid var(--line);border-radius:8px;padding:7px 10px;
+      font-size:12px;white-space:nowrap;box-shadow:var(--shadow);z-index:3"></div>
+  </div>`;
+}
+
+function barChart(rows, key, label, unit = '') {
+  const data = rows.filter((r) => r[key] != null).sort((a, b) => b[key] - a[key]);
+  if (!data.length) return '';
+  const max = Math.max(...data.map((r) => r[key]));
+  return `<div class="rows">
+    ${data.map((r) => `
+      <div class="row" style="padding:9px 16px;align-items:center">
+        <div style="width:96px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600">
+          <i class="tdot" style="background:${teamColor(r.number)};display:inline-block;margin-right:7px;vertical-align:middle"></i>${esc(r.manager)}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="height:16px;background:var(--surface-3);border-radius:4px;overflow:hidden">
+            <i style="display:block;height:100%;width:${(r[key] / max * 100).toFixed(1)}%;
+               background:linear-gradient(90deg,#C43D0E,var(--heat));border-radius:4px"></i>
+          </div>
+        </div>
+        <div style="width:76px;flex:none;text-align:right;font-family:var(--f-display);font-weight:700;font-size:15px">
+          ${unit === '%' ? (r[key] * 100).toFixed(1) + '%' : pts(r[key])}
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+function render(db, state = {}) {
+  const S = db.season;
+  const st = db.stats(S);
+  const focus = state.focusTeam ?? [...st.rows].sort((a, b) => b.total - a.total)[0]?.number ?? 1;
+  const metric = st.hasCeiling && state.metric === 'ceiling' ? 'ceiling' : 'actual';
+  const wkKey = metric === 'ceiling' ? 'byWeekMax' : 'byWeek';
+  const sync = db.get('stats').lastSleeperSync;
+  const withData = st.rows.filter((r) => r.games > 0);
+
+  if (!st.hasData && !st.hasMaxPF) {
+    return `${empty(`Nothing logged for ${S} yet`,
+      'Connect your Sleeper league in Admin to pull weekly scores automatically, or enter them by hand.', 'chart')}
+      <div style="text-align:center;margin-top:-14px"><button class="btn" data-go="admin">${icon('sync')} Set up Sleeper</button></div>`;
+  }
+
+  const lead = [...withData].sort((a, b) => b.total - a.total)[0];
+  const ceiling = [...st.rows].filter((r) => r.maxPF != null).sort((a, b) => b.maxPF - a.maxPF)[0];
+  const eff = [...st.rows].filter((r) => r.efficiency != null).sort((a, b) => b.efficiency - a.efficiency)[0];
+  const best = st.weekly.length ? st.weekly.reduce((a, b) => (b.points > a.points ? b : a)) : null;
+
+  return `
+  <div class="tiles">
+    <div class="tile accent"><div class="k">Points leader</div>
+      <div class="v" style="font-size:23px">${esc(lead?.manager ?? '--')}</div>
+      <div class="m">${lead ? pts(lead.total) + ' through wk ' + st.weeks.at(-1) : 'no scores yet'}</div></div>
+    <div class="tile gold"><div class="k">Highest ceiling</div>
+      <div class="v" style="font-size:23px">${esc(ceiling?.manager ?? '--')}</div>
+      <div class="m">${ceiling ? pts(ceiling.maxPF) + ' max PF' : 'no max PF yet'}</div></div>
+    <div class="tile mint"><div class="k">Best manager</div>
+      <div class="v" style="font-size:23px">${eff ? esc(eff.manager) : '&mdash;'}</div>
+      <div class="m">${eff ? (eff.efficiency * 100).toFixed(1) + '% of ceiling'
+        : `needs all ${st.regularSeasonWeeks} weeks logged`}</div></div>
+    <div class="tile"><div class="k">Top week</div>
+      <div class="v">${best ? pts(best.points) : '--'}</div>
+      <div class="m">${best ? esc(db.team(best.team)?.manager) + ' &middot; wk ' + best.week : ''}</div></div>
+  </div>
+
+  ${st.hasData ? `
+  <div class="section-title">Week by week</div>
+  <div class="card">
+    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3><div class="spacer"></div>
+      <span class="chip heat">${esc(db.team(focus)?.manager ?? '')}</span></div>
+    <div class="card-bd">
+      ${st.hasCeiling ? `<div class="pills" style="margin-bottom:10px">
+        <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
+        <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
+      </div>` : ''}
+      ${lineChart(withData, st.weeks, focus, wkKey)}
+      <div class="pills" style="margin-top:10px">
+        ${st.rows.map((r) => `<button data-focus="${r.number}" aria-pressed="${r.number === focus}">${esc(r.manager)}</button>`).join('')}
+      </div>
+      <div class="s dim" style="font-size:11.5px;margin-top:4px">Grey lines are the rest of the league. Tap a name to bring it forward.${
+        metric === 'ceiling' ? ' Ceiling is the best lineup that team could have started that week.' : ''}</div>
+    </div>
+  </div>` : ''}
+
+  ${st.hasMaxPF ? `
+  <div class="section-title">Max points for</div>
+  <div class="card">
+    <div class="card-hd"><h3>Season ceiling</h3><div class="spacer"></div>
+      <span class="chip ghost">best possible lineup</span></div>
+    <div class="card-bd flush">${barChart(st.rows, 'maxPF', 'Max PF')}</div>
+    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px">Max PF is what you'd have scored starting the perfect lineup every week.
+      The gap between this and your actual points is the cost of your start/sit calls.</div>
+    </div>
+  </div>` : ''}
+
+  ${st.hasCeiling ? `
+  <div class="section-title">Left on the bench</div>
+  <div class="card">
+    <div class="card-hd"><h3>Ceiling minus actual</h3><div class="spacer"></div>
+      <span class="chip ghost">lower is better</span></div>
+    <div class="card-bd flush">${barChart(st.rows, 'left', 'Left on bench')}</div>
+  </div>` : ''}
+
+  ${st.hasEfficiency ? `
+  <div class="section-title">Lineup efficiency</div>
+  <div class="card">
+    <div class="card-hd"><h3>Points as a share of ceiling</h3></div>
+    <div class="card-bd flush">${barChart(withData, 'efficiency', 'Efficiency', '%')}</div>
+  </div>` : ''}
+
+  ${st.hasData ? `
+  <div class="section-title">The numbers</div>
+  <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
+    <thead><tr><th class="sticky">Team</th>
+      ${st.weeks.map((w) => `<th class="n">W${w}</th>`).join('')}
+      <th class="n">Total</th><th class="n">Avg</th><th class="n">High</th><th class="n">Low</th>
+      ${st.hasMaxPF ? '<th class="n">Max PF</th><th class="n">Bench</th>' : ''}</tr></thead>
+    <tbody>${[...withData].sort((a, b) => b.total - a.total).map((r) => `
+      <tr><td class="sticky">${teamTag(r)}</td>
+        ${st.weeks.map((w) => `<td class="n ${r.byWeek[w] === r.high ? 'pos' : r.byWeek[w] === r.low ? 'dim' : ''}">${r.byWeek[w] != null ? pts(r.byWeek[w]) : '<span class="dimmer">&mdash;</span>'}</td>`).join('')}
+        <td class="n" style="font-weight:700">${pts(r.total)}</td>
+        <td class="n">${pts(r.avg)}</td>
+        <td class="n pos">${pts(r.high)}</td>
+        <td class="n dim">${pts(r.low)}</td>
+        ${st.hasMaxPF ? `<td class="n">${r.maxPF != null ? pts(r.maxPF) : '<span class="dimmer">&mdash;</span>'}</td>
+        <td class="n dim">${r.left != null ? pts(r.left) : '<span class="dimmer">&mdash;</span>'}</td>` : ''}
+      </tr>`).join('')}
+    </tbody></table></div></div></div>` : ''}
+
+  <div class="s dimmer" style="font-size:11.5px;margin-top:16px;text-align:center">
+    ${sync ? `Last Sleeper sync ${esc(sync)}` : 'Not yet synced with Sleeper'}
+  </div>`;
+}
+function mount(root, db, go, setState) {
+  root.querySelectorAll('[data-focus]').forEach((b) => b.addEventListener('click', () =>
+    setState({ focusTeam: Number(b.dataset.focus) })));
+  root.querySelectorAll('[data-metric]').forEach((b) => b.addEventListener('click', () =>
+    setState({ metric: b.dataset.metric })));
+  root.querySelector('[data-go]')?.addEventListener('click', (e) => go(e.currentTarget.dataset.go));
+
+  /* crosshair + tooltip */
+  const svg = root.querySelector('[data-chart]');
+  if (!svg) return;
+  const wrap = svg.parentElement;
+  const tip = wrap.querySelector('[data-tip]');
+  const cross = svg.querySelector('[data-cross]');
+  const st = db.stats(db.season);
+  const rows = st.rows.filter((r) => r.games > 0);
+  const W = +svg.dataset.w;
+
+  const mKey = root.querySelector('[data-metric][aria-pressed="true"]')?.dataset.metric === 'ceiling'
+    ? 'byWeekMax' : 'byWeek';
+  const move = (ev) => {
+    const p = ev.touches?.[0] ?? ev;
+    const box = svg.getBoundingClientRect();
+    const vx = ((p.clientX - box.left) / box.width) * W;
+    const span = W - PAD.l - PAD.r;
+    const t = Math.max(0, Math.min(1, (vx - PAD.l) / span));
+    const wk = st.weeks[Math.round(t * (st.weeks.length - 1))];
+    if (wk == null) return;
+    const ranked = rows.filter((r) => r[mKey][wk] != null).sort((a, b) => b[mKey][wk] - a[mKey][wk]);
+    cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '1');
+    tip.innerHTML = `<b style="font-family:var(--f-display);letter-spacing:.06em">WEEK ${wk}</b><br>`
+      + ranked.slice(0, 3).map((r, i) =>
+        `<span style="color:var(--ink-3)">${i + 1}.</span> ${esc(r.manager)} <b>${pts(r[mKey][wk])}</b>`).join('<br>');
+    tip.style.opacity = '1';
+    const left = Math.min(box.width - 150, Math.max(0, (vx / W) * box.width - 60));
+    tip.style.left = left + 'px';
+    tip.style.top = '8px';
+  };
+  const leave = () => { tip.style.opacity = '0'; cross.setAttribute('opacity', '0'); };
+  svg.addEventListener('mousemove', move);
+  svg.addEventListener('mouseleave', leave);
+  svg.addEventListener('touchstart', move, { passive: true });
+  svg.addEventListener('touchmove', move, { passive: true });
+  svg.addEventListener('touchend', leave);
+}
+
+return { render, mount };
+})();
+
+/* ===== js/views/empire.js ===== */
+__M["js/views/empire.js"] = (function () {
+const { money, esc, icon, teamTag, empty, ordinal } = __M["js/util.js"];
+function render(db) {
+  const e = db.empire();
+  const L = db.league;
+  const seasons = db.seasons;
+  const bank = db.get('bank');
+  const leader = e.board[0];
+  const chase = e.board[1];
+
+  let running = 0;
+  const growth = e.contributions.map((c) => ({ ...c, running: (running += c.amount) }));
+  const maxRun = Math.max(...growth.map((g) => g.running), 1);
+
+  return `
+  <div class="card gauge-card" style="padding-top:26px">
+    <div class="k" style="font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);font-weight:700">The Empire Pot</div>
+    <div style="font-family:var(--f-display);font-size:56px;font-weight:700;line-height:1;margin:8px 0 4px;color:var(--violet);
+      text-shadow:0 0 30px rgba(156,140,250,.35)">${money(e.pot)}</div>
+    <div class="s dim" style="font-size:12.5px">${e.claimed
+      ? `Claimed by <b style="color:var(--gold)">${esc(db.team(e.claimed)?.manager ?? '')}</b>`
+      : `Rolls over until someone reaches <b style="color:var(--violet)">${e.threshold} empire points</b>`}</div>
+    <div style="margin-top:18px;display:flex;gap:3px;align-items:flex-end;height:60px;justify-content:center">
+      ${growth.map((g) => `
+        <div style="flex:1;max-width:56px;display:flex;flex-direction:column;align-items:center;gap:5px">
+          <div style="width:100%;height:${g.running ? Math.max(6, (g.running / maxRun) * 46) : 3}px;border-radius:3px;
+            background:${g.amount ? 'linear-gradient(180deg,#C9BDFF,var(--violet))' : 'var(--surface-3)'}"
+            title="${g.season}: ${money(g.running)}"></div>
+          <div style="font-size:9.5px;color:var(--ink-3);font-weight:600">${String(g.season).slice(2)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="s dimmer" style="font-size:11px;margin-top:8px">${money(L.empireContribution[String(db.season)] || 0)} set aside each season</div>
+  </div>
+
+  <div class="section-title">The race</div>
+  <div class="card">
+    <div class="card-hd"><h3>Empire points</h3><div class="spacer"></div>
+      <span class="chip violet">${e.threshold} to win</span></div>
+    <div class="card-bd flush"><div class="rows">
+      ${e.board.map((t, i) => `
+        <div class="row">
+          <div style="width:20px;flex:none;font-family:var(--f-display);font-weight:700;font-size:15px;
+            color:${i === 0 ? 'var(--gold)' : 'var(--ink-3)'}">${i + 1}</div>
+          <div class="grow">
+            <div class="t">${teamTag(t)}</div>
+            <div class="meter violet" style="margin-top:7px"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div>
+            <div class="s" style="margin-top:5px">${t.total
+              ? `${e.threshold - t.total} more to claim ${money(e.pot)}`
+              : 'yet to score'}</div>
+          </div>
+          <div class="val" style="color:${t.total ? 'var(--violet)' : 'var(--ink-3)'}">${t.total}</div>
+        </div>`).join('')}
+    </div></div>
+    ${leader && chase ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="banner" style="background:rgba(156,140,250,.07);border-color:rgba(156,140,250,.26)">
+        ${icon('crown')}<div><b style="color:var(--violet)">${esc(leader.manager)}</b> leads by
+        ${leader.total - chase.total} point${leader.total - chase.total === 1 ? '' : 's'} and is
+        ${((leader.pct) * 100).toFixed(0)}% of the way to the pot.</div></div>
+    </div>` : ''}
+  </div>
+
+  <div class="section-title">How points are earned</div>
+  <div class="card"><div class="card-bd flush"><div class="rows">
+    ${L.empirePointsScale.map((s) => `
+      <div class="row">
+        <span class="chip ${s.place === 1 ? 'gold' : 'ghost'}">${ordinal(s.place)}</span>
+        <div class="grow"><div class="t">${esc(s.label)}</div></div>
+        <div class="val" style="color:var(--violet)">+${s.points}</div>
+      </div>`).join('')}
+  </div></div>
+  <div class="card-bd" style="border-top:1px solid var(--line-soft)">
+    <div class="s dim" style="font-size:12px;line-height:1.6">${esc(L.empireRule)}</div></div>
+  </div>
+
+  <div class="section-title">By season</div>
+  <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
+    <thead><tr><th class="sticky">Team</th>
+      ${seasons.map((s) => `<th class="n">${String(s).slice(2)}</th>`).join('')}
+      <th class="n">Total</th></tr></thead>
+    <tbody>
+      ${e.board.map((t) => `<tr><td class="sticky">${teamTag(t)}</td>
+        ${seasons.map((s) => `<td class="n ${t.bySeason[s] ? '' : 'dimmer'}">${t.bySeason[s] || '&mdash;'}</td>`).join('')}
+        <td class="n" style="font-weight:700;color:var(--violet)">${t.total}</td></tr>`).join('')}
+      <tr class="total"><td class="sticky">Pot</td>
+        ${seasons.map((s) => {
+          const v = bank.payouts.filter((p) => p.category === 'empire' && p.season === s).reduce((a, p) => a + p.amount, 0);
+          return `<td class="n ${v ? '' : 'dimmer'}">${v ? money(v) : '&mdash;'}</td>`;
+        }).join('')}
+        <td class="n" style="color:var(--violet)">${money(e.pot)}</td></tr>
+    </tbody></table></div></div></div>
+  `;
+}
+
+return { render };
+})();
+
+/* ===== js/views/managers.js ===== */
+__M["js/views/managers.js"] = (function () {
+const { money, esc, icon, teamTag, dot, teamColor, empty } = __M["js/util.js"];
+function render(db) {
+  const led = db.ledger();
+  const S = db.season;
+  const mg = db.get('managers');
+  const emp = db.empire();
+  const finishes = db.get('bank').finishes || [];
+
+  return `
+  ${mg._placeholder || mg._unconfirmed ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+    <div><b>Team numbers are provisional.</b> Confirm the mapping in <code>tools/remap_teams.py</code>
+    and re-run it — the whole app follows.</div></div>` : ''}
+
+  <div class="section-title">Franchises</div>
+  ${led.sort((a, b) => a.number - b.number).map((t) => {
+    const rings = finishes.filter((f) => f.team === t.number && f.place === 1);
+    const ep = emp.board.find((b) => b.number === t.number);
+    const hist = t.ownership.map((o) => {
+      const m = db.managerById(o.managerId);
+      return `${esc(m?.name ?? o.managerId)} <span class="dimmer">${o.fromSeason}&ndash;${o.toSeason ?? 'now'}</span>`;
+    }).join(' <span class="dimmer">&rarr;</span> ');
+    return `<div class="card" style="margin-bottom:10px;border-left:3px solid ${teamColor(t.number)}">
+      <div class="card-hd">
+        <div style="font-family:var(--f-display);font-size:22px;font-weight:700;color:${teamColor(t.number)};
+          min-width:34px">${String(t.number).padStart(2, '0')}</div>
+        <div style="min-width:0">
+          <h3 style="font-size:17px">${esc(t.fullName)}</h3>
+          <div class="sub" style="text-transform:none;letter-spacing:0;font-size:11.5px">
+            Team ${t.number}${t.sleeper ? ` &middot; <span style="color:var(--ink-3)">@${esc(t.sleeper)}</span>` : ''}</div>
+        </div>
+        <div class="spacer"></div>
+        ${rings.map(() => '<span class="chip gold">' + icon('trophy') + ' Champ</span>').join('')}
+      </div>
+      <div class="card-bd" style="padding-top:12px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
+          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Paid in</div>
+            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px">${money(t.paidIn)}</div></div>
+          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Won</div>
+            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px;color:var(--mint)">${money(t.won)}</div></div>
+          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Net</div>
+            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px"
+              class="${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</div></div>
+          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Empire</div>
+            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px;color:var(--violet)">${ep?.total ?? 0}</div></div>
+        </div>
+        ${t.owesNow ? `<div class="banner" style="margin-top:13px;background:rgba(255,77,94,.07);border-color:rgba(255,77,94,.26)">
+          ${icon('alert')}<div>Owes <b style="color:var(--red)">${money(t.owesNow)}</b> for ${db.league.currentSeason} or earlier.</div></div>` : ''}
+        ${t.owes - t.owesNow > 0 ? `<div class="s dimmer" style="margin-top:11px;font-size:11.5px">
+          ${money(t.owes - t.owesNow)} of buy-ins scheduled for later seasons.</div>` : ''}
+        <div class="s dim" style="margin-top:13px;font-size:12px">
+          <span class="dimmer" style="letter-spacing:.12em;text-transform:uppercase;font-size:9.5px;font-weight:700">Ownership</span><br>${hist}
+        </div>
+      </div>
+    </div>`;
+  }).join('')}
+
+  ${(mg.unresolvedAliases || []).some((a) => !a.managerId) ? `
+  <div class="section-title">Unmapped names</div>
+  <div class="card"><div class="card-bd">
+    <div class="s dim" style="font-size:12.5px;margin-bottom:12px">These names appear in your spreadsheet but aren't
+    matched to a manager yet, so their trades and claims show as unassigned.</div>
+    ${mg.unresolvedAliases.filter((a) => !a.managerId).map((a) => `
+      <div class="row" style="padding:10px 0">
+        <span class="chip red">${esc(a.alias)}</span>
+        <div class="grow"><div class="s">seen in ${esc(a.seenIn.join(', '))}</div></div>
+      </div>`).join('')}
+  </div></div>` : ''}
+  `;
+}
+
+return { render };
+})();
+
+/* ===== js/views/admin.js ===== */
+__M["js/views/admin.js"] = (function () {
+const { esc, icon, toast, openModal, money, teamTag } = __M["js/util.js"];
+const SL = __M["js/sleeper.js"];
+const { isConfigured } = __M["js/config.js"];
+const LEVEL = { warn: 'red', info: '', edit: 'heat' };
+function render(db) {
+  const admin = db.isAdmin;
+  const issues = db.issues();
+  const dirty = db.dirtyKeys();
+  const L = db.league;
+  const ids = L.sleeper.leagueIds;
+  const S = db.season;
+  const st = db.get('stats');
+
+  const live = db.live;
+  const user = db.auth?.user ?? null;
+
+  return `
+  ${live ? `
+  <div class="card">
+    <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>Commissioner</h3><div class="spacer"></div>
+      <span class="chip ${admin ? 'mint' : ''}">${admin ? 'Signed in' : 'Viewing'}</span></div>
+    <div class="card-bd">
+      ${admin ? `
+        <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
+          Signed in as <b style="color:var(--ink)">${esc(user?.email ?? 'commissioner')}</b>.
+          Edit controls are on across the app and every change saves to the database immediately &mdash;
+          the league sees it on their next refresh.
+        </div>
+        <button class="btn" data-signout>${icon('lock')} Sign out</button>
+      ` : `
+        <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
+          Anyone can read the league without signing in. Sign in to edit &mdash; the database itself
+          refuses writes from anyone who hasn't.
+        </div>
+        <form data-signin>
+          <div class="field"><label>Email</label>
+            <input name="email" type="email" autocomplete="username" required placeholder="you@example.com"></div>
+          <div class="field"><label>Password</label>
+            <input name="password" type="password" autocomplete="current-password" required></div>
+          <button class="btn primary" type="submit" style="width:100%">${icon('check')} Sign in</button>
+          <div data-autherr class="s" style="font-size:12.5px;margin-top:10px;color:var(--red)"></div>
+        </form>
+      `}
+    </div>
+  </div>` : `
+  <div class="card">
+    <div class="card-hd">${icon('lock')}<h3>Edit mode</h3><div class="spacer"></div>
+      <label class="toggle"><input type="checkbox" id="adminToggle" ${admin ? 'checked' : ''}><span class="tr"></span></label>
+    </div>
+    <div class="card-bd">
+      <div class="s dim" style="font-size:12.5px;line-height:1.6">
+        Turns on the edit controls across the app: tap buy-in cells to mark them paid, add trades and
+        waiver claims, set each week's minigame and chop teams from the guillotine.
+        Changes save in this browser only &mdash; export below and commit to make them everyone's.
+        ${isConfigured() ? '' : '<br><br>Add your Supabase keys in <code>js/config.js</code> to save live instead.'}
+      </div>
+    </div>
+  </div>`}
+
+  ${issues.length ? `
+  <div class="section-title">Needs a look</div>
+  <div class="card"><div class="card-bd flush"><div class="rows">
+    ${issues.map((i) => `<div class="row">
+      <span class="chip ${LEVEL[i.level] ?? ''}">${i.level === 'warn' ? 'Fix' : i.level === 'edit' ? 'Unsaved' : 'Info'}</span>
+      <div class="grow"><div class="s" style="white-space:normal;font-size:12.5px;color:var(--ink-2)">${esc(i.text)}</div></div>
+    </div>`).join('')}
+  </div></div></div>` : `
+  <div class="card"><div class="card-bd">
+    <div class="banner" style="background:rgba(61,220,151,.07);border-color:rgba(61,220,151,.26)">
+      ${icon('check')}<div>Everything checks out. No config gaps and nothing unexported.</div></div>
+  </div></div>`}
+
+  <div class="section-title">Sleeper</div>
+  <div class="card">
+    <div class="card-hd">${icon('sync')}<h3>League sync</h3><div class="spacer"></div>
+      <span class="chip ${Object.values(ids).some(Boolean) ? 'mint' : ''}">${Object.values(ids).filter(Boolean).length} linked</span></div>
+    <div class="card-bd">
+      ${db.seasons.map((s) => `
+        <div class="field" style="margin-bottom:9px">
+          <label>${s} league ID</label>
+          <div style="display:flex;gap:8px">
+            <input data-lid="${s}" value="${esc(ids[String(s)] || '')}" placeholder="e.g. 1124800000000000000"
+              inputmode="numeric" style="flex:1">
+            <button class="btn sm" data-test="${s}">Test</button>
+          </div>
+        </div>`).join('')}
+      <div class="s dim" style="font-size:12px;margin:4px 0 14px;line-height:1.6">
+        Open your league on sleeper.com &mdash; the ID is the long number in the URL
+        (<span class="dimmer">sleeper.com/leagues/<b style="color:var(--heat)">1124…</b>/team</span>).
+        Sleeper's read API is public, so nothing here needs a password.
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" data-save-ids>${icon('check')} Save IDs</button>
+        <button class="btn primary" data-sync="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Sync ${S} scores</button>
+        <button class="btn" data-maxpf="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('chart')} Compute Max PF</button>
+      </div>
+      <div data-syncout class="s dim" style="font-size:12px;margin-top:12px"></div>
+      ${st.lastSleeperSync ? `<div class="s dimmer" style="font-size:11.5px;margin-top:6px">Last sync ${esc(st.lastSleeperSync)}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="section-title">${live ? 'Backup' : 'Save your work'}</div>
+  <div class="card">
+    <div class="card-hd">${icon('down')}<h3>${live ? 'Export a snapshot' : 'Export'}</h3><div class="spacer"></div>
+      ${live ? '<span class="chip mint">saved live</span>'
+             : dirty.length ? `<span class="chip heat">${dirty.length} changed</span>` : '<span class="chip">in sync</span>'}</div>
+    <div class="card-bd">
+      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
+        ${live
+          ? `Changes save to Supabase as you make them &mdash; there is nothing to commit. Downloading is
+             still worth doing occasionally as an offline backup, and the files drop straight back into
+             <code>/data</code> if you ever want to run without a backend.`
+          : `Download the changed files and drop them into <code>/data</code> in the repo, then commit.
+             That's what turns your local edits into what everyone else sees.`}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" data-export-all ${dirty.length ? '' : 'disabled'}>
+          ${icon('down')} Download changed (${dirty.length})</button>
+        <button class="btn" data-export-every>${icon('down')} Download all 8</button>
+        <button class="btn" data-copy>${icon('pencil')} Copy changed to clipboard</button>
+      </div>
+      ${dirty.length ? `<div style="margin-top:14px">
+        <div class="s dimmer" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:7px">Changed</div>
+        ${dirty.map((k) => `<span class="chip heat" style="margin:0 4px 4px 0">${esc(k)}.json</span>`).join('')}
+        <div style="margin-top:12px"><button class="btn sm ghost" data-revert style="color:var(--red)">Discard local changes</button></div>
+      </div>` : ''}
+    </div>
+  </div>
+
+  <div class="section-title">League settings</div>
+  <div class="card"><div class="card-bd">
+    <div class="fgrid">
+      <div class="field"><label>Buy-in ${S}</label>
+        <input data-cfg="buyIn" type="number" value="${L.buyIn[String(S)] ?? 50}"></div>
+      <div class="field"><label>Empire set-aside ${S}</label>
+        <input data-cfg="empireContribution" type="number" value="${L.empireContribution[String(S)] ?? 150}"></div>
+      <div class="field"><label>Empire threshold (pts)</label>
+        <input data-cfg="empireThreshold" type="number" value="${L.empireThreshold}"></div>
+      <div class="field"><label>Current season</label>
+        <select data-cfg="currentSeason">${db.seasons.map((s) =>
+          `<option value="${s}" ${s === L.currentSeason ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+    </div>
+    <button class="btn" data-save-cfg>${icon('check')} Save settings</button>
+  </div></div>
+  `;
+}
+
+const dl = (name, text) => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+function mount(root, db) {
+  const out = root.querySelector('[data-syncout]');
+  const say = (m) => { if (out) out.innerHTML = esc(m); };
+
+  root.querySelector('[data-signin]')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = e.currentTarget;
+    const err = f.querySelector('[data-autherr]');
+    const btn = f.querySelector('button[type="submit"]');
+    err.textContent = ''; btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      await db.auth.signIn(f.email.value.trim(), f.password.value);
+      toast('Signed in as commissioner');
+    } catch (ex) {
+      err.textContent = ex.message;
+      btn.disabled = false; btn.innerHTML = 'Sign in';
+    }
+  });
+
+  root.querySelector('[data-signout]')?.addEventListener('click', async () => {
+    await db.auth.signOut();
+    toast('Signed out');
+  });
+
+  root.querySelector('#adminToggle')?.addEventListener('change', (e) => {
+    db.setAdmin(e.target.checked);
+    toast(e.target.checked ? 'Edit mode on' : 'Edit mode off');
+  });
+
+  /* ---- sleeper ---- */
+  root.querySelector('[data-save-ids]')?.addEventListener('click', async () => {
+    await db.update('league', (L) => {
+      root.querySelectorAll('[data-lid]').forEach((i) => { L.sleeper.leagueIds[i.dataset.lid] = i.value.trim(); });
+    });
+    toast('League IDs saved');
+  });
+
+  root.querySelectorAll('[data-test]').forEach((b) => b.addEventListener('click', async () => {
+    const id = root.querySelector(`[data-lid="${b.dataset.test}"]`).value.trim();
+    if (!id) return toast('Enter an ID first');
+    b.disabled = true; say('Checking…');
+    try {
+      const lg = await SL.league(id);
+      const us = await SL.users(id);
+      say(`Connected: "${lg.name}" · ${lg.season} · ${lg.total_rosters} teams · ${us.length} users`);
+      toast('Sleeper reachable');
+    } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
+    b.disabled = false;
+  }));
+
+  root.querySelector('[data-sync]')?.addEventListener('click', async (ev) => {
+    const S = Number(ev.currentTarget.dataset.sync);
+    const id = db.league.sleeper.leagueIds[String(S)];
+    ev.currentTarget.disabled = true;
+    try {
+      say('Matching rosters…');
+      const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(S));
+      if (map.unmatched.length)
+        say(`Heads up: no manager matched ${map.unmatched.map((u) => u.name).join(', ')}. Add those names to \`aliases\` in managers.json.`);
+      const weeks = await SL.completedWeeks(S, db.get('stats').regularSeasonWeeks);
+      if (!weeks.length) { say('No completed weeks yet this season.'); ev.currentTarget.disabled = false; return; }
+      const rows = [];
+      for (const w of weeks) {
+        say(`Pulling week ${w} of ${weeks.at(-1)}…`);
+        rows.push(...(await SL.fetchWeek(id, w, map.rosterToTeam)));
+      }
+      await db.update('stats', (s) => {
+        s.weekly = s.weekly.filter((x) => x.season !== S);
+        for (const r of rows) s.weekly.push({ season: S, week: r.week, team: r.team, points: r.points, opponent: null, result: null });
+        s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      });
+      say(`Synced ${rows.length} scores across ${weeks.length} weeks. Export stats.json to keep it.`);
+      toast(`${S} scores synced`);
+    } catch (e) { say(`Sync failed — ${e.message}`); }
+    ev.currentTarget.disabled = false;
+  });
+
+  root.querySelector('[data-maxpf]')?.addEventListener('click', async (ev) => {
+    const S = Number(ev.currentTarget.dataset.maxpf);
+    const id = db.league.sleeper.leagueIds[String(S)];
+    ev.currentTarget.disabled = true;
+    try {
+      const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(S));
+      const weeks = await SL.completedWeeks(S, db.get('stats').regularSeasonWeeks);
+      if (!weeks.length) { say('No completed weeks to compute from.'); ev.currentTarget.disabled = false; return; }
+      const totals = await SL.fetchMaxPF(id, weeks, map.rosterToTeam, say);
+      await db.update('stats', (s) => {
+        s.maxPF = s.maxPF.filter((m) => m.season !== S);
+        for (const [team, points] of Object.entries(totals)) s.maxPF.push({ season: S, team: +team, points });
+      });
+      say(`Max PF computed for ${Object.keys(totals).length} teams over ${weeks.length} weeks.`);
+      toast('Max PF updated');
+    } catch (e) { say(`Could not compute Max PF — ${e.message}`); }
+    ev.currentTarget.disabled = false;
+  });
+
+  /* ---- export ---- */
+  const files = () => db.exportFiles();
+  root.querySelector('[data-export-all]')?.addEventListener('click', () => {
+    const dirty = new Set(db.dirtyKeys());
+    files().filter((f) => dirty.has(f.name.replace('.json', ''))).forEach((f, i) =>
+      setTimeout(() => dl(f.name, f.json), i * 220));
+    toast(`Downloading ${dirty.size} file${dirty.size === 1 ? '' : 's'}`);
+  });
+  root.querySelector('[data-export-every]')?.addEventListener('click', () => {
+    files().forEach((f, i) => setTimeout(() => dl(f.name, f.json), i * 220));
+    toast('Downloading all data files');
+  });
+  root.querySelector('[data-copy]')?.addEventListener('click', async () => {
+    const dirty = new Set(db.dirtyKeys());
+    const picked = files().filter((f) => dirty.has(f.name.replace('.json', '')));
+    if (!picked.length) return toast('Nothing changed');
+    const text = picked.map((f) => `/* ---- data/${f.name} ---- */\n${f.json}`).join('\n\n');
+    try { await navigator.clipboard.writeText(text); toast('Copied'); }
+    catch { toast('Clipboard blocked — use Download'); }
+  });
+  root.querySelector('[data-revert]')?.addEventListener('click', () => {
+    openModal({
+      title: 'Discard local changes?', confirm: 'Discard', danger: true,
+      body: `<p style="margin:0;font-size:13.5px;line-height:1.6">This throws away every edit stored in this
+        browser and reloads the committed files in <code>/data</code>. It cannot be undone.</p>`,
+      onConfirm: async () => { await db.revert(); toast('Back to the committed data'); },
+    });
+  });
+
+  /* ---- settings ---- */
+  root.querySelector('[data-save-cfg]')?.addEventListener('click', async () => {
+    const g = (k) => root.querySelector(`[data-cfg="${k}"]`).value;
+    const S = String(db.season);
+    await db.update('league', (L) => {
+      L.buyIn[S] = +g('buyIn') || 0;
+      L.empireContribution[S] = +g('empireContribution') || 0;
+      L.empireThreshold = +g('empireThreshold') || 0;
+      L.currentSeason = +g('currentSeason');
+    });
+    toast('Settings saved');
+  });
+}
+
+return { render, mount };
+})();
+
+/* ===== js/app.js ===== */
+__M["js/app.js"] = (function () {
+const { db } = __M["js/db.js"];
+const { $, el, icon, esc, toast } = __M["js/util.js"];const Dashboard = __M["js/views/dashboard.js"];
+const Bank = __M["js/views/bank.js"];
+const Minigames = __M["js/views/minigames.js"];
+const Drafts = __M["js/views/drafts.js"];
+const Trades = __M["js/views/trades.js"];
+const Stats = __M["js/views/stats.js"];
+const Empire = __M["js/views/empire.js"];
+const Managers = __M["js/views/managers.js"];
+const Admin = __M["js/views/admin.js"];
+const VIEWS = {
+  home:      { label: 'Home',      icon: 'home',   mod: Dashboard, primary: true },
+  bank:      { label: 'Bank',      icon: 'wallet', mod: Bank,      primary: true },
+  minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
+  drafts:    { label: 'Draft',     icon: 'board',  mod: Drafts,    primary: true },
+  trades:    { label: 'Trades',    icon: 'swap',   mod: Trades },
+  stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
+  empire:    { label: 'Empire',    icon: 'crown',  mod: Empire },
+  managers:  { label: 'Managers',  icon: 'users',  mod: Managers },
+  admin:     { label: 'Admin',     icon: 'cog',    mod: Admin },
+};
+const PRIMARY = Object.keys(VIEWS).filter((k) => VIEWS[k].primary);
+
+const state = { view: 'home' };
+const setState = (patch) => { Object.assign(state, patch); paint(); };
+
+const routeFromHash = () => {
+  const k = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+  return VIEWS[k] ? k : 'home';
+};
+const go = (view) => {
+  if (!VIEWS[view]) return;
+  location.hash = `#/${view}`;
+  closeSheet();
+};
+
+/* ---------- chrome ---------- */
+const brand = () => `
+  <div class="brand">
+    <div class="mark">SD</div>
+    <div class="txt"><h1>${esc(db.league.name)}</h1><small>${esc(db.league.tagline)}</small></div>
+  </div>`;
+
+function navButtons(keys, cls = '') {
+  return keys.map((k) => `<button class="${cls}" data-view="${k}"
+    ${state.view === k ? 'aria-current="page"' : ''}>${icon(VIEWS[k].icon)}<span>${VIEWS[k].label}</span></button>`).join('');
+}
+
+function shell() {
+  document.getElementById('boot-fallback')?.remove();
+  document.body.innerHTML = `
+  <div class="app">
+    <nav class="sidenav" aria-label="Sections">
+      ${brand()}
+      ${navButtons(Object.keys(VIEWS))}
+    </nav>
+    <div class="col">
+      <header class="topbar">
+        ${brand()}
+        <div class="season-pick">
+          <label for="seasonSel">Season</label>
+          <select id="seasonSel" aria-label="Season">
+            ${db.seasons.map((s) => `<option value="${s}" ${s === db.season ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </header>
+      <main id="main"></main>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Sections">
+    ${navButtons(PRIMARY)}
+    <button data-sheet>${icon('more')}<span>More</span></button>
+  </nav>
+  <div class="sheet-backdrop" id="sheetBd"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-label="More sections">
+    <div class="grab"></div>
+    ${Object.keys(VIEWS).filter((k) => !VIEWS[k].primary)
+      .map((k) => `<button class="sheet-item" data-view="${k}"
+        ${state.view === k ? 'aria-current="page"' : ''}>${icon(VIEWS[k].icon)}${VIEWS[k].label}</button>`).join('')}
+  </div>`;
+
+  document.body.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-view]');
+    if (b) go(b.dataset.view);
+    if (e.target.closest('[data-sheet]')) openSheet();
+  });
+  $('#sheetBd').addEventListener('click', closeSheet);
+  $('#seasonSel').addEventListener('change', (e) => { db.season = Number(e.target.value); });
+}
+
+const openSheet  = () => { $('#sheet').classList.add('open'); $('#sheetBd').classList.add('open'); };
+const closeSheet = () => { $('#sheet')?.classList.remove('open'); $('#sheetBd')?.classList.remove('open'); };
+
+/* ---------- render ---------- */
+function paint() {
+  const v = VIEWS[state.view];
+  const main = $('#main');
+  if (!main) return;
+  try {
+    main.innerHTML = v.mod.render(db, state);
+    v.mod.mount?.(main, db, go, setState);
+  } catch (err) {
+    console.error(err);
+    main.innerHTML = `<div class="card"><div class="card-bd">
+      <div class="banner">${icon('alert')}<div><b>${esc(v.label)} hit an error.</b><br>
+      <span style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(err.message)}</span></div></div></div></div>`;
+  }
+  document.querySelectorAll('[data-view]').forEach((b) => {
+    if (b.dataset.view === state.view) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  const sel = $('#seasonSel');
+  if (sel && Number(sel.value) !== db.season) sel.value = db.season;
+  main.scrollTop = 0;
+  window.scrollTo({ top: 0 });
+}
+
+/* ---------- boot ---------- */
+(async function boot() {
+  try {
+    await db.init();
+  } catch (err) {
+    document.getElementById('boot-fallback')?.remove();
+    document.body.innerHTML = `<div style="max-width:520px;margin:16vh auto;padding:26px;font-family:system-ui;color:#EAF0F6">
+      <h1 style="font-size:22px;margin-bottom:10px">Couldn't load the league data</h1>
+      <p style="color:#A9B6C6;line-height:1.6;font-size:14px">${esc(err.message)}</p>
+      ${globalThis.__SD_DATA ? '' : `<p style="color:#6D7C8E;line-height:1.6;font-size:13px">This app uses ES modules and
+      <code>fetch</code>, so it has to be served over http — opening <code>index.html</code> straight off the disk
+      won't work. Run <code style="color:#FF6B2C">python3 -m http.server 8000</code> in this folder and visit
+      <code>localhost:8000</code>, or double-click <code>sweaty-dyno.html</code> instead.</p>`}</div>`;
+    return;
+  }
+  state.view = routeFromHash();
+  shell();
+  paint();
+  window.addEventListener('hashchange', () => setState({ view: routeFromHash() }));
+  db.on(() => {
+    const sel = $('#seasonSel');
+    if (sel) sel.value = db.season;
+    paint();
+  });
+})();
+
+return {};
+})();
+
+</script>
+</body>
+</html>

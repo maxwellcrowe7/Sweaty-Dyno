@@ -1,0 +1,265 @@
+{
+  "_README": "A trade is a list of sides; each side is what that team RECEIVES. team:null with an alias means the participant has not been mapped to a team number yet (see managers.json > unresolvedAliases). Conditional trades carry status: open | met | expired.",
+  "trades": [
+    {
+      "id": "2025-01",
+      "season": 2025,
+      "date": "2025-07-10",
+      "sides": [
+        {
+          "team": 6,
+          "receives": [
+            "$10 FAAB"
+          ]
+        },
+        {
+          "team": 5,
+          "receives": [
+            "Kareem Hunt"
+          ]
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "2025-02",
+      "season": 2025,
+      "date": "2025-08-15",
+      "sides": [
+        {
+          "team": 6,
+          "receives": [
+            "2026 3rd (Noah)"
+          ]
+        },
+        {
+          "team": 1,
+          "receives": [
+            "Roschon Johnson"
+          ]
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "2025-03",
+      "season": 2025,
+      "date": "2025-10-15",
+      "sides": [
+        {
+          "team": 3,
+          "receives": [
+            "Breece Hall"
+          ]
+        },
+        {
+          "team": 1,
+          "receives": [
+            "Hassan Haskins",
+            "2026 1st (Alex)"
+          ]
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "2025-04",
+      "season": 2025,
+      "date": "2025-10-26",
+      "sides": [
+        {
+          "team": 6,
+          "receives": [
+            "Rashee Rice"
+          ]
+        },
+        {
+          "team": 10,
+          "receives": [
+            "2026 1st (Max)",
+            "2027 1st (Max)"
+          ]
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "2025-05",
+      "season": 2025,
+      "date": "2025-11-08",
+      "sides": [
+        {
+          "team": 4,
+          "receives": [
+            "Mark Andrews",
+            "Rhamondre Stevenson"
+          ]
+        },
+        {
+          "team": 10,
+          "receives": [
+            "2026 2nd (Andrew)"
+          ]
+        }
+      ],
+      "note": null
+    },
+    {
+      "id": "2025-06",
+      "season": 2025,
+      "date": "2025-12-07",
+      "sides": [
+        {
+          "team": 5,
+          "receives": [
+            "2026 3rd (Noah)"
+          ]
+        },
+        {
+          "team": 6,
+          "receives": [
+            "Kareem Hunt",
+            "Bam Knight"
+          ]
+        }
+      ],
+      "note": "Settled outcome of conditional trade cond-2025-01.",
+      "conditionalId": "cond-2025-01"
+    }
+  ],
+  "conditionalTrades": [
+    {
+      "id": "cond-2025-01",
+      "season": 2025,
+      "date": "2025-12-07",
+      "status": "met",
+      "sides": [
+        {
+          "team": 6,
+          "receives": [
+            "Kareem Hunt",
+            "Bam Knight"
+          ]
+        },
+        {
+          "team": 5,
+          "receives": [
+            "2026 3rd (maxcrowe)"
+          ]
+        }
+      ],
+      "condition": "If Max reaches the finals, the 2026 3rd (maxcrowe) will turn into 2026 3rd (NoahG621).",
+      "deadline": "2025-12-28",
+      "deadlineLabel": "End of the 2025 playoffs",
+      "resolvedDate": "2025-12-28",
+      "outcome": "Condition met — Max reached the finals, so the pick converted to the 2026 3rd (NoahG621).",
+      "settledTradeId": "2025-06"
+    }
+  ],
+  "waivers": [
+    {
+      "n": 1,
+      "season": 2025,
+      "date": "2025-07-12",
+      "team": 6,
+      "player": "Jacory Croskey-Merritt",
+      "faab": 6
+    },
+    {
+      "n": 2,
+      "season": 2025,
+      "date": "2025-07-12",
+      "team": 3,
+      "player": "Oronde Gadsden",
+      "faab": 26
+    },
+    {
+      "n": 3,
+      "season": 2025,
+      "date": "2025-07-12",
+      "team": 6,
+      "player": "Harold Fannin",
+      "faab": 17
+    },
+    {
+      "n": 4,
+      "season": 2025,
+      "date": "2025-07-12",
+      "team": 9,
+      "player": "Shedeur Sanders",
+      "faab": 0
+    },
+    {
+      "n": 5,
+      "season": 2025,
+      "date": "2025-07-12",
+      "team": 9,
+      "player": "Tory Horton",
+      "faab": 10
+    },
+    {
+      "n": 6,
+      "season": 2025,
+      "date": "2025-07-12",
+      "team": 10,
+      "player": "Woody Marks",
+      "faab": 5
+    },
+    {
+      "n": 7,
+      "season": 2025,
+      "date": "2025-07-12",
+      "team": 10,
+      "player": "Kyle Monangai",
+      "faab": 25
+    },
+    {
+      "n": 8,
+      "season": 2025,
+      "date": "2025-07-26",
+      "team": 5,
+      "player": "Isaac TeSlaa",
+      "faab": 9
+    },
+    {
+      "n": 9,
+      "season": 2025,
+      "date": "2025-07-26",
+      "team": 5,
+      "player": "Chimere Dike",
+      "faab": 25
+    },
+    {
+      "n": 10,
+      "season": 2025,
+      "date": "2025-08-09",
+      "team": 6,
+      "player": "Terrance Ferguson",
+      "faab": 0
+    },
+    {
+      "n": 11,
+      "season": 2025,
+      "date": "2025-08-30",
+      "team": 3,
+      "player": "Pat Bryant",
+      "faab": 0
+    },
+    {
+      "n": 12,
+      "season": 2025,
+      "date": "2025-09-10",
+      "team": 9,
+      "player": "Daniel Jones",
+      "faab": 0
+    },
+    {
+      "n": 13,
+      "season": 2025,
+      "date": "2025-09-17",
+      "team": 2,
+      "player": "Chris Rodriguez",
+      "faab": 9
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+/* ============================================================
+   DATA LAYER
+   Every read and write in the app goes through this module, so
+   swapping the JSON+localStorage adapter for Supabase later is a
+   change to ONE file. See the SupabaseAdapter stub at the bottom.
+   ============================================================ */
+
+import { SUPABASE, isConfigured } from './config.js';
+import { Supabase } from './supabase.js';
+
+const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players'];
+const LS_KEY = 'sweatydyno:overlay:v1';
+const LS_ADMIN = 'sweatydyno:admin';
+
+/* ---------- adapter: static JSON + localStorage overlay ---------- */
+class JsonAdapter {
+  constructor(base = 'data') { this.base = base; this.data = {}; this.overlay = {}; }
+
+  async load() {
+    // Single-file build inlines the data, so there is nothing to fetch.
+    if (globalThis.__SD_DATA) {
+      this.data = structuredClone(globalThis.__SD_DATA);
+      try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { this.overlay = {}; }
+      for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
+      return this.data;
+    }
+    const bust = `?v=${Date.now()}`;
+    const loaded = await Promise.all(FILES.map(async (f) => {
+      const res = await fetch(`${this.base}/${f}.json${bust}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Could not load ${f}.json (${res.status})`);
+      return [f, await res.json()];
+    }));
+    this.data = Object.fromEntries(loaded);
+    try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
+    catch { this.overlay = {}; }
+    for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
+    return this.data;
+  }
+
+  get(key) { return this.data[key]; }
+
+  async set(key, value) {
+    this.data[key] = value;
+    this.overlay[key] = value;
+    try { localStorage.setItem(LS_KEY, JSON.stringify(this.overlay)); }
+    catch (e) { console.warn('Local save failed', e); }
+  }
+
+  /** Unsaved-to-git changes living only in this browser. */
+  dirtyKeys() { return Object.keys(this.overlay); }
+  async revert() { this.overlay = {}; try { localStorage.removeItem(LS_KEY); } catch {} await this.load(); }
+}
+
+/* ---------- store ---------- */
+class Store {
+  constructor(adapter) { this.a = adapter; this.subs = new Set(); }
+
+  async init() {
+    await this.a.load();
+    this.a.onAuth?.(() => this.emit());   // re-render when the commish signs in/out
+    return this;
+  }
+
+  /** True when writes go straight to Supabase rather than a local overlay. */
+  get live() { return Boolean(this.a.live); }
+  get auth() { return this.live ? this.a : null; }
+  get backend() { return this.live ? 'supabase' : 'local'; }
+  get(k) { return this.a.get(k); }
+  dirtyKeys() { return this.a.dirtyKeys?.() ?? []; }
+  async revert() { await this.a.revert?.(); this.emit(); }
+
+  async set(k, v) { await this.a.set(k, v); this.emit(); }
+  /** Mutate a file in place: db.update('bank', b => { b.payouts.push(x) }) */
+  async update(k, fn) { const d = structuredClone(this.get(k)); fn(d); await this.set(k, d); return d; }
+
+  on(fn) { this.subs.add(fn); return () => this.subs.delete(fn); }
+  emit() { this.subs.forEach((f) => f()); }
+
+  /* ---------- edit mode ----------
+     With Supabase the gate is real: writes are refused by RLS unless a
+     signed-in user made them. Without it, this is a local convenience
+     switch only — the honest framing is "this browser", not "security". */
+  get isAdmin() {
+    if (this.live) return this.a.signedIn;
+    return localStorage.getItem(LS_ADMIN) === '1';
+  }
+  setAdmin(on) {
+    if (this.live) return;   // Supabase mode: sign in / out instead
+    on ? localStorage.setItem(LS_ADMIN, '1') : localStorage.removeItem(LS_ADMIN);
+    this.emit();
+  }
+
+  /* ================= derived selectors ================= */
+
+  get league() { return this.get('league'); }
+  get seasons() { return this.league.seasons; }
+
+  managerById(id) { return this.get('managers').managers.find((m) => m.id === id) || null; }
+
+  /** Every team, with the manager who owned it in `season`. */
+  teams(season = this.season) {
+    return this.get('managers').teams.map((t) => {
+      const own = [...t.ownership]
+        .filter((o) => o.fromSeason <= season && (o.toSeason == null || o.toSeason >= season))
+        .sort((a, b) => b.fromSeason - a.fromSeason)[0] || t.ownership.at(-1);
+      const m = own ? this.managerById(own.managerId) : null;
+      return {
+        number: t.number,
+        name: t.name || (m ? `${m.name}` : `Team ${t.number}`),
+        manager: m ? m.name : `Team ${t.number}`,
+        fullName: m ? (m.fullName || m.name) : `Team ${t.number}`,
+        sleeper: m?.sleeperUsername ?? null,
+        managerId: m?.id ?? null,
+        abandoned: !own,
+        ownership: t.ownership,
+      };
+    });
+  }
+  team(n, season = this.season) { return n == null ? null : this.teams(season).find((t) => t.number === Number(n)) || null; }
+
+  /** Current view season — set by the app shell, defaults to league config. */
+  get season() { return this._season ?? this.league.currentSeason; }
+  set season(s) { this._season = Number(s); this.emit(); }
+
+  /* ---------- bank ---------- */
+  bank(season = null) {
+    const b = this.get('bank');
+    const inSeason = (x) => season == null || x.season === season;
+    const payins = b.payins.filter(inSeason);
+    const payouts = b.payouts.filter(inSeason);
+    const collected = payins.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
+    const outstanding = payins.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+    const cur = this.league.currentSeason;
+    const owedNow = payins.filter((p) => !p.paid && p.season <= cur).reduce((a, p) => a + p.amount, 0);
+    const disbursed = payouts.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
+    const earmarked = payouts.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+    const byCat = {};
+    for (const p of payouts) byCat[p.category] = (byCat[p.category] || 0) + p.amount;
+    return {
+      payins, payouts, collected, outstanding, disbursed, earmarked,
+      owedNow, future: outstanding - owedNow,
+      cash: collected - disbursed,          // what should physically be in the bank
+      free: collected - disbursed - earmarked, // cash not spoken for by the empire pot
+      byCat,
+    };
+  }
+
+  /** Per-team ledger across all time (or one season). */
+  ledger(season = null) {
+    const b = this.get('bank');
+    return this.teams().map((t) => {
+      const ins = b.payins.filter((p) => p.team === t.number && (season == null || p.season === season));
+      const outs = b.payouts.filter((p) => p.team === t.number && (season == null || p.season === season));
+      const paidIn = ins.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
+      const owes = ins.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+      const owesNow = ins.filter((p) => !p.paid && p.season <= this.league.currentSeason).reduce((a, p) => a + p.amount, 0);
+      const won = outs.reduce((a, p) => a + p.amount, 0);
+      const cat = {};
+      for (const p of outs) cat[p.category] = (cat[p.category] || 0) + p.amount;
+      return { ...t, paidIn, owes, owesNow, won, net: won - paidIn, cat, seasonsPaid: ins.filter(p => p.paid).length };
+    });
+  }
+
+  /* ---------- empire ---------- */
+  empire() {
+    const b = this.get('bank'), L = this.league;
+    const pot = b.payouts.filter((p) => p.category === 'empire').reduce((a, p) => a + p.amount, 0);
+    const contributions = this.seasons.map((s) => ({
+      season: s,
+      amount: b.payouts.filter((p) => p.category === 'empire' && p.season === s).reduce((a, p) => a + p.amount, 0),
+    }));
+    const board = this.teams().map((t) => {
+      const rows = b.empirePoints.filter((e) => e.team === t.number);
+      const bySeason = Object.fromEntries(this.seasons.map((s) =>
+        [s, rows.filter((r) => r.season === s).reduce((a, r) => a + r.points, 0)]));
+      const total = Object.values(bySeason).reduce((a, x) => a + x, 0);
+      return { ...t, bySeason, total, pct: L.empireThreshold ? Math.min(1, total / L.empireThreshold) : 0 };
+    }).sort((a, b2) => b2.total - a.total || a.number - b2.number);
+    return { pot, contributions, board, threshold: L.empireThreshold, claimed: b.empirePot?.claimedBy ?? null };
+  }
+
+  /* ---------- minigames ---------- */
+  minigames(season = this.season) {
+    const s = this.get('minigames').seasons[String(season)];
+    return s || { games: [], guillotine: null, legacy: null };
+  }
+  minigameSpend(season = this.season) {
+    const s = this.minigames(season);
+    const won = (g) => Object.entries(g.results || {})
+      .filter(([, r]) => r?.team).reduce((a, [pl]) => a + (Number(g.payout?.[pl]) || 0), 0);
+    const paid = s.games.reduce((a, g) => a + won(g), 0)
+      + (s.guillotine?.winner ? (Number(s.guillotine.payout?.['1']) || 0) : 0);
+    const committed = s.games.reduce((a, g) => a + Object.values(g.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0), 0)
+      + Object.values(s.guillotine?.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0);
+    return { paid: paid + (s.legacy?.total || 0), committed, remaining: committed - paid };
+  }
+
+  /* ---------- stats ---------- */
+  stats(season = this.season) {
+    const st = this.get('stats');
+    const weekly = st.weekly.filter((w) => w.season === season);
+    const weeks = [...new Set(weekly.map((w) => w.week))].sort((a, b) => a - b);
+    const rows = this.teams(season).map((t) => {
+      const mine = weekly.filter((w) => w.team === t.number);
+      const total = mine.reduce((a, w) => a + w.points, 0);
+      const maxpf = st.maxPF.find((m) => m.season === season && m.team === t.number)?.points ?? null;
+      const scores = mine.map((w) => w.points);
+      const ceil = mine.filter((w) => w.maxPoints != null);
+      const maxTotal = ceil.reduce((a, w) => a + w.maxPoints, 0);
+      // Max PF is a whole-season figure, so the ratio is only meaningful once the
+      // weekly log actually covers the season. Partial data would report nonsense.
+      const fullSeason = mine.length >= (st.regularSeasonWeeks || 14);
+      return {
+        ...t, total, maxPF: maxpf, games: mine.length, fullSeason,
+        avg: mine.length ? total / mine.length : null,
+        high: scores.length ? Math.max(...scores) : null,
+        low: scores.length ? Math.min(...scores) : null,
+        efficiency: fullSeason && maxpf && total ? total / maxpf : null,
+        maxTotal: ceil.length ? Math.round(maxTotal * 100) / 100 : null,
+        left: ceil.length ? Math.round((maxTotal - total) * 100) / 100 : null,
+        byWeek: Object.fromEntries(mine.map((w) => [w.week, w.points])),
+        byWeekMax: Object.fromEntries(ceil.map((w) => [w.week, w.maxPoints])),
+      };
+    });
+    return { weeks, rows, weekly, hasData: weekly.length > 0,
+             hasMaxPF: rows.some((r) => r.maxPF != null),
+             hasEfficiency: rows.some((r) => r.efficiency != null),
+             hasCeiling: rows.some((r) => r.maxTotal != null),
+             regularSeasonWeeks: st.regularSeasonWeeks || 14 };
+  }
+
+  /* ---------- drafts / trades ---------- */
+  draft(season = this.season) { return this.get('drafts').rookie[String(season)] || null; }
+  draftSeasons() { return Object.keys(this.get('drafts').rookie).map(Number).sort((a, b) => b - a); }
+  position(player) { return this.get('players').positions[player] || null; }
+
+  trades(season = null) {
+    const t = this.get('trades');
+    const f = (x) => season == null || x.season === season;
+    return {
+      trades: t.trades.filter(f).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')),
+      conditional: t.conditionalTrades.filter(f),
+      waivers: t.waivers.filter(f).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.n - a.n),
+    };
+  }
+
+  /** Conditional status, re-evaluated against today so "expired" is never stale. */
+  conditionalStatus(c) {
+    if (c.status === 'met') return { key: 'met', label: 'Condition met', chip: 'mint' };
+    if (c.status === 'expired') return { key: 'expired', label: 'Expired', chip: 'red' };
+    if (c.deadline && new Date(c.deadline) < new Date())
+      return { key: 'expired', label: 'Deadline passed', chip: 'red' };
+    return { key: 'open', label: 'Open', chip: 'gold' };
+  }
+
+  /* ---------- health checks surfaced in Admin ---------- */
+  issues() {
+    const out = [];
+    const mg = this.get('managers');
+    if (mg._placeholder || mg._unconfirmed) out.push({ level: 'warn', text: 'Team numbers are still provisional. Confirm TARGET in tools/remap_teams.py and re-run it.' });
+    for (const a of mg.unresolvedAliases || [])
+      if (!a.managerId) out.push({ level: 'warn', text: `Alias "${a.alias}" is not mapped to a manager (seen in ${a.seenIn.join(', ')}).` });
+    const ids = Object.values(this.league.sleeper.leagueIds).filter(Boolean);
+    if (!ids.length) out.push({ level: 'info', text: 'No Sleeper league ID set yet — stat sync is disabled.' });
+    const d = this.dirtyKeys();
+    if (d.length) out.push({ level: 'edit', text: `Unexported local changes in: ${d.join(', ')}.` });
+    if (!this.live) out.push({ level: 'info', text: 'Running on the JSON files. Add your Supabase keys in js/config.js to save changes live.' });
+    return out;
+  }
+
+  /* ---------- export for committing back to the repo ---------- */
+  exportFiles() {
+    return FILES.map((f) => ({ name: `${f}.json`, json: JSON.stringify(this.get(f), null, 2) }));
+  }
+}
+
+export const db = new Store(isConfigured() ? new Supabase(SUPABASE) : new JsonAdapter());
+
+/* ============================================================
+   The Supabase adapter lives in js/supabase.js. Point js/config.js at
+   your project and the store above switches to it automatically — no
+   view code changes, because every read and write goes through here.
+   ============================================================ */

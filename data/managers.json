@@ -1,0 +1,258 @@
+{
+  "_README": "TEAM NUMBERS ARE THE PERMANENT KEY. A team keeps its history through ownership changes. To reassign a team, add an entry to that team's `ownership` array with a `fromSeason` -- do NOT edit past entries. To renumber teams wholesale, edit TARGET in tools/remap_teams.py and run it.",
+  "managers": [
+    {
+      "id": "andrew",
+      "name": "Andrew",
+      "aliases": [
+        "Andrew",
+        "Andrew Nissen",
+        "Andrewnissen1",
+        "Nissen"
+      ],
+      "sleeperUserId": "844305947303243776",
+      "sleeperUsername": "Andrewnissen1",
+      "usernameConfirmed": true,
+      "fullName": "Andrew Nissen"
+    },
+    {
+      "id": "matt",
+      "name": "Matt",
+      "aliases": [
+        "3bnet",
+        "Ebnet",
+        "Matt",
+        "Matt Ebnet"
+      ],
+      "sleeperUserId": "718948222990622720",
+      "sleeperUsername": "3bnet",
+      "usernameConfirmed": true,
+      "fullName": "Matt Ebnet"
+    },
+    {
+      "id": "sam",
+      "name": "Sam",
+      "aliases": [
+        "Kutina",
+        "Sam",
+        "Sam Kutina",
+        "kuti"
+      ],
+      "sleeperUserId": "869763754424983552",
+      "sleeperUsername": "kuti",
+      "usernameConfirmed": true,
+      "fullName": "Sam Kutina"
+    },
+    {
+      "id": "damon",
+      "name": "Damon",
+      "aliases": [
+        "Damon",
+        "Damon Weierke",
+        "Weierke",
+        "dweierke34"
+      ],
+      "sleeperUserId": "857503027475656704",
+      "sleeperUsername": "dweierke34",
+      "usernameConfirmed": true,
+      "fullName": "Damon Weierke"
+    },
+    {
+      "id": "neal",
+      "name": "Neal",
+      "aliases": [
+        "Bhakta",
+        "Neal",
+        "Neal Bhakta",
+        "Nealb17"
+      ],
+      "sleeperUserId": "869756757285781504",
+      "sleeperUsername": "Nealb17",
+      "usernameConfirmed": true,
+      "fullName": "Neal Bhakta"
+    },
+    {
+      "id": "alex",
+      "name": "Alex",
+      "aliases": [
+        "Alex",
+        "Alex Crowe",
+        "Crowe",
+        "alexrcrowe"
+      ],
+      "sleeperUserId": "737104291222937600",
+      "sleeperUsername": "alexrcrowe",
+      "usernameConfirmed": true,
+      "fullName": "Alex Crowe"
+    },
+    {
+      "id": "tyler",
+      "name": "Tyler",
+      "aliases": [
+        "Gopherkid14",
+        "Tyler",
+        "Tyler Waterson",
+        "Waterson"
+      ],
+      "sleeperUserId": "869758787958099968",
+      "sleeperUsername": "Gopherkid14",
+      "usernameConfirmed": true,
+      "fullName": "Tyler Waterson"
+    },
+    {
+      "id": "tanner",
+      "name": "Tanner",
+      "aliases": [
+        "Menge",
+        "Tanner",
+        "Tanner Menge",
+        "Tanner2431"
+      ],
+      "sleeperUserId": "733051981551271936",
+      "sleeperUsername": "Tanner2431",
+      "usernameConfirmed": true,
+      "fullName": "Tanner Menge"
+    },
+    {
+      "id": "noah",
+      "name": "Noah",
+      "aliases": [
+        "Goossen",
+        "Noah",
+        "Noah Goossen",
+        "NoahG621"
+      ],
+      "sleeperUserId": "879824429373603840",
+      "sleeperUsername": "NoahG621",
+      "usernameConfirmed": true,
+      "fullName": "Noah Goossen"
+    },
+    {
+      "id": "max",
+      "name": "Max",
+      "aliases": [
+        "Crowe",
+        "Max",
+        "Max Crowe",
+        "maxcrowe"
+      ],
+      "sleeperUserId": "859271870711709696",
+      "sleeperUsername": "maxcrowe",
+      "usernameConfirmed": true,
+      "fullName": "Max Crowe"
+    }
+  ],
+  "unresolvedAliases": [],
+  "teams": [
+    {
+      "number": 1,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "noah",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "neal",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "alex",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "andrew",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "damon",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "max",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "sam",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "tanner",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "tyler",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "name": null,
+      "ownership": [
+        {
+          "managerId": "matt",
+          "fromSeason": 2025,
+          "toSeason": null
+        }
+      ]
+    }
+  ]
+}

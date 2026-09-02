@@ -1,0 +1,579 @@
+{
+  "_README": "slotTeam = team that originally owned the pick slot. pickedBy = team that actually made the selection. traded=true when they differ.",
+  "rookie": {
+    "2025": {
+      "order": [
+        7,
+        8,
+        9,
+        5,
+        1,
+        4,
+        2,
+        3,
+        6,
+        10
+      ],
+      "rounds": 3,
+      "picks": [
+        {
+          "round": 1,
+          "slot": 1,
+          "pick": "1.01",
+          "slotTeam": 7,
+          "pickedBy": 7,
+          "player": "Ashton Jeanty",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 2,
+          "pick": "1.02",
+          "slotTeam": 8,
+          "pickedBy": 5,
+          "player": "Omarion Hampton",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 3,
+          "pick": "1.03",
+          "slotTeam": 9,
+          "pickedBy": 2,
+          "player": "TreVeyon Henderson",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 4,
+          "pick": "1.04",
+          "slotTeam": 5,
+          "pickedBy": 5,
+          "player": "Tetairoa McMillan",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 5,
+          "pick": "1.05",
+          "slotTeam": 1,
+          "pickedBy": 10,
+          "player": "Kaleb Johnson",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 6,
+          "pick": "1.06",
+          "slotTeam": 4,
+          "pickedBy": 10,
+          "player": "Quinshon Judkins",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 7,
+          "pick": "1.07",
+          "slotTeam": 2,
+          "pickedBy": 10,
+          "player": "RJ Harvey",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 8,
+          "pick": "1.08",
+          "slotTeam": 3,
+          "pickedBy": 10,
+          "player": "Travis Hunter",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 9,
+          "pick": "1.09",
+          "slotTeam": 6,
+          "pickedBy": 1,
+          "player": "Tyler Warren",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 10,
+          "pick": "1.10",
+          "slotTeam": 10,
+          "pickedBy": 6,
+          "player": "Emeka Egbuka",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 1,
+          "pick": "2.01",
+          "slotTeam": 7,
+          "pickedBy": 3,
+          "player": "Colston Loveland",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 2,
+          "pick": "2.02",
+          "slotTeam": 8,
+          "pickedBy": 9,
+          "player": "Matthew Golden",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 3,
+          "pick": "2.03",
+          "slotTeam": 9,
+          "pickedBy": 3,
+          "player": "Tre Harris",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 4,
+          "pick": "2.04",
+          "slotTeam": 5,
+          "pickedBy": 6,
+          "player": "Cam Skattebo",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 5,
+          "pick": "2.05",
+          "slotTeam": 1,
+          "pickedBy": 9,
+          "player": "Cameron Ward",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 6,
+          "pick": "2.06",
+          "slotTeam": 4,
+          "pickedBy": 5,
+          "player": "Luther Burden",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 7,
+          "pick": "2.07",
+          "slotTeam": 2,
+          "pickedBy": 7,
+          "player": "Jayden Higgins",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 8,
+          "pick": "2.08",
+          "slotTeam": 3,
+          "pickedBy": 10,
+          "player": "Jaydon Blue",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 9,
+          "pick": "2.09",
+          "slotTeam": 6,
+          "pickedBy": 1,
+          "player": "Jack Bech",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 10,
+          "pick": "2.10",
+          "slotTeam": 10,
+          "pickedBy": 6,
+          "player": "Bhayshul Tuten",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 1,
+          "pick": "3.01",
+          "slotTeam": 7,
+          "pickedBy": 2,
+          "player": "Jaylin Noel",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 2,
+          "pick": "3.02",
+          "slotTeam": 8,
+          "pickedBy": 10,
+          "player": "Kyle Williams",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 3,
+          "pick": "3.03",
+          "slotTeam": 9,
+          "pickedBy": 10,
+          "player": "Dylan Sampson",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 4,
+          "pick": "3.04",
+          "slotTeam": 5,
+          "pickedBy": 4,
+          "player": "Devin Neal",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 5,
+          "pick": "3.05",
+          "slotTeam": 1,
+          "pickedBy": 4,
+          "player": "Jaxson Dart",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 6,
+          "pick": "3.06",
+          "slotTeam": 4,
+          "pickedBy": 6,
+          "player": "Jalen Royals",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 7,
+          "pick": "3.07",
+          "slotTeam": 2,
+          "pickedBy": 2,
+          "player": "Jimmy Horn",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 8,
+          "pick": "3.08",
+          "slotTeam": 3,
+          "pickedBy": 5,
+          "player": "Jordan James",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 9,
+          "pick": "3.09",
+          "slotTeam": 6,
+          "pickedBy": 3,
+          "player": "Jalen Milroe",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 10,
+          "pick": "3.10",
+          "slotTeam": 10,
+          "pickedBy": 9,
+          "player": "Ollie Gordon",
+          "traded": true
+        }
+      ]
+    },
+    "2026": {
+      "order": [
+        1,
+        10,
+        2,
+        5,
+        3,
+        7,
+        9,
+        4,
+        8,
+        6
+      ],
+      "rounds": 3,
+      "picks": [
+        {
+          "round": 1,
+          "slot": 1,
+          "pick": "1.01",
+          "slotTeam": 1,
+          "pickedBy": 1,
+          "player": "Jeremiyah Love",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 2,
+          "pick": "1.02",
+          "slotTeam": 10,
+          "pickedBy": 10,
+          "player": "Carnell Tate",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 3,
+          "pick": "1.03",
+          "slotTeam": 2,
+          "pickedBy": 2,
+          "player": "Jordyn Tyson",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 4,
+          "pick": "1.04",
+          "slotTeam": 5,
+          "pickedBy": 5,
+          "player": "Makai Lemon",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 5,
+          "pick": "1.05",
+          "slotTeam": 3,
+          "pickedBy": 1,
+          "player": "KC Concepcion",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 6,
+          "pick": "1.06",
+          "slotTeam": 7,
+          "pickedBy": 7,
+          "player": "Jadarian Price",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 7,
+          "pick": "1.07",
+          "slotTeam": 9,
+          "pickedBy": 9,
+          "player": "Kenyon Sadiq",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 8,
+          "pick": "1.08",
+          "slotTeam": 4,
+          "pickedBy": 4,
+          "player": "Fernando Mendoza",
+          "traded": false
+        },
+        {
+          "round": 1,
+          "slot": 9,
+          "pick": "1.09",
+          "slotTeam": 8,
+          "pickedBy": 10,
+          "player": "Omar Cooper",
+          "traded": true
+        },
+        {
+          "round": 1,
+          "slot": 10,
+          "pick": "1.10",
+          "slotTeam": 6,
+          "pickedBy": 10,
+          "player": "Eli Stowers",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 1,
+          "pick": "2.01",
+          "slotTeam": 1,
+          "pickedBy": 1,
+          "player": "Denzel Boston",
+          "traded": false
+        },
+        {
+          "round": 2,
+          "slot": 2,
+          "pick": "2.02",
+          "slotTeam": 10,
+          "pickedBy": 10,
+          "player": "Jonah Coleman",
+          "traded": false
+        },
+        {
+          "round": 2,
+          "slot": 3,
+          "pick": "2.03",
+          "slotTeam": 2,
+          "pickedBy": 2,
+          "player": "Emmett Johnson",
+          "traded": false
+        },
+        {
+          "round": 2,
+          "slot": 4,
+          "pick": "2.04",
+          "slotTeam": 5,
+          "pickedBy": 5,
+          "player": "Chris Bell",
+          "traded": false
+        },
+        {
+          "round": 2,
+          "slot": 5,
+          "pick": "2.05",
+          "slotTeam": 3,
+          "pickedBy": 5,
+          "player": "Germie Bernard",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 6,
+          "pick": "2.06",
+          "slotTeam": 7,
+          "pickedBy": 7,
+          "player": "Elijah Sarratt",
+          "traded": false
+        },
+        {
+          "round": 2,
+          "slot": 7,
+          "pick": "2.07",
+          "slotTeam": 9,
+          "pickedBy": 9,
+          "player": "De'Zhaun Stribling",
+          "traded": false
+        },
+        {
+          "round": 2,
+          "slot": 8,
+          "pick": "2.08",
+          "slotTeam": 4,
+          "pickedBy": 10,
+          "player": "Chris Brazzell",
+          "traded": true
+        },
+        {
+          "round": 2,
+          "slot": 9,
+          "pick": "2.09",
+          "slotTeam": 8,
+          "pickedBy": 8,
+          "player": "Ty Simpson",
+          "traded": false
+        },
+        {
+          "round": 2,
+          "slot": 10,
+          "pick": "2.10",
+          "slotTeam": 6,
+          "pickedBy": 6,
+          "player": "Skyler Bell",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 1,
+          "pick": "3.01",
+          "slotTeam": 1,
+          "pickedBy": 5,
+          "player": "Antonio Williams",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 2,
+          "pick": "3.02",
+          "slotTeam": 10,
+          "pickedBy": 5,
+          "player": "Kaytron Allen",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 3,
+          "pick": "3.03",
+          "slotTeam": 2,
+          "pickedBy": 2,
+          "player": "Zachariah Branch",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 4,
+          "pick": "3.04",
+          "slotTeam": 5,
+          "pickedBy": 3,
+          "player": "Nicholas Singleton",
+          "traded": true
+        },
+        {
+          "round": 3,
+          "slot": 5,
+          "pick": "3.05",
+          "slotTeam": 3,
+          "pickedBy": 3,
+          "player": "Ted Hurst",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 6,
+          "pick": "3.06",
+          "slotTeam": 7,
+          "pickedBy": 7,
+          "player": "Malachi Fields",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 7,
+          "pick": "3.07",
+          "slotTeam": 9,
+          "pickedBy": 9,
+          "player": "Mike Washington",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 8,
+          "pick": "3.08",
+          "slotTeam": 4,
+          "pickedBy": 4,
+          "player": "Ja'Kobi Lane",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 9,
+          "pick": "3.09",
+          "slotTeam": 8,
+          "pickedBy": 8,
+          "player": "Brenen Thompson",
+          "traded": false
+        },
+        {
+          "round": 3,
+          "slot": 10,
+          "pick": "3.10",
+          "slotTeam": 6,
+          "pickedBy": 6,
+          "player": "Demond Claiborne",
+          "traded": false
+        }
+      ]
+    }
+  }
+}

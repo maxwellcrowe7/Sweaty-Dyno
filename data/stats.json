@@ -1,0 +1,1319 @@
+{
+  "_README": "`weekly` = points for by team by week (the source for every derived stat). `maxPF` = season Max Points For per team, imported from Sleeper or entered by hand. Sleeper sync appends to `weekly` and recomputes totals.",
+  "regularSeasonWeeks": 14,
+  "maxPF": [
+    {
+      "season": 2025,
+      "team": 1,
+      "points": 2056.85
+    },
+    {
+      "season": 2025,
+      "team": 2,
+      "points": 2132.2
+    },
+    {
+      "season": 2025,
+      "team": 3,
+      "points": 2272.3
+    },
+    {
+      "season": 2025,
+      "team": 4,
+      "points": 2538.45
+    },
+    {
+      "season": 2025,
+      "team": 5,
+      "points": 2188.0
+    },
+    {
+      "season": 2025,
+      "team": 6,
+      "points": 2441.45
+    },
+    {
+      "season": 2025,
+      "team": 7,
+      "points": 2413.75
+    },
+    {
+      "season": 2025,
+      "team": 8,
+      "points": 2320.8
+    },
+    {
+      "season": 2025,
+      "team": 9,
+      "points": 2520.95
+    },
+    {
+      "season": 2025,
+      "team": 10,
+      "points": 2057.3
+    }
+  ],
+  "weekly": [
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 1,
+      "points": 130.5,
+      "maxPoints": 172.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 2,
+      "points": 166.9,
+      "maxPoints": 173.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 3,
+      "points": 140.0,
+      "maxPoints": 155.75,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 4,
+      "points": 143.05,
+      "maxPoints": 185.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 5,
+      "points": 115.0,
+      "maxPoints": 126.2,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 6,
+      "points": 123.3,
+      "maxPoints": 150.5,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 7,
+      "points": 105.3,
+      "maxPoints": 169.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 8,
+      "points": 133.7,
+      "maxPoints": 174.0,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 9,
+      "points": 160.95,
+      "maxPoints": 185.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 1,
+      "team": 10,
+      "points": 99.35,
+      "maxPoints": 112.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 1,
+      "points": 73.4,
+      "maxPoints": 163.5,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 2,
+      "points": 104.4,
+      "maxPoints": 146.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 3,
+      "points": 151.5,
+      "maxPoints": 172.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 4,
+      "points": 182.7,
+      "maxPoints": 211.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 5,
+      "points": 117.6,
+      "maxPoints": 139.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 6,
+      "points": 135.7,
+      "maxPoints": 172.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 7,
+      "points": 120.05,
+      "maxPoints": 169.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 8,
+      "points": 125.9,
+      "maxPoints": 163.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 9,
+      "points": 167.35,
+      "maxPoints": 206.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 2,
+      "team": 10,
+      "points": 136.35,
+      "maxPoints": 147.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 1,
+      "points": 123.55,
+      "maxPoints": 134.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 2,
+      "points": 121.65,
+      "maxPoints": 137.25,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 3,
+      "points": 151.55,
+      "maxPoints": 162.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 4,
+      "points": 139.75,
+      "maxPoints": 209.9,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 5,
+      "points": 114.2,
+      "maxPoints": 165.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 6,
+      "points": 136.0,
+      "maxPoints": 161.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 7,
+      "points": 143.75,
+      "maxPoints": 175.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 8,
+      "points": 145.15,
+      "maxPoints": 157.65,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 9,
+      "points": 149.25,
+      "maxPoints": 169.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 3,
+      "team": 10,
+      "points": 120.6,
+      "maxPoints": 142.65,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 1,
+      "points": 175.2,
+      "maxPoints": 187.4,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 2,
+      "points": 132.95,
+      "maxPoints": 162.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 3,
+      "points": 121.0,
+      "maxPoints": 140.3,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 4,
+      "points": 164.4,
+      "maxPoints": 207.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 5,
+      "points": 147.45,
+      "maxPoints": 177.05,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 6,
+      "points": 206.6,
+      "maxPoints": 207.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 7,
+      "points": 148.15,
+      "maxPoints": 167.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 8,
+      "points": 142.85,
+      "maxPoints": 154.75,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 9,
+      "points": 163.85,
+      "maxPoints": 180.25,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 4,
+      "team": 10,
+      "points": 119.75,
+      "maxPoints": 187.85,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 1,
+      "points": 103.9,
+      "maxPoints": 163.4,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 2,
+      "points": 128.7,
+      "maxPoints": 140.3,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 3,
+      "points": 111.15,
+      "maxPoints": 114.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 4,
+      "points": 139.2,
+      "maxPoints": 179.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 5,
+      "points": 147.15,
+      "maxPoints": 157.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 6,
+      "points": 204.1,
+      "maxPoints": 214.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 7,
+      "points": 175.15,
+      "maxPoints": 225.9,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 8,
+      "points": 139.55,
+      "maxPoints": 165.75,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 9,
+      "points": 183.5,
+      "maxPoints": 186.4,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 5,
+      "team": 10,
+      "points": 124.7,
+      "maxPoints": 158.85,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 1,
+      "points": 123.35,
+      "maxPoints": 147.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 2,
+      "points": 124.2,
+      "maxPoints": 128.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 3,
+      "points": 122.85,
+      "maxPoints": 131.85,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 4,
+      "points": 154.75,
+      "maxPoints": 171.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 5,
+      "points": 138.5,
+      "maxPoints": 162.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 6,
+      "points": 185.7,
+      "maxPoints": 216.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 7,
+      "points": 113.55,
+      "maxPoints": 171.0,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 8,
+      "points": 119.5,
+      "maxPoints": 146.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 9,
+      "points": 172.35,
+      "maxPoints": 209.9,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 6,
+      "team": 10,
+      "points": 78.05,
+      "maxPoints": 97.75,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 1,
+      "points": 130.3,
+      "maxPoints": 147.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 2,
+      "points": 134.5,
+      "maxPoints": 166.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 3,
+      "points": 205.7,
+      "maxPoints": 226.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 4,
+      "points": 163.15,
+      "maxPoints": 176.55,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 5,
+      "points": 115.15,
+      "maxPoints": 126.25,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 6,
+      "points": 111.7,
+      "maxPoints": 148.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 7,
+      "points": 130.75,
+      "maxPoints": 211.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 8,
+      "points": 147.8,
+      "maxPoints": 180.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 9,
+      "points": 158.15,
+      "maxPoints": 190.05,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 7,
+      "team": 10,
+      "points": 141.7,
+      "maxPoints": 214.4,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 1,
+      "points": 106.9,
+      "maxPoints": 117.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 2,
+      "points": 183.6,
+      "maxPoints": 194.0,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 3,
+      "points": 148.6,
+      "maxPoints": 165.3,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 4,
+      "points": 157.0,
+      "maxPoints": 163.9,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 5,
+      "points": 161.0,
+      "maxPoints": 181.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 6,
+      "points": 114.7,
+      "maxPoints": 131.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 7,
+      "points": 145.95,
+      "maxPoints": 180.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 8,
+      "points": 169.3,
+      "maxPoints": 171.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 9,
+      "points": 144.9,
+      "maxPoints": 181.2,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 8,
+      "team": 10,
+      "points": 97.35,
+      "maxPoints": 143.75,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 1,
+      "points": 103.45,
+      "maxPoints": 154.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 2,
+      "points": 119.05,
+      "maxPoints": 163.4,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 3,
+      "points": 166.0,
+      "maxPoints": 173.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 4,
+      "points": 141.95,
+      "maxPoints": 179.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 5,
+      "points": 112.9,
+      "maxPoints": 176.0,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 6,
+      "points": 152.75,
+      "maxPoints": 182.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 7,
+      "points": 126.45,
+      "maxPoints": 144.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 8,
+      "points": 124.3,
+      "maxPoints": 150.4,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 9,
+      "points": 128.4,
+      "maxPoints": 189.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 9,
+      "team": 10,
+      "points": 130.8,
+      "maxPoints": 144.9,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 1,
+      "points": 121.05,
+      "maxPoints": 131.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 2,
+      "points": 128.1,
+      "maxPoints": 168.3,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 3,
+      "points": 132.05,
+      "maxPoints": 164.85,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 4,
+      "points": 131.9,
+      "maxPoints": 143.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 5,
+      "points": 117.7,
+      "maxPoints": 171.0,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 6,
+      "points": 144.3,
+      "maxPoints": 153.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 7,
+      "points": 190.4,
+      "maxPoints": 204.05,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 8,
+      "points": 120.5,
+      "maxPoints": 142.5,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 9,
+      "points": 170.8,
+      "maxPoints": 189.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 10,
+      "team": 10,
+      "points": 130.9,
+      "maxPoints": 153.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 1,
+      "points": 91.3,
+      "maxPoints": 123.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 2,
+      "points": 110.7,
+      "maxPoints": 138.65,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 3,
+      "points": 113.95,
+      "maxPoints": 161.65,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 4,
+      "points": 178.4,
+      "maxPoints": 232.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 5,
+      "points": 125.35,
+      "maxPoints": 140.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 6,
+      "points": 168.4,
+      "maxPoints": 192.2,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 7,
+      "points": 84.1,
+      "maxPoints": 157.65,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 8,
+      "points": 147.85,
+      "maxPoints": 158.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 9,
+      "points": 174.6,
+      "maxPoints": 187.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 11,
+      "team": 10,
+      "points": 86.95,
+      "maxPoints": 96.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 1,
+      "points": 107.15,
+      "maxPoints": 127.2,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 2,
+      "points": 97.55,
+      "maxPoints": 132.25,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 3,
+      "points": 178.9,
+      "maxPoints": 181.8,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 4,
+      "points": 144.35,
+      "maxPoints": 151.25,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 5,
+      "points": 126.5,
+      "maxPoints": 161.85,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 6,
+      "points": 169.35,
+      "maxPoints": 183.25,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 7,
+      "points": 129.2,
+      "maxPoints": 144.5,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 8,
+      "points": 182.15,
+      "maxPoints": 191.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 9,
+      "points": 92.75,
+      "maxPoints": 132.6,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 12,
+      "team": 10,
+      "points": 133.75,
+      "maxPoints": 146.25,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 1,
+      "points": 105.35,
+      "maxPoints": 146.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 2,
+      "points": 87.45,
+      "maxPoints": 121.85,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 3,
+      "points": 168.2,
+      "maxPoints": 198.65,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 4,
+      "points": 179.25,
+      "maxPoints": 198.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 5,
+      "points": 133.7,
+      "maxPoints": 169.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 6,
+      "points": 155.6,
+      "maxPoints": 164.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 7,
+      "points": 103.55,
+      "maxPoints": 149.95,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 8,
+      "points": 146.25,
+      "maxPoints": 175.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 9,
+      "points": 116.95,
+      "maxPoints": 144.15,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 13,
+      "team": 10,
+      "points": 147.1,
+      "maxPoints": 167.0,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 1,
+      "points": 107.95,
+      "maxPoints": 138.75,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 2,
+      "points": 145.3,
+      "maxPoints": 158.1,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 3,
+      "points": 118.35,
+      "maxPoints": 123.35,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 4,
+      "points": 112.15,
+      "maxPoints": 126.75,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 5,
+      "points": 94.8,
+      "maxPoints": 133.7,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 6,
+      "points": 127.4,
+      "maxPoints": 163.55,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 7,
+      "points": 115.85,
+      "maxPoints": 141.85,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 8,
+      "points": 175.25,
+      "maxPoints": 188.9,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 9,
+      "points": 134.75,
+      "maxPoints": 167.45,
+      "opponent": null,
+      "result": null
+    },
+    {
+      "season": 2025,
+      "week": 14,
+      "team": 10,
+      "points": 139.8,
+      "maxPoints": 143.8,
+      "opponent": null,
+      "result": null
+    }
+  ],
+  "lastSleeperSync": "2026-09-01 22:15"
+}
