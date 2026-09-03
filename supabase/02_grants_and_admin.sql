@@ -2,8 +2,9 @@
 -- Run this in the Supabase SQL Editor if you already ran schema.sql
 -- before the grants were added. Safe to run more than once.
 --
--- Replace BOTH copies of the email with the account you created under
--- Authentication -> Users (not your supabase.com dashboard login).
+-- Replace the email in step 2 with your Supabase account's email
+-- (the one listed under Authentication -> Users). That is the only edit
+-- needed -- step 3 lists every commissioner, so it takes no email.
 -- ============================================================
 
 -- 1. let the API roles touch the tables at all
