@@ -24,6 +24,10 @@ export function render(db) {
     <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>Commissioner</h3><div class="spacer"></div>
       <span class="chip ${admin ? 'mint' : ''}">${admin ? 'Signed in' : 'Viewing'}</span></div>
     <div class="card-bd">
+      ${!cloudErr && db.missingInCloud?.length ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+        <div><b>${db.missingInCloud.length} file${db.missingInCloud.length === 1 ? '' : 's'} not in the database yet.</b><br>
+        <span class="dim">${esc(db.missingInCloud.join(', '))}</span><br><br>
+        Showing the built-in copy. Sign in and hit <b>Publish</b> to upload.</div></div>` : ''}
       ${cloudErr ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
         <div><b>Not reading from Supabase yet.</b><br>
         <span style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(cloudErr)}</span><br><br>
@@ -35,8 +39,8 @@ export function render(db) {
                     the league sees it on their next refresh.`
                  : `Editing is still local until the data is published.`}
         </div>
-        ${!live ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
-          ${icon('down')} Publish local data to Supabase</button>
+        ${(!live || db.missingInCloud?.length) ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
+          ${icon('down')} Publish ${live ? 'missing files' : 'local data'} to Supabase</button>
           <div data-pubout class="s dim" style="font-size:12px;margin-bottom:11px"></div>` : ''}
         <button class="btn" data-signout>${icon('lock')} Sign out</button>
       ` : `

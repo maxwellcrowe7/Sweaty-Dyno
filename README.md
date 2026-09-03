@@ -178,6 +178,41 @@ back-filling history: the player dictionary downloads once and you see a diff fi
 > exactly. (Alex week 2 read 173.80 where Sleeper gives 172.80, most likely a typo.) The app
 > now keeps both figures per week, so nothing is lost either way.
 
+## Rulebook
+
+One rulebook per season, at `data/rules.json`. The 2025 book is transcribed from
+`2025 Sweaty Dyno Rules.pdf` — 14 sections, 159 rules.
+
+**Reading it.** A contents rail runs down the side (a drawer on phones) and jumps to any
+section, with a badge showing how many rules changed there this year. Sections and
+individual rules are linkable:
+
+```
+#/rules?year=2026                    the 2026 book
+#/rules?year=2026&tab=changes        just what changed
+#/rules?year=2026&sec=waivers        jump to a section
+#/rules?year=2026&item=waivers-faab  jump to one rule and flash it
+```
+
+**Writing next year's.** Copy the previous book forward, edit, publish:
+
+```bash
+python3 tools/new_rulebook.py 2027
+```
+
+or in the app: **Rules → Start next season's rulebook**. Either way it lands as a *draft*,
+visible only to a signed-in commissioner, until you hit Publish.
+
+**How changes get tracked.** Every rule carries a stable `id` that survives the copy. Edit
+the text and it reads as **Changed**; add a line and it reads as **New**; delete one and it
+shows under **Removed**. Changed rules get a word-level diff, so `$100` → `$125` shows
+exactly those two words rather than repainting the paragraph. Managers can read the whole
+book with changes marked inline, flip to **What changed** for just the deltas, or turn the
+marks off entirely.
+
+That only works because ids are preserved — which is why you should copy a season forward
+rather than paste in fresh text.
+
 ## Supabase backend
 
 Read is public; write requires the commissioner to sign in. The gate is enforced by

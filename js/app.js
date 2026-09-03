@@ -6,6 +6,7 @@ import * as Bank      from './views/bank.js';
 import * as Minigames from './views/minigames.js';
 import * as Drafts    from './views/drafts.js';
 import * as Trades    from './views/trades.js';
+import * as Rules     from './views/rules.js';
 import * as Stats     from './views/stats.js';
 import * as Empire    from './views/empire.js';
 import * as Managers  from './views/managers.js';
@@ -17,6 +18,7 @@ const VIEWS = {
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
   drafts:    { label: 'Draft',     icon: 'board',  mod: Drafts,    primary: true },
   trades:    { label: 'Trades',    icon: 'swap',   mod: Trades },
+  rules:     { label: 'Rules',     icon: 'book',   mod: Rules },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
   empire:    { label: 'Empire',    icon: 'crown',  mod: Empire },
   managers:  { label: 'Managers',  icon: 'users',  mod: Managers },
@@ -24,16 +26,27 @@ const VIEWS = {
 };
 const PRIMARY = Object.keys(VIEWS).filter((k) => VIEWS[k].primary);
 
-const state = { view: 'home' };
+const state = { view: 'home', params: {} };
 const setState = (patch) => { Object.assign(state, patch); paint(); };
 
-const routeFromHash = () => {
-  const k = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-  return VIEWS[k] ? k : 'home';
+/** `#/rules?year=2026&tab=changes&sec=waivers` -> { view, params }.
+    Keeping view state in the URL makes sections linkable and the back button work. */
+const parseHash = () => {
+  const raw = (location.hash || '').replace(/^#\/?/, '');
+  const [path, qs] = raw.split('?');
+  return {
+    view: VIEWS[path] ? path : 'home',
+    params: Object.fromEntries(new URLSearchParams(qs || '')),
+  };
 };
-const go = (view) => {
+const routeFromHash = () => parseHash().view;
+
+const go = (view, params = null) => {
   if (!VIEWS[view]) return;
-  location.hash = `#/${view}`;
+  const q = params && Object.keys(params).length
+    ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString()
+    : '';
+  location.hash = `#/${view}${q}`;
   closeSheet();
 };
 
@@ -99,9 +112,10 @@ function paint() {
   const v = VIEWS[state.view];
   const main = $('#main');
   if (!main) return;
+  if (main._spy) { window.removeEventListener('scroll', main._spy); main._spy = null; }
   try {
     main.innerHTML = v.mod.render(db, state);
-    v.mod.mount?.(main, db, go, setState);
+    v.mod.mount?.(main, db, go, setState, state.params || {});
   } catch (err) {
     console.error(err);
     main.innerHTML = `<div class="card"><div class="card-bd">
@@ -133,10 +147,10 @@ function paint() {
       <code>localhost:8000</code>, or double-click <code>sweaty-dyno.html</code> instead.</p>`}</div>`;
     return;
   }
-  state.view = routeFromHash();
+  Object.assign(state, parseHash());
   shell();
   paint();
-  window.addEventListener('hashchange', () => setState({ view: routeFromHash() }));
+  window.addEventListener('hashchange', () => setState(parseHash()));
   db.on(() => {
     const sel = $('#seasonSel');
     if (sel) sel.value = db.season;

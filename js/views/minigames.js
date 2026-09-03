@@ -26,7 +26,8 @@ function guillotineCard(db, G, S, admin) {
   <div class="card">
     <div class="card-hd">
       ${icon('blade')}
-      <div><h3>Guillotine</h3><div class="sub">from week ${G.startWeek}</div></div>
+      <div><h3>Guillotine</h3><div class="sub">from week ${G.startWeek}${
+        G.awardedInWeek && G.awardedInWeek !== G.startWeek ? ` &middot; paid wk ${G.awardedInWeek}` : ''}</div></div>
       <div class="spacer"></div>
       <span class="chip ${G.winner ? 'gold' : 'heat'}">${money(G.payout?.['1'] || 0)}</span>
     </div>
@@ -94,22 +95,45 @@ export function render(db) {
   <div class="section-title">Weekly slate</div>
   ${s.games.length ? s.games.map((g) => {
     const settled = g.results?.['1']?.team;
-    return `<div class="card" style="margin-bottom:10px">
+    const off = g.status === 'none' || g.status === 'canceled' || g.status === 'guillotine';
+    const title = g.status === 'none' ? 'No minigame this week'
+      : g.name ? esc(g.name) : 'Not set yet';
+    return `<div class="card" style="margin-bottom:10px${off ? ';opacity:.62' : ''}">
       <div class="card-hd">
-        <span class="chip ${settled ? 'mint' : 'ghost'}">WK ${g.week}</span>
+        <span class="chip ${settled ? 'mint' : off ? '' : 'ghost'}">WK ${g.week}</span>
         <div style="min-width:0">
-          <h3 style="font-size:15px;${g.name ? '' : 'color:var(--ink-3)'}">${g.name ? esc(g.name) : 'Not set yet'}</h3>
+          <h3 style="font-size:15px;${g.name && !off ? '' : 'color:var(--ink-3)'}">${title}</h3>
           ${g.rules ? `<div class="sub" style="text-transform:none;letter-spacing:0;font-size:11.5px">${esc(g.rules)}</div>` : ''}
         </div>
         <div class="spacer"></div>
+        ${g.status === 'canceled' ? '<span class="chip red">Cancelled</span>' : ''}
+        ${g.status === 'guillotine' ? '<span class="chip heat">See below</span>' : ''}
         ${admin ? `<button class="btn sm" data-edit="${g.id}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
       </div>
-      ${settled || Object.values(g.payout || {}).some((v) => v > 0)
+      ${g.note ? `<div class="card-bd" style="padding-top:0"><div class="s dim" style="font-size:12px">${esc(g.note)}</div></div>` : ''}
+      ${!off && (settled || Object.values(g.payout || {}).some((v) => v > 0))
         ? `<div class="card-bd" style="padding-top:4px;padding-bottom:4px">
             ${['1', '2', '3'].map((p) => resultRow(db, g, p)).join('')}</div>`
         : ''}
     </div>`;
   }).join('') : empty('No slate yet', `Add this season's minigames in Admin, or turn on edit mode to build the schedule week by week.`, 'dice')}
+
+  ${(s.awards || []).length ? `
+  <div class="section-title">Post-season awards</div>
+  <div class="card"><div class="card-bd flush"><div class="rows">
+    ${s.awards.map((a) => `<div class="row"${a.status === 'canceled' ? ' style="opacity:.6"' : ''}>
+      ${icon('trophy')}
+      <div class="grow">
+        <div class="t">${esc(a.name)}</div>
+        <div class="s" style="white-space:normal">${esc(a.rules || '')}</div>
+      </div>
+      ${a.status === 'canceled' ? '<span class="chip red">Cancelled</span>'
+        : a.result?.team ? `<div style="text-align:right">
+            <div>${teamTag(db.team(a.result.team), { num: false })}</div>
+            <div class="s" style="color:var(--heat);font-family:var(--f-display);font-weight:700">${money(a.payout)}</div>
+          </div>` : '<span class="chip ghost">undecided</span>'}
+    </div>`).join('')}
+  </div></div></div>` : ''}
 
   <div class="section-title">Elimination</div>
   ${guillotineCard(db, s.guillotine, S, admin)}
@@ -213,6 +237,7 @@ export async function syncPayouts(db, season) {
   for (const g of s.games)
     for (const p of ['1', '2', '3']) add(g.results?.[p]?.team, Number(g.payout?.[p]) || 0);
   if (s.guillotine?.winner) add(s.guillotine.winner, Number(s.guillotine.payout?.['1']) || 0);
+  for (const a of s.awards || []) add(a.result?.team, Number(a.payout) || 0);
 
   await db.update('bank', (b) => {
     b.payouts = b.payouts.filter((p) => !(p.season === season && p.category === 'minigame'));

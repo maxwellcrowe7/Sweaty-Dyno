@@ -8,7 +8,7 @@
 import { SUPABASE, isConfigured } from './config.js';
 import { Supabase } from './supabase.js';
 
-const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players'];
+const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players', 'rules'];
 const LS_KEY = 'sweatydyno:overlay:v1';
 const LS_ADMIN = 'sweatydyno:admin';
 
@@ -67,6 +67,21 @@ class Store {
       this.cloudError = err.message;
       this.a = new JsonAdapter();
       await this.a.load();
+    }
+    // A key the database has never seen — a feature shipped after the last
+    // publish — would otherwise just vanish from the UI. Backfill it from the
+    // bundled JSON and tell Admin it needs uploading.
+    this.missingInCloud = [];
+    if (this.live) {
+      const gaps = FILES.filter((f) => this.get(f) == null);
+      if (gaps.length) {
+        const local = new JsonAdapter();
+        try {
+          await local.load();
+          for (const f of gaps) if (local.get(f) != null) this.a.data[f] = local.get(f);
+          this.missingInCloud = gaps.filter((f) => this.get(f) != null);
+        } catch { /* offline: the gap simply stays */ }
+      }
     }
     this.cloud?.onAuth?.(() => this.emit());       // re-render when the commish signs in/out
     return this;
@@ -196,14 +211,31 @@ class Store {
       season: s,
       amount: b.payouts.filter((p) => p.category === 'empire' && p.season === s).reduce((a, p) => a + p.amount, 0),
     }));
+    // Two ways to win: 2 titles, or 1 title AND the points threshold.
+    // Points alone never claim it, so progress has to be measured against both.
+    const titlesNeeded = L.empireTitlesToWin ?? 2;
     const board = this.teams().map((t) => {
       const rows = b.empirePoints.filter((e) => e.team === t.number);
       const bySeason = Object.fromEntries(this.seasons.map((s) =>
         [s, rows.filter((r) => r.season === s).reduce((a, r) => a + r.points, 0)]));
       const total = Object.values(bySeason).reduce((a, x) => a + x, 0);
-      return { ...t, bySeason, total, pct: L.empireThreshold ? Math.min(1, total / L.empireThreshold) : 0 };
-    }).sort((a, b2) => b2.total - a.total || a.number - b2.number);
-    return { pot, contributions, board, threshold: L.empireThreshold, claimed: b.empirePot?.claimedBy ?? null };
+      const titles = (b.finishes || []).filter((f) => f.team === t.number && f.place === 1).length;
+      const ptsPct = L.empireThreshold ? Math.min(1, total / L.empireThreshold) : 0;
+      const titlePct = titlesNeeded ? Math.min(1, titles / titlesNeeded) : 0;
+      const eligible = !L.empireRequiresTitle || titles >= 1;
+      return {
+        ...t, bySeason, total, titles, eligible,
+        needsTitle: L.empireRequiresTitle && titles === 0,
+        titlesToGo: Math.max(0, titlesNeeded - titles),
+        pointsToGo: Math.max(0, (L.empireThreshold || 0) - total),
+        // closest of the two routes
+        pct: Math.max(titlePct, eligible ? ptsPct : 0),
+        wins: titles >= titlesNeeded || (eligible && total >= (L.empireThreshold || Infinity)),
+      };
+    }).sort((a, b2) => b2.pct - a.pct || b2.total - a.total || a.number - b2.number);
+    return { pot, contributions, board, threshold: L.empireThreshold,
+             titlesToWin: titlesNeeded, requiresTitle: Boolean(L.empireRequiresTitle),
+             claimed: b.empirePot?.claimedBy ?? null };
   }
 
   /* ---------- minigames ---------- */
@@ -216,9 +248,11 @@ class Store {
     const won = (g) => Object.entries(g.results || {})
       .filter(([, r]) => r?.team).reduce((a, [pl]) => a + (Number(g.payout?.[pl]) || 0), 0);
     const paid = s.games.reduce((a, g) => a + won(g), 0)
-      + (s.guillotine?.winner ? (Number(s.guillotine.payout?.['1']) || 0) : 0);
+      + (s.guillotine?.winner ? (Number(s.guillotine.payout?.['1']) || 0) : 0)
+      + (s.awards || []).reduce((a, x) => a + (x.result?.team ? Number(x.payout) || 0 : 0), 0);
     const committed = s.games.reduce((a, g) => a + Object.values(g.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0), 0)
-      + Object.values(s.guillotine?.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0);
+      + Object.values(s.guillotine?.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0)
+      + (s.awards || []).reduce((a, x) => a + (Number(x.payout) || 0), 0);
     return { paid: paid + (s.legacy?.total || 0), committed, remaining: committed - paid };
   }
 
@@ -254,6 +288,86 @@ class Store {
              hasEfficiency: rows.some((r) => r.efficiency != null),
              hasCeiling: rows.some((r) => r.maxTotal != null),
              regularSeasonWeeks: st.regularSeasonWeeks || 14 };
+  }
+
+  /* ---------- rules ---------- */
+
+  /** Seasons with a rulebook, newest first. Drafts are hidden unless signed in. */
+  rulebookSeasons() {
+    const r = this.get('rules')?.seasons || {};
+    return Object.keys(r).map(Number)
+      .filter((s) => r[String(s)].status === 'published' || this.isAdmin)
+      .sort((a, b) => b - a);
+  }
+
+  rulebook(season) {
+    const b = this.get('rules')?.seasons?.[String(season)];
+    if (!b) return null;
+    if (b.status !== 'published' && !this.isAdmin) return null;
+    return { season: Number(season), ...b };
+  }
+
+  /** The rulebook a given season was copied from — the diff baseline. */
+  previousRulebook(season) {
+    const b = this.get('rules')?.seasons?.[String(season)];
+    if (!b) return null;
+    if (b.basedOn) return this.get('rules').seasons[String(b.basedOn)]
+      ? { season: Number(b.basedOn), ...this.get('rules').seasons[String(b.basedOn)] } : null;
+    const earlier = Object.keys(this.get('rules').seasons).map(Number)
+      .filter((s) => s < Number(season)).sort((a, b2) => b2 - a)[0];
+    return earlier == null ? null : { season: earlier, ...this.get('rules').seasons[String(earlier)] };
+  }
+
+  /**
+   * What changed between a rulebook and the one it was based on.
+   * Items carry stable ids, so an edit reads as `changed` rather than as a
+   * remove plus an add — which is the whole point of copying last year forward.
+   */
+  rulesDiff(season) {
+    const cur = this.rulebook(season);
+    const prev = this.previousRulebook(season);
+    if (!cur || !prev) return null;
+
+    const flat = (bk) => {
+      const m = new Map();
+      for (const sec of bk.sections)
+        for (const it of sec.items) m.set(it.id, { ...it, section: sec.id, sectionTitle: sec.title });
+      return m;
+    };
+    const A = flat(prev), B = flat(cur);
+
+    const added = [], changed = [], removed = [];
+    for (const [id, it] of B) {
+      const was = A.get(id);
+      if (!was) added.push(it);
+      else if (was.text !== it.text) changed.push({ ...it, was: was.text });
+    }
+    for (const [id, it] of A) if (!B.has(id)) removed.push(it);
+
+    const prevSecs = new Set(prev.sections.map((s) => s.id));
+    const curSecs = new Set(cur.sections.map((s) => s.id));
+    const sectionsAdded = cur.sections.filter((s) => !prevSecs.has(s.id));
+    const sectionsRemoved = prev.sections.filter((s) => !curSecs.has(s.id));
+
+    const byId = new Map();
+    for (const it of added) byId.set(it.id, 'added');
+    for (const it of changed) byId.set(it.id, 'changed');
+    const wasById = new Map(changed.map((c) => [c.id, c.was]));
+
+    const perSection = {};
+    for (const sec of cur.sections) {
+      const a = added.filter((x) => x.section === sec.id).length;
+      const c = changed.filter((x) => x.section === sec.id).length;
+      const d = removed.filter((x) => x.section === sec.id).length;
+      if (a || c || d) perSection[sec.id] = { added: a, changed: c, removed: d, total: a + c + d };
+    }
+
+    return {
+      from: prev.season, to: cur.season,
+      added, changed, removed, sectionsAdded, sectionsRemoved,
+      byId, wasById, perSection,
+      count: added.length + changed.length + removed.length,
+    };
   }
 
   /* ---------- drafts / trades ---------- */
@@ -292,6 +406,8 @@ class Store {
     const d = this.dirtyKeys();
     if (d.length) out.push({ level: 'edit', text: `Unexported local changes in: ${d.join(', ')}.` });
     if (this.cloudError) out.push({ level: 'warn', text: `Supabase is configured but not serving data yet: ${this.cloudError}` });
+    if (this.missingInCloud?.length) out.push({ level: 'warn',
+      text: `Not in the database yet: ${this.missingInCloud.join(', ')}. Showing the built-in copy — sign in and Publish to upload.` });
     else if (!this.live) out.push({ level: 'info', text: 'Running on the JSON files. Add your Supabase keys in js/config.js to save changes live.' });
     return out;
   }

@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 D = ROOT / 'data'
-FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players']
+FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players', 'rules']
 
 URL = (os.environ.get('SUPABASE_URL') or '').rstrip('/')
 KEY = os.environ.get('SUPABASE_SERVICE_KEY') or ''

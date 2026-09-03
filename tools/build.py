@@ -12,13 +12,13 @@ import json, re, sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players']
+DATA = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players', 'rules']
 
 # Dependency order: a module must appear after everything it imports.
 ORDER = [
     'js/config.js', 'js/supabase.js', 'js/util.js', 'js/db.js', 'js/sleeper.js',
     'js/views/dashboard.js', 'js/views/bank.js', 'js/views/minigames.js',
-    'js/views/drafts.js', 'js/views/trades.js', 'js/views/stats.js',
+    'js/views/drafts.js', 'js/views/trades.js', 'js/views/stats.js', 'js/views/rules.js',
     'js/views/empire.js', 'js/views/managers.js', 'js/views/admin.js',
     'js/app.js',
 ]

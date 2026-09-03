@@ -1,5 +1,5 @@
 {
-  "_README": "One entry per week per season. `name:null` means the week's minigame has not been set yet. `results` maps place -> {team, value, note}; `value` is the free-text stat/player that won it. Payout maps place -> dollars; set 2nd/3rd to 0 for winner-take-all. The guillotine is a separate multi-week object.",
+  "_README": "One entry per week per season. `status`: final | scheduled | none (no minigame that week) | canceled. `results` maps place -> {team, value, note}; `value` is the free-text stat or player that won it. `awards` are post-season, league-voted, and not tied to a week. The guillotine is a separate multi-week object: it runs from `startWeek` and is paid out in `week`. A week whose status is `guillotine` is a pointer to the guillotine object, not a separate payout — it exists so the week is not missing from the slate.",
   "defaults": {
     "weeklyPayout": {
       "1": 10,
@@ -11,22 +11,484 @@
   },
   "seasons": {
     "2025": {
-      "games": [],
-      "guillotine": null,
-      "legacy": {
-        "note": "2025 minigames were tracked only as season totals in the original spreadsheet — week-by-week results were not recorded. These totals are what reconciles against the bank ($170 paid).",
-        "totalsByTeam": {
-          "4": 30,
-          "10": 30,
-          "7": 20,
-          "5": 10,
-          "2": 20,
-          "3": 10,
-          "9": 30,
-          "6": 20
+      "games": [
+        {
+          "id": "2025-w01",
+          "week": 1,
+          "name": "Bench Bandit",
+          "rules": "Highest scoring bench player",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 3,
+              "value": "37.95 — Justin Herbert"
+            },
+            "2": null,
+            "3": null
+          }
         },
-        "total": 170
-      }
+        {
+          "id": "2025-w02",
+          "week": 2,
+          "name": "Boat Raced",
+          "rules": "Winner of the highest matchup point total",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 4,
+              "value": "319.05 combined points with Matt"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w03",
+          "week": 3,
+          "name": "On the Hot Seat",
+          "rules": "Manager whose weeks 1–3 max PF vs. total points gap is the greatest",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 7,
+              "value": "145.7 point gap"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w04",
+          "week": 4,
+          "name": "Ground and Pound",
+          "rules": "Most cumulative points by top 2 started RBs (RB or FLEX)",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 9,
+              "value": "50.3 — Josh Jacobs and De’Von Achane"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w05",
+          "week": 5,
+          "name": "Mass Destruction",
+          "rules": "Greatest margin of victory",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 9,
+              "value": "79.6 point win over Noah"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w06",
+          "week": 6,
+          "name": "Reading the Future",
+          "rules": "Closest to max PF on the week. Tie goes to the higher overall score",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 2,
+              "value": "4.2 point difference"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w07",
+          "week": 7,
+          "name": "Lucky 7s",
+          "rules": "Most instances of ‘7’ in a starting lineup. Tie goes to higher scorer",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 10,
+              "value": "5 occurrences"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w08",
+          "week": 8,
+          "name": "National Tight End Day",
+          "rules": "Highest composite TE score in starting lineup",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 2,
+              "value": "52.6"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w09",
+          "week": 9,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w10",
+          "week": 10,
+          "name": "Guillotine",
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "guillotine",
+          "note": "Runs from week 1 and pays out here — see the Guillotine card below.",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w11",
+          "week": 11,
+          "name": "Backpacked",
+          "rules": "Highest-scoring single player among winning teams",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 9,
+              "value": "54.7 — Josh Allen"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w12",
+          "week": 12,
+          "name": "Nail-Biter",
+          "rules": "Smallest margin of victory",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 7,
+              "value": "22.05"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w13",
+          "week": 13,
+          "name": "Pity Points",
+          "rules": "Highest scoring losing team",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 5,
+              "value": "133.7"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w14",
+          "week": 14,
+          "name": "Air Raid",
+          "rules": "Highest total receiving yards",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 6,
+              "value": "537 yards"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w15",
+          "week": 15,
+          "name": "Endzone Livin’",
+          "rules": "Most total touchdowns scored",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "note": null,
+          "results": {
+            "1": {
+              "team": 10,
+              "value": "9 — including a fumble TD"
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w16",
+          "week": 16,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w17",
+          "week": 17,
+          "name": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-w18",
+          "week": 18,
+          "name": "“Too little, too late, Harry”",
+          "rules": "Highest scoring non-playoff team",
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "canceled",
+          "note": "The league setup prevents managers from setting a week 18 lineup.",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        }
+      ],
+      "guillotine": {
+        "id": "2025-guillotine",
+        "week": 10,
+        "name": "Guillotine",
+        "startWeek": 1,
+        "rules": "Lowest scoring manager is chopped every week until one remains. Paid out in week 10.",
+        "payout": {
+          "1": 10
+        },
+        "status": "final",
+        "entrants": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "eliminations": [
+          {
+            "week": 1,
+            "team": 10,
+            "points": 99.35
+          },
+          {
+            "week": 2,
+            "team": 1,
+            "points": 73.4
+          },
+          {
+            "week": 3,
+            "team": 5,
+            "points": 114.2
+          },
+          {
+            "week": 4,
+            "team": 3,
+            "points": 121.0
+          },
+          {
+            "week": 5,
+            "team": 2,
+            "points": 128.7
+          },
+          {
+            "week": 6,
+            "team": 7,
+            "points": 113.55
+          },
+          {
+            "week": 7,
+            "team": 6,
+            "points": 111.7
+          },
+          {
+            "week": 8,
+            "team": 9,
+            "points": 144.9
+          },
+          {
+            "week": 9,
+            "team": 8,
+            "points": 124.3
+          }
+        ],
+        "winner": 4,
+        "awardedInWeek": 10
+      },
+      "awards": [
+        {
+          "id": "2025-aw1",
+          "name": "Trade of the Year",
+          "rules": "Biggest ‘win’ in a trade (value bump)",
+          "payout": 10,
+          "status": "final",
+          "result": {
+            "team": 10,
+            "value": null
+          }
+        },
+        {
+          "id": "2025-aw2",
+          "name": "Waiver Wire Wizard",
+          "rules": "Best waiver wire additions. Emphasis on starting-lineup impact",
+          "payout": 10,
+          "status": "final",
+          "result": {
+            "team": 6,
+            "value": null
+          }
+        },
+        {
+          "id": "2025-aw3",
+          "name": "League Favorite Manager",
+          "rules": "Who are we most thankful for?",
+          "payout": 10,
+          "status": "final",
+          "result": {
+            "team": 4,
+            "value": null
+          }
+        },
+        {
+          "id": "2025-aw4",
+          "name": "GM Jiu-Jitsu",
+          "rules": "Roster moves and start/sit decisions deemed most positively impactful",
+          "payout": 0,
+          "status": "canceled",
+          "result": null
+        }
+      ],
+      "legacy": null
     },
     "2026": {
       "games": [
@@ -259,7 +721,7 @@
         "startWeek": 9,
         "rules": "Starting week 9, the lowest-scoring team still in the pool is chopped each week. Last manager standing takes the pot.",
         "payout": {
-          "1": 30
+          "1": 10
         },
         "status": "scheduled",
         "entrants": [
@@ -275,9 +737,11 @@
           6
         ],
         "eliminations": [],
-        "winner": null
+        "winner": null,
+        "awardedInWeek": 9
       },
-      "legacy": null
+      "legacy": null,
+      "awards": []
     }
   }
 }

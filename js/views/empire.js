@@ -19,7 +19,7 @@ export function render(db) {
       text-shadow:0 0 30px rgba(156,140,250,.35)">${money(e.pot)}</div>
     <div class="s dim" style="font-size:12.5px">${e.claimed
       ? `Claimed by <b style="color:var(--gold)">${esc(db.team(e.claimed)?.manager ?? '')}</b>`
-      : `Rolls over until someone reaches <b style="color:var(--violet)">${e.threshold} empire points</b>`}</div>
+      : `Rolls over until a manager wins <b style="color:var(--violet)">${e.titlesToWin} titles</b>, or <b style="color:var(--violet)">1 title and ${e.threshold}+ points</b>`}</div>
     <div style="margin-top:18px;display:flex;gap:3px;align-items:flex-end;height:60px;justify-content:center">
       ${growth.map((g) => `
         <div style="flex:1;max-width:56px;display:flex;flex-direction:column;align-items:center;gap:5px">
@@ -35,7 +35,7 @@ export function render(db) {
   <div class="section-title">The race</div>
   <div class="card">
     <div class="card-hd"><h3>Empire points</h3><div class="spacer"></div>
-      <span class="chip violet">${e.threshold} to win</span></div>
+      <span class="chip violet">${e.titlesToWin} titles &middot; or 1 + ${e.threshold}</span></div>
     <div class="card-bd flush"><div class="rows">
       ${e.board.map((t, i) => `
         <div class="row">
@@ -44,11 +44,18 @@ export function render(db) {
           <div class="grow">
             <div class="t">${teamTag(t)}</div>
             <div class="meter violet" style="margin-top:7px"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div>
-            <div class="s" style="margin-top:5px">${t.total
-              ? `${e.threshold - t.total} more to claim ${money(e.pot)}`
-              : 'yet to score'}</div>
+            <div class="s" style="margin-top:5px">${
+              t.wins ? `<b style="color:var(--gold)">Claims ${money(e.pot)}</b>`
+              : t.titles >= 1
+                ? `${t.titles} title${t.titles === 1 ? '' : 's'} &middot; ${t.titlesToGo} more title or ${t.pointsToGo} more points`
+              : t.total
+                ? `${t.pointsToGo} points to go &mdash; but a title is required to claim`
+                : 'yet to score'}</div>
           </div>
-          <div class="val" style="color:${t.total ? 'var(--violet)' : 'var(--ink-3)'}">${t.total}</div>
+          <div style="text-align:right;flex:none">
+            <div class="val" style="color:${t.total ? 'var(--violet)' : 'var(--ink-3)'}">${t.total}</div>
+            ${t.titles ? `<div class="s" style="color:var(--gold);font-size:11px">${'★'.repeat(t.titles)}</div>` : ''}
+          </div>
         </div>`).join('')}
     </div></div>
     ${leader && chase ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
