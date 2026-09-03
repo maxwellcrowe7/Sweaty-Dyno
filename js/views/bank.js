@@ -8,6 +8,11 @@ const CATS = {
 
 const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 
+/* Which panels are open. Module-scoped so it survives the re-render that an edit
+   triggers — expanding a row, changing a value and watching the row collapse
+   would be maddening. Not in the URL: this is transient, not worth linking to. */
+const UI = { rates: false, seasons: null, lines: new Set() };
+
 /* ---------- payouts, one collapsible block per season ---------- */
 function seasonPayouts(db, season, open) {
   const b = db.get('bank');
@@ -43,7 +48,7 @@ function seasonPayouts(db, season, open) {
       ${lines.map((l) => {
         const c = CATS[l.cat];
         const can = l.rows.length > 0;
-        return `<div class="pay-line${can ? ' can' : ''}">
+        return `<div class="pay-line${can ? ' can' : ''}${UI.lines.has(`${season}:${l.cat}`) ? ' open' : ''}">
           <button class="pay-hd" ${can ? `data-line="${season}:${l.cat}"` : 'disabled'}>
             ${can ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
             <span class="chip ${c.chip}">${c.label}</span>
@@ -66,9 +71,9 @@ export function render(db, state = {}) {
   const teams = db.teams();
   const bank = db.get('bank');
   const admin = db.isAdmin;
-  const P = state.params || {};
-  const openSeasons = new Set((P.open || String(db.league.currentSeason)).split(',').filter(Boolean).map(Number));
-  const ratesOpen = P.rates === '1';
+  if (UI.seasons === null) UI.seasons = new Set([db.league.currentSeason]);
+  const openSeasons = UI.seasons;
+  const ratesOpen = UI.rates;
 
   const paidFor = (t, s) => bank.payins.find((p) => p.team === t && p.season === s)?.paid || 0;
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
@@ -103,18 +108,14 @@ export function render(db, state = {}) {
     <button class="acc-hd sub" data-rates aria-expanded="${ratesOpen}">
       ${icon('chev', 'acc-caret')}
       <span>Buy-in per season</span>
-      <div class="spacer" style="margin-left:auto"></div>
-      <span class="chip ghost">${money(db.buyIn(db.league.currentSeason))} in ${db.league.currentSeason}</span>
     </button>
     <div class="acc-bd${ratesOpen ? ' open' : ''}">
-      <div class="card-bd" style="padding-top:6px">
+      <div class="card-bd" style="padding-top:4px">
         <div class="rates">
           ${seasons.map((s) => `<label class="rate">
             <span>${s}</span>
-            ${admin ? `<input type="number" min="0" step="5" inputmode="numeric"
-                        data-rate="${s}" value="${db.buyIn(s)}">`
+            ${admin ? `<input type="text" inputmode="decimal" data-rate="${s}" value="${money(db.buyIn(s))}">`
                     : `<b>${money(db.buyIn(s))}</b>`}
-            <i>&times;${teams.length} = ${money(seasonDue(s))}</i>
           </label>`).join('')}
         </div>
       </div>
@@ -133,8 +134,8 @@ export function render(db, state = {}) {
               const due = db.buyIn(s);
               const cls = v >= due && due > 0 ? 'full' : v > 0 ? 'part' : 'none';
               return `<td class="n cell-${cls}">${admin
-                ? `<input class="cell-in" type="number" min="0" step="5" inputmode="numeric"
-                     data-pay="${t.number}:${s}" value="${v || ''}" placeholder="0"
+                ? `<input class="cell-in" type="text" inputmode="decimal"
+                     data-pay="${t.number}:${s}" value="${v ? money(v) : ''}" placeholder="&mdash;"
                      aria-label="${esc(t.manager)} ${s}">`
                 : v ? money(v) : '<span class="dimmer">&mdash;</span>'}</td>`;
             }).join('')}
@@ -198,53 +199,79 @@ export function render(db, state = {}) {
 }
 
 export function mount(root, db, go, setState, params = {}) {
-  const nav = (patch) => go('bank', { ...params, ...patch });
+  /* Type a plain number, see a dollar value. Editing shows the raw figure so
+     you are never fighting a currency mask mid-keystroke. */
+  const parseMoney = (v) => Math.max(0, Number(String(v).replace(/[^0-9.]/g, '')) || 0);
 
-  /* buy-in cells: type a value, save on blur or Enter */
-  root.querySelectorAll('[data-pay]').forEach((inp) => {
+  const currencyField = (inp, read, write) => {
+    let busy = false;
+    // Commit on Enter directly rather than via blur(): a soft keyboard's Done
+    // key does not reliably blur the field, and losing a typed figure is worse
+    // than committing twice (the busy flag covers that).
     const commit = async () => {
-      const [team, season] = inp.dataset.pay.split(':').map(Number);
-      const val = Math.max(0, Number(inp.value) || 0);
-      const cur = db.get('bank').payins.find((p) => p.team === team && p.season === season)?.paid || 0;
-      if (val === cur) return;
-      await db.update('bank', (b) => {
-        const row = b.payins.find((p) => p.team === team && p.season === season);
-        if (row) row.paid = val;
-        else b.payins.push({ season, team, paid: val });
-      });
-      toast(`${db.team(team).manager} ${season}: ${val ? money(val) : 'cleared'}`);
+      if (busy) return;
+      busy = true;
+      try {
+        const val = parseMoney(inp.value);
+        if (val !== read()) await write(val);
+        inp.value = val ? money(val) : '';
+      } finally { busy = false; }
     };
+    inp.addEventListener('focus', () => {
+      const raw = read();
+      inp.value = raw ? String(raw) : '';
+      inp.select();
+    });
     inp.addEventListener('blur', commit);
     inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
-      if (e.key === 'Escape') { inp.value = inp.defaultValue; inp.blur(); }
+      if (e.key === 'Enter') { e.preventDefault(); commit().then(() => inp.blur()); }
+      if (e.key === 'Escape') { inp.value = ''; inp.blur(); }
     });
+  };
+
+  root.querySelectorAll('[data-pay]').forEach((inp) => {
+    const [team, season] = inp.dataset.pay.split(':').map(Number);
+    currencyField(inp,
+      () => db.get('bank').payins.find((p) => p.team === team && p.season === season)?.paid || 0,
+      async (val) => {
+        await db.update('bank', (b) => {
+          const row = b.payins.find((p) => p.team === team && p.season === season);
+          if (row) row.paid = val;
+          else b.payins.push({ season, team, paid: val });
+        });
+        toast(`${db.team(team).manager} ${season}: ${val ? money(val) : 'cleared'}`);
+      });
   });
 
-  /* buy-in rate per season */
   root.querySelectorAll('[data-rate]').forEach((inp) => {
-    inp.addEventListener('blur', async () => {
-      const s = inp.dataset.rate;
-      const val = Math.max(0, Number(inp.value) || 0);
-      if (val === db.buyIn(s)) return;
+    const s = inp.dataset.rate;
+    currencyField(inp, () => db.buyIn(s), async (val) => {
       await db.update('league', (L) => { L.buyIn[s] = val; });
       toast(`${s} buy-in set to ${money(val)}`);
     });
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
   });
 
-  root.querySelector('[data-rates]')?.addEventListener('click', () =>
-    nav({ rates: params.rates === '1' ? null : '1' }));
+  /* Accordions toggle the DOM directly — routing through the URL would re-render
+     and cost the reader their place. UI state above keeps them open across the
+     re-render an edit causes. */
+  const rates = root.querySelector('[data-rates]');
+  rates?.addEventListener('click', () => {
+    UI.rates = !UI.rates;
+    rates.setAttribute('aria-expanded', String(UI.rates));
+    rates.nextElementSibling.classList.toggle('open', UI.rates);
+  });
 
-  /* one open season at a time is the common case, but allow several */
   root.querySelectorAll('[data-season]').forEach((b) => b.addEventListener('click', () => {
-    const cur = new Set((params.open || String(db.league.currentSeason)).split(',').filter(Boolean));
-    const y = b.dataset.season;
-    cur.has(y) ? cur.delete(y) : cur.add(y);
-    nav({ open: [...cur].join(',') || null });
+    const y = Number(b.dataset.season);
+    UI.seasons.has(y) ? UI.seasons.delete(y) : UI.seasons.add(y);
+    const open = UI.seasons.has(y);
+    b.setAttribute('aria-expanded', String(open));
+    b.closest('.acc').classList.toggle('open', open);
   }));
 
-  /* payout category rows expand in place, no re-render */
-  root.querySelectorAll('[data-line]').forEach((b) => b.addEventListener('click', () =>
-    b.closest('.pay-line').classList.toggle('open')));
+  root.querySelectorAll('[data-line]').forEach((b) => b.addEventListener('click', () => {
+    const key = b.dataset.line;
+    UI.lines.has(key) ? UI.lines.delete(key) : UI.lines.add(key);
+    b.closest('.pay-line').classList.toggle('open', UI.lines.has(key));
+  }));
 }

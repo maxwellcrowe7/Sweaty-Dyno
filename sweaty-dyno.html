@@ -636,19 +636,19 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .pay-rows b{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink)}
 
 /* buy-in rate editor */
-.rates{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px}
+.rates{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:9px}
 .rate{
   display:flex;align-items:center;gap:8px;padding:9px 11px;
   background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
 }
 .rate > span{font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--ink-3);flex:none}
 .rate input{
-  width:64px;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  width:62px;background:var(--surface);border:1px solid var(--line);border-radius:6px;
   padding:5px 7px;font-size:14px;font-weight:600;
 }
 .rate input:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
 .rate b{font-size:14px;font-weight:700}
-.rate i{font-style:normal;font-size:10.5px;color:var(--ink-3);margin-left:auto;white-space:nowrap}
+.rate input{margin-left:auto;text-align:right}
 
 /* editable table cells */
 .cell-in{
@@ -697,6 +697,45 @@ const isConfigured = () => Boolean(SUPABASE.url && SUPABASE.anonKey);
 return { SUPABASE, isConfigured };
 })();
 
+/* ===== js/migrate.js ===== */
+__M["js/migrate.js"] = (function () {
+/* ============================================================
+   MIGRATIONS
+   Data can arrive from an older publish (Supabase still holding last
+   week's shape) or from a stale export. Coerce it on load rather than
+   letting the views do arithmetic on the wrong types — a boolean `paid`
+   silently summing as $1 is worse than a loud failure.
+   ============================================================ */
+function migrate(data) {
+  const d = data || {};
+
+  // buy-ins: { amount: 50, paid: true } -> { paid: 50 }
+  if (d.bank?.payins) {
+    for (const p of d.bank.payins) {
+      if (typeof p.paid === 'boolean') p.paid = p.paid ? (Number(p.amount) || 0) : 0;
+      else p.paid = Number(p.paid) || 0;
+      delete p.amount;
+      delete p.note;
+      delete p.date;
+    }
+  }
+  // the empire set-aside is an accrual now, not a payout row
+  if (d.bank?.payouts) d.bank.payouts = d.bank.payouts.filter((p) => p.category !== 'empire');
+  if (d.bank && !d.bank.empirePot) d.bank.empirePot = { claimedBy: null, claimedSeason: null, paidAmount: null };
+  if (d.bank?.empirePot && !('paidAmount' in d.bank.empirePot)) d.bank.empirePot.paidAmount = null;
+
+  // minigames gained per-season awards
+  for (const s of Object.values(d.minigames?.seasons || {})) if (!s.awards) s.awards = [];
+
+  // weekly scores gained a ceiling alongside actual points
+  for (const w of d.stats?.weekly || []) if (!('maxPoints' in w)) w.maxPoints = null;
+
+  return d;
+}
+
+return { migrate };
+})();
+
 /* ===== js/supabase.js ===== */
 __M["js/supabase.js"] = (function () {
 /* ============================================================
@@ -704,6 +743,7 @@ __M["js/supabase.js"] = (function () {
    No SDK, no build step, nothing to install.
    ============================================================ */
 const { SUPABASE } = __M["js/config.js"];
+const { migrate } = __M["js/migrate.js"];
 const SESSION_KEY = 'sweatydyno:session:v1';
 const TABLE = 'sweaty_dyno_data';
 
@@ -814,7 +854,8 @@ class Supabase {
     if (!res.ok) await fail(res, 'Loading the league');
     const rows = await res.json();
     if (!rows.length) throw new Error('The sweaty_dyno_data table is empty — run tools/seed_supabase.py first.');
-    this.data = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    // The table may still hold an older shape from the last publish.
+    this.data = migrate(Object.fromEntries(rows.map((r) => [r.key, r.value])));
     return this.data;
   }
 
@@ -1007,6 +1048,7 @@ __M["js/db.js"] = (function () {
    change to ONE file. See the SupabaseAdapter stub at the bottom.
    ============================================================ */
 const { SUPABASE, isConfigured } = __M["js/config.js"];
+const { migrate } = __M["js/migrate.js"];
 const { Supabase } = __M["js/supabase.js"];
 const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players', 'rules'];
 const LS_KEY = 'sweatydyno:overlay:v1';
@@ -1022,7 +1064,7 @@ class JsonAdapter {
       this.data = structuredClone(globalThis.__SD_DATA);
       try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { this.overlay = {}; }
       for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
-      return this.data;
+      return migrate(this.data);
     }
     const bust = `?v=${Date.now()}`;
     const loaded = await Promise.all(FILES.map(async (f) => {
@@ -1034,7 +1076,7 @@ class JsonAdapter {
     try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
     catch { this.overlay = {}; }
     for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
-    return this.data;
+    return migrate(this.data);
   }
 
   get(key) { return this.data[key]; }
@@ -1848,6 +1890,11 @@ const CATS = {
 
 const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 
+/* Which panels are open. Module-scoped so it survives the re-render that an edit
+   triggers — expanding a row, changing a value and watching the row collapse
+   would be maddening. Not in the URL: this is transient, not worth linking to. */
+const UI = { rates: false, seasons: null, lines: new Set() };
+
 /* ---------- payouts, one collapsible block per season ---------- */
 function seasonPayouts(db, season, open) {
   const b = db.get('bank');
@@ -1883,7 +1930,7 @@ function seasonPayouts(db, season, open) {
       ${lines.map((l) => {
         const c = CATS[l.cat];
         const can = l.rows.length > 0;
-        return `<div class="pay-line${can ? ' can' : ''}">
+        return `<div class="pay-line${can ? ' can' : ''}${UI.lines.has(`${season}:${l.cat}`) ? ' open' : ''}">
           <button class="pay-hd" ${can ? `data-line="${season}:${l.cat}"` : 'disabled'}>
             ${can ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
             <span class="chip ${c.chip}">${c.label}</span>
@@ -1905,9 +1952,9 @@ function render(db, state = {}) {
   const teams = db.teams();
   const bank = db.get('bank');
   const admin = db.isAdmin;
-  const P = state.params || {};
-  const openSeasons = new Set((P.open || String(db.league.currentSeason)).split(',').filter(Boolean).map(Number));
-  const ratesOpen = P.rates === '1';
+  if (UI.seasons === null) UI.seasons = new Set([db.league.currentSeason]);
+  const openSeasons = UI.seasons;
+  const ratesOpen = UI.rates;
 
   const paidFor = (t, s) => bank.payins.find((p) => p.team === t && p.season === s)?.paid || 0;
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
@@ -1942,18 +1989,14 @@ function render(db, state = {}) {
     <button class="acc-hd sub" data-rates aria-expanded="${ratesOpen}">
       ${icon('chev', 'acc-caret')}
       <span>Buy-in per season</span>
-      <div class="spacer" style="margin-left:auto"></div>
-      <span class="chip ghost">${money(db.buyIn(db.league.currentSeason))} in ${db.league.currentSeason}</span>
     </button>
     <div class="acc-bd${ratesOpen ? ' open' : ''}">
-      <div class="card-bd" style="padding-top:6px">
+      <div class="card-bd" style="padding-top:4px">
         <div class="rates">
           ${seasons.map((s) => `<label class="rate">
             <span>${s}</span>
-            ${admin ? `<input type="number" min="0" step="5" inputmode="numeric"
-                        data-rate="${s}" value="${db.buyIn(s)}">`
+            ${admin ? `<input type="text" inputmode="decimal" data-rate="${s}" value="${money(db.buyIn(s))}">`
                     : `<b>${money(db.buyIn(s))}</b>`}
-            <i>&times;${teams.length} = ${money(seasonDue(s))}</i>
           </label>`).join('')}
         </div>
       </div>
@@ -1972,8 +2015,8 @@ function render(db, state = {}) {
               const due = db.buyIn(s);
               const cls = v >= due && due > 0 ? 'full' : v > 0 ? 'part' : 'none';
               return `<td class="n cell-${cls}">${admin
-                ? `<input class="cell-in" type="number" min="0" step="5" inputmode="numeric"
-                     data-pay="${t.number}:${s}" value="${v || ''}" placeholder="0"
+                ? `<input class="cell-in" type="text" inputmode="decimal"
+                     data-pay="${t.number}:${s}" value="${v ? money(v) : ''}" placeholder="&mdash;"
                      aria-label="${esc(t.manager)} ${s}">`
                 : v ? money(v) : '<span class="dimmer">&mdash;</span>'}</td>`;
             }).join('')}
@@ -2036,55 +2079,81 @@ function render(db, state = {}) {
   `;
 }
 function mount(root, db, go, setState, params = {}) {
-  const nav = (patch) => go('bank', { ...params, ...patch });
+  /* Type a plain number, see a dollar value. Editing shows the raw figure so
+     you are never fighting a currency mask mid-keystroke. */
+  const parseMoney = (v) => Math.max(0, Number(String(v).replace(/[^0-9.]/g, '')) || 0);
 
-  /* buy-in cells: type a value, save on blur or Enter */
-  root.querySelectorAll('[data-pay]').forEach((inp) => {
+  const currencyField = (inp, read, write) => {
+    let busy = false;
+    // Commit on Enter directly rather than via blur(): a soft keyboard's Done
+    // key does not reliably blur the field, and losing a typed figure is worse
+    // than committing twice (the busy flag covers that).
     const commit = async () => {
-      const [team, season] = inp.dataset.pay.split(':').map(Number);
-      const val = Math.max(0, Number(inp.value) || 0);
-      const cur = db.get('bank').payins.find((p) => p.team === team && p.season === season)?.paid || 0;
-      if (val === cur) return;
-      await db.update('bank', (b) => {
-        const row = b.payins.find((p) => p.team === team && p.season === season);
-        if (row) row.paid = val;
-        else b.payins.push({ season, team, paid: val });
-      });
-      toast(`${db.team(team).manager} ${season}: ${val ? money(val) : 'cleared'}`);
+      if (busy) return;
+      busy = true;
+      try {
+        const val = parseMoney(inp.value);
+        if (val !== read()) await write(val);
+        inp.value = val ? money(val) : '';
+      } finally { busy = false; }
     };
+    inp.addEventListener('focus', () => {
+      const raw = read();
+      inp.value = raw ? String(raw) : '';
+      inp.select();
+    });
     inp.addEventListener('blur', commit);
     inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
-      if (e.key === 'Escape') { inp.value = inp.defaultValue; inp.blur(); }
+      if (e.key === 'Enter') { e.preventDefault(); commit().then(() => inp.blur()); }
+      if (e.key === 'Escape') { inp.value = ''; inp.blur(); }
     });
+  };
+
+  root.querySelectorAll('[data-pay]').forEach((inp) => {
+    const [team, season] = inp.dataset.pay.split(':').map(Number);
+    currencyField(inp,
+      () => db.get('bank').payins.find((p) => p.team === team && p.season === season)?.paid || 0,
+      async (val) => {
+        await db.update('bank', (b) => {
+          const row = b.payins.find((p) => p.team === team && p.season === season);
+          if (row) row.paid = val;
+          else b.payins.push({ season, team, paid: val });
+        });
+        toast(`${db.team(team).manager} ${season}: ${val ? money(val) : 'cleared'}`);
+      });
   });
 
-  /* buy-in rate per season */
   root.querySelectorAll('[data-rate]').forEach((inp) => {
-    inp.addEventListener('blur', async () => {
-      const s = inp.dataset.rate;
-      const val = Math.max(0, Number(inp.value) || 0);
-      if (val === db.buyIn(s)) return;
+    const s = inp.dataset.rate;
+    currencyField(inp, () => db.buyIn(s), async (val) => {
       await db.update('league', (L) => { L.buyIn[s] = val; });
       toast(`${s} buy-in set to ${money(val)}`);
     });
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
   });
 
-  root.querySelector('[data-rates]')?.addEventListener('click', () =>
-    nav({ rates: params.rates === '1' ? null : '1' }));
+  /* Accordions toggle the DOM directly — routing through the URL would re-render
+     and cost the reader their place. UI state above keeps them open across the
+     re-render an edit causes. */
+  const rates = root.querySelector('[data-rates]');
+  rates?.addEventListener('click', () => {
+    UI.rates = !UI.rates;
+    rates.setAttribute('aria-expanded', String(UI.rates));
+    rates.nextElementSibling.classList.toggle('open', UI.rates);
+  });
 
-  /* one open season at a time is the common case, but allow several */
   root.querySelectorAll('[data-season]').forEach((b) => b.addEventListener('click', () => {
-    const cur = new Set((params.open || String(db.league.currentSeason)).split(',').filter(Boolean));
-    const y = b.dataset.season;
-    cur.has(y) ? cur.delete(y) : cur.add(y);
-    nav({ open: [...cur].join(',') || null });
+    const y = Number(b.dataset.season);
+    UI.seasons.has(y) ? UI.seasons.delete(y) : UI.seasons.add(y);
+    const open = UI.seasons.has(y);
+    b.setAttribute('aria-expanded', String(open));
+    b.closest('.acc').classList.toggle('open', open);
   }));
 
-  /* payout category rows expand in place, no re-render */
-  root.querySelectorAll('[data-line]').forEach((b) => b.addEventListener('click', () =>
-    b.closest('.pay-line').classList.toggle('open')));
+  root.querySelectorAll('[data-line]').forEach((b) => b.addEventListener('click', () => {
+    const key = b.dataset.line;
+    UI.lines.has(key) ? UI.lines.delete(key) : UI.lines.add(key);
+    b.closest('.pay-line').classList.toggle('open', UI.lines.has(key));
+  }));
 }
 
 return { render, mount };
@@ -3758,8 +3827,13 @@ function paint() {
   });
   const sel = $('#seasonSel');
   if (sel && Number(sel.value) !== db.season) sel.value = db.season;
-  main.scrollTop = 0;
-  window.scrollTo({ top: 0 });
+  // Only jump to the top when the section actually changed. Expanding a row or
+  // switching a tab within a view must leave the reader where they were.
+  if (paint._last !== state.view) {
+    paint._last = state.view;
+    main.scrollTop = 0;
+    window.scrollTo({ top: 0 });
+  }
 }
 
 /* ---------- boot ---------- */

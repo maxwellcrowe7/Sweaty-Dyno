@@ -128,8 +128,13 @@ function paint() {
   });
   const sel = $('#seasonSel');
   if (sel && Number(sel.value) !== db.season) sel.value = db.season;
-  main.scrollTop = 0;
-  window.scrollTo({ top: 0 });
+  // Only jump to the top when the section actually changed. Expanding a row or
+  // switching a tab within a view must leave the reader where they were.
+  if (paint._last !== state.view) {
+    paint._last = state.view;
+    main.scrollTop = 0;
+    window.scrollTo({ top: 0 });
+  }
 }
 
 /* ---------- boot ---------- */

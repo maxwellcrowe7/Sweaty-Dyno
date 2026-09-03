@@ -620,19 +620,19 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .pay-rows b{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink)}
 
 /* buy-in rate editor */
-.rates{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px}
+.rates{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:9px}
 .rate{
   display:flex;align-items:center;gap:8px;padding:9px 11px;
   background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
 }
 .rate > span{font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--ink-3);flex:none}
 .rate input{
-  width:64px;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  width:62px;background:var(--surface);border:1px solid var(--line);border-radius:6px;
   padding:5px 7px;font-size:14px;font-weight:600;
 }
 .rate input:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
 .rate b{font-size:14px;font-weight:700}
-.rate i{font-style:normal;font-size:10.5px;color:var(--ink-3);margin-left:auto;white-space:nowrap}
+.rate input{margin-left:auto;text-align:right}
 
 /* editable table cells */
 .cell-in{

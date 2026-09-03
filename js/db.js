@@ -6,6 +6,7 @@
    ============================================================ */
 
 import { SUPABASE, isConfigured } from './config.js';
+import { migrate } from './migrate.js';
 import { Supabase } from './supabase.js';
 
 const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players', 'rules'];
@@ -22,7 +23,7 @@ class JsonAdapter {
       this.data = structuredClone(globalThis.__SD_DATA);
       try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { this.overlay = {}; }
       for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
-      return this.data;
+      return migrate(this.data);
     }
     const bust = `?v=${Date.now()}`;
     const loaded = await Promise.all(FILES.map(async (f) => {
@@ -34,7 +35,7 @@ class JsonAdapter {
     try { this.overlay = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
     catch { this.overlay = {}; }
     for (const [k, v] of Object.entries(this.overlay)) if (this.data[k]) this.data[k] = v;
-    return this.data;
+    return migrate(this.data);
   }
 
   get(key) { return this.data[key]; }

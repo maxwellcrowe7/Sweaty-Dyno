@@ -3,6 +3,7 @@
    No SDK, no build step, nothing to install.
    ============================================================ */
 import { SUPABASE } from './config.js';
+import { migrate } from './migrate.js';
 
 const SESSION_KEY = 'sweatydyno:session:v1';
 const TABLE = 'sweaty_dyno_data';
@@ -115,7 +116,8 @@ export class Supabase {
     if (!res.ok) await fail(res, 'Loading the league');
     const rows = await res.json();
     if (!rows.length) throw new Error('The sweaty_dyno_data table is empty — run tools/seed_supabase.py first.');
-    this.data = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    // The table may still hold an older shape from the last publish.
+    this.data = migrate(Object.fromEntries(rows.map((r) => [r.key, r.value])));
     return this.data;
   }
 
