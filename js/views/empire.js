@@ -90,7 +90,7 @@ export function render(db) {
         <td class="n" style="font-weight:700;color:var(--violet)">${t.total}</td></tr>`).join('')}
       <tr class="total"><td class="sticky">Pot</td>
         ${seasons.map((s) => {
-          const v = bank.payouts.filter((p) => p.category === 'empire' && p.season === s).reduce((a, p) => a + p.amount, 0);
+          const v = e.contributions.find((c) => c.season === s)?.amount || 0;
           return `<td class="n ${v ? '' : 'dimmer'}">${v ? money(v) : '&mdash;'}</td>`;
         }).join('')}
         <td class="n" style="color:var(--violet)">${money(e.pot)}</td></tr>

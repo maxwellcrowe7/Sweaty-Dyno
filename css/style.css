@@ -225,9 +225,8 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .btn[disabled]{opacity:.4;pointer-events:none}
 
 /* team identity dot — hue derived from team number */
-.tdot{width:9px;height:9px;border-radius:3px;flex:none;box-shadow:0 0 8px -1px currentColor}
 .tname{display:inline-flex;align-items:center;gap:8px;min-width:0}
-.tname b{font-weight:600}
+.tname b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tnum{
   font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);
   letter-spacing:.06em; background:var(--surface-2); border:1px solid var(--line);
@@ -579,3 +578,72 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 @media (max-width:899px){
   .toc ol{max-height:236px;overflow-y:auto}
 }
+
+/* ---------- accordions ---------- */
+.acc-hd{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:13px 16px;border-radius:var(--r-lg) var(--r-lg) 0 0;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),transparent);
+}
+.acc-hd h3{font-family:var(--f-display);font-size:17px;text-transform:uppercase;letter-spacing:.06em}
+.acc-hd.sub{
+  border-top:1px solid var(--line-soft);border-radius:0;
+  padding:11px 16px;font-size:13px;font-weight:600;color:var(--ink-2);background:none;
+}
+.acc-caret{transition:transform .18s;color:var(--ink-3);flex:none}
+.acc-hd[aria-expanded="true"] .acc-caret{transform:rotate(90deg)}
+.acc-hd:active{background:var(--surface-2)}
+.acc-bd{display:none}
+.card.acc.open > .acc-bd,.acc-bd.open{display:block}
+.card.acc > .acc-bd{border-top:1px solid var(--line-soft)}
+
+/* payout category lines */
+.pay-line{border-bottom:1px solid var(--line-soft)}
+.pay-line:last-child{border-bottom:none}
+.pay-hd{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 16px;
+}
+.pay-hd:disabled{opacity:.75;cursor:default}
+.pay-hd .grow{flex:1;min-width:0}
+.pay-hd .s{font-size:11.5px;color:var(--ink-3)}
+.pay-val{font-family:var(--f-display);font-size:19px;font-weight:700;flex:none}
+.pay-val.zero{color:var(--ink-3)}
+.pay-line .acc-caret{transition:transform .18s}
+.pay-line.open .acc-caret{transform:rotate(90deg)}
+.pay-rows{display:none;list-style:none;margin:0;padding:0 16px 12px 44px}
+.pay-line.open .pay-rows{display:block}
+.pay-rows li{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:6px 0;font-size:13.5px;color:var(--ink-2);border-top:1px solid var(--line-soft);
+}
+.pay-rows li:first-child{border-top:none}
+.pay-rows b{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink)}
+
+/* buy-in rate editor */
+.rates{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:9px}
+.rate{
+  display:flex;align-items:center;gap:8px;padding:9px 11px;
+  background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
+}
+.rate > span{font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--ink-3);flex:none}
+.rate input{
+  width:64px;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+  padding:5px 7px;font-size:14px;font-weight:600;
+}
+.rate input:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
+.rate b{font-size:14px;font-weight:700}
+.rate i{font-style:normal;font-size:10.5px;color:var(--ink-3);margin-left:auto;white-space:nowrap}
+
+/* editable table cells */
+.cell-in{
+  width:66px;text-align:right;background:transparent;border:1px solid transparent;border-radius:6px;
+  padding:4px 6px;font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink-3);
+  -moz-appearance:textfield;
+}
+.cell-in::-webkit-outer-spin-button,.cell-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.cell-in:hover{border-color:var(--line)}
+.cell-in:focus{outline:none;background:var(--bg-2);border-color:var(--heat);
+  box-shadow:0 0 0 3px rgba(255,107,44,.14);color:var(--ink)}
+td.cell-full .cell-in{color:var(--mint);font-weight:600}
+td.cell-part .cell-in{color:var(--gold);font-weight:600}
+table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}

@@ -1,4 +1,4 @@
-import { esc, icon, teamTag, dot, posChip, empty, teamColor } from '../util.js';
+import { esc, icon, teamTag, posChip, empty, teamColor } from '../util.js';
 
 export function render(db, state = {}) {
   const seasons = db.draftSeasons();
@@ -52,7 +52,7 @@ export function render(db, state = {}) {
               <div class="top"><span class="no">${p.pick}</span>
                 <div style="flex:1"></div>${posChip(pos)}</div>
               <div class="pl">${esc(p.player)}</div>
-              ${p.traded ? `<div class="via">${dot(p.pickedBy)} ${esc(by?.manager ?? 'T' + p.pickedBy)}</div>`
+              ${p.traded ? `<div class="via">via ${esc(by?.manager ?? 'T' + p.pickedBy)}</div>`
                          : `<div class="via" style="color:var(--ink-3)">&nbsp;</div>`}
             </div>`;
           }).join('')).join('')}

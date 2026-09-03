@@ -61,7 +61,7 @@ function barChart(rows, key, label, unit = '') {
     ${data.map((r) => `
       <div class="row" style="padding:9px 16px;align-items:center">
         <div style="width:96px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600">
-          <i class="tdot" style="background:${teamColor(r.number)};display:inline-block;margin-right:7px;vertical-align:middle"></i>${esc(r.manager)}
+<span class="tnum" style="margin-right:7px">T${r.number}</span>${esc(r.manager)}
         </div>
         <div style="flex:1;min-width:0">
           <div style="height:16px;background:var(--surface-3);border-radius:4px;overflow:hidden">

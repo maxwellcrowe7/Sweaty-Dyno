@@ -165,51 +165,99 @@ class Store {
   set season(s) { this._season = Number(s); this.emit(); }
 
   /* ---------- bank ---------- */
+
+  /** What one team owes for a season. */
+  buyIn(season) { return Number(this.league.buyIn?.[String(season)]) || 0; }
+
+  /** Seasons that have actually started — the empire pot only accrues for these. */
+  activeSeasons() { return this.seasons.filter((s) => s <= this.league.currentSeason); }
+
   bank(season = null) {
     const b = this.get('bank');
     const inSeason = (x) => season == null || x.season === season;
     const payins = b.payins.filter(inSeason);
     const payouts = b.payouts.filter(inSeason);
-    const collected = payins.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
-    const outstanding = payins.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+    const teamCount = this.get('managers').teams.length;
+
+    const collected = payins.reduce((a, p) => a + (Number(p.paid) || 0), 0);
+    const expected = (season == null ? this.seasons : [season])
+      .reduce((a, s) => a + this.buyIn(s) * teamCount, 0);
+
     const cur = this.league.currentSeason;
-    const owedNow = payins.filter((p) => !p.paid && p.season <= cur).reduce((a, p) => a + p.amount, 0);
+    const owedNow = (season == null ? this.seasons : [season])
+      .filter((s) => s <= cur)
+      .reduce((a, s) => a + Math.max(0, this.buyIn(s) * teamCount
+        - b.payins.filter((p) => p.season === s).reduce((x, p) => x + (Number(p.paid) || 0), 0)), 0);
+
     const disbursed = payouts.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
-    const earmarked = payouts.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
+    const claim = this.empireClaim();
+    const empirePaid = claim && (season == null || claim.season === season) ? claim.amount : 0;
+
     const byCat = {};
     for (const p of payouts) byCat[p.category] = (byCat[p.category] || 0) + p.amount;
+    if (empirePaid) byCat.empire = empirePaid;
+
+    const earmarked = season == null ? this.empirePotBalance() : 0;
+    const out = collected - disbursed - empirePaid;
     return {
-      payins, payouts, collected, outstanding, disbursed, earmarked,
-      owedNow, future: outstanding - owedNow,
-      cash: collected - disbursed,          // what should physically be in the bank
-      free: collected - disbursed - earmarked, // cash not spoken for by the empire pot
-      byCat,
+      payins, payouts, collected, expected,
+      outstanding: Math.max(0, expected - collected),
+      owedNow, future: Math.max(0, expected - collected - owedNow),
+      disbursed: disbursed + empirePaid, empirePaid, earmarked,
+      cash: out,
+      free: out - earmarked,
+      byCat, teamCount,
     };
   }
 
-  /** Per-team ledger across all time (or one season). */
+  /** Money set aside for the Empire so far, less anything already claimed. */
+  empirePotBalance() {
+    const contributed = this.activeSeasons()
+      .reduce((a, s) => a + (Number(this.league.empireContribution?.[String(s)]) || 0), 0);
+    const claim = this.empireClaim();
+    return contributed - (claim ? claim.amount : 0);
+  }
+
+  /** The season the pot was won, if it has been. */
+  empireClaim() {
+    const e = this.get('bank').empirePot;
+    if (!e?.claimedBy) return null;
+    const upTo = this.seasons.filter((s) => s <= e.claimedSeason)
+      .reduce((a, s) => a + (Number(this.league.empireContribution?.[String(s)]) || 0), 0);
+    return { team: e.claimedBy, season: e.claimedSeason, amount: Number(e.paidAmount) || upTo };
+  }
+
+  /** Per-team ledger. `owes` only ever counts seasons that have started. */
   ledger(season = null) {
     const b = this.get('bank');
+    const cur = this.league.currentSeason;
+    const claim = this.empireClaim();
     return this.teams().map((t) => {
       const ins = b.payins.filter((p) => p.team === t.number && (season == null || p.season === season));
       const outs = b.payouts.filter((p) => p.team === t.number && (season == null || p.season === season));
-      const paidIn = ins.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
-      const owes = ins.filter((p) => !p.paid).reduce((a, p) => a + p.amount, 0);
-      const owesNow = ins.filter((p) => !p.paid && p.season <= this.league.currentSeason).reduce((a, p) => a + p.amount, 0);
-      const won = outs.reduce((a, p) => a + p.amount, 0);
+      const paidIn = ins.reduce((a, p) => a + (Number(p.paid) || 0), 0);
+      const owesNow = (season == null ? this.seasons : [season])
+        .filter((s) => s <= cur)
+        .reduce((a, s) => a + Math.max(0, this.buyIn(s)
+          - (ins.find((p) => p.season === s)?.paid || 0)), 0);
       const cat = {};
       for (const p of outs) cat[p.category] = (cat[p.category] || 0) + p.amount;
-      return { ...t, paidIn, owes, owesNow, won, net: won - paidIn, cat, seasonsPaid: ins.filter(p => p.paid).length };
+      let won = outs.reduce((a, p) => a + p.amount, 0);
+      if (claim && claim.team === t.number && (season == null || claim.season === season)) {
+        won += claim.amount; cat.empire = claim.amount;
+      }
+      return { ...t, paidIn, owes: owesNow, owesNow, won, net: won - paidIn, cat };
     });
   }
 
   /* ---------- empire ---------- */
   empire() {
     const b = this.get('bank'), L = this.league;
-    const pot = b.payouts.filter((p) => p.category === 'empire').reduce((a, p) => a + p.amount, 0);
+    const pot = this.empirePotBalance();
+    const active = new Set(this.activeSeasons());
     const contributions = this.seasons.map((s) => ({
       season: s,
-      amount: b.payouts.filter((p) => p.category === 'empire' && p.season === s).reduce((a, p) => a + p.amount, 0),
+      amount: active.has(s) ? (Number(L.empireContribution?.[String(s)]) || 0) : 0,
     }));
     // Two ways to win: 2 titles, or 1 title AND the points threshold.
     // Points alone never claim it, so progress has to be measured against both.

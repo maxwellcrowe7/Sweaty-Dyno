@@ -49,15 +49,11 @@ export const ordinal = (n) => {
 export const teamHue = (n) => (((Number(n) || 0) - 1) * 137.508) % 360;
 export const teamColor = (n) => n ? `hsl(${teamHue(n).toFixed(1)} 72% 62%)` : 'var(--ink-3)';
 
-export const dot = (n) =>
-  `<i class="tdot" style="background:${teamColor(n)};color:${teamColor(n)}"></i>`;
-
-/** Renders a team as: [colour dot] Name [T#]. `t` may be null (unmapped alias). */
+/** Team number first, then the name. No colour swatch — ten hues was noise. */
 export const teamTag = (t, { num: showNum = true, alias = null } = {}) => {
-  if (!t) return `<span class="tname"><i class="tdot" style="background:var(--surface-3)"></i>
-    <b class="dim">${esc(alias || 'Unassigned')}</b><span class="tnum">?</span></span>`;
-  return `<span class="tname">${dot(t.number)}<b>${esc(t.manager)}</b>${
-    showNum ? `<span class="tnum">T${t.number}</span>` : ''}</span>`;
+  if (!t) return `<span class="tname"><span class="tnum">&mdash;</span>
+    <b class="dim">${esc(alias || 'Unassigned')}</b></span>`;
+  return `<span class="tname">${showNum ? `<span class="tnum">T${t.number}</span>` : ''}<b>${esc(t.manager)}</b></span>`;
 };
 
 export const posChip = (pos) =>
@@ -89,6 +85,7 @@ const I = {
   book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z',
   list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   diff:'M12 3v6M9 6h6M12 15v6M9 18h6M5 12h14',
+  chev:'m9 18 6-6-6-6',
   inbox:'M4 13h4l2 3h4l2-3h4M4 13 6.6 5.2A2 2 0 0 1 8.5 4h7a2 2 0 0 1 1.9 1.2L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5Z',
 };
 export const icon = (name, cls = '') =>

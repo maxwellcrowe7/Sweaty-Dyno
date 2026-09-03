@@ -1,485 +1,305 @@
 {
-  "_README": "Payouts with category 'empire' have team:null and paid:false — they are set-asides that stay in the physical bank until the Empire Pot is claimed. Bank cash = payins collected - payouts actually paid.",
+  "_README": "payins[].paid is the dollar amount that team has actually handed over for that season (0 = nothing yet, partial amounts are fine — the rules allow paying half a buy-in to trade a pick). What is OWED comes from league.buyIn for that season. payouts are real disbursements only: minigame and placement. The Empire pot is an accrual, not a payout — it grows by league.empireContribution each season and only becomes a payout in the season it is claimed (see empirePot).",
   "payins": [
     {
       "season": 2025,
       "team": 4,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 10,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 7,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 5,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 2,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 3,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 9,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 8,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 1,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2025,
       "team": 6,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 4,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 10,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 7,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 5,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 2,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 3,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 9,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 8,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 1,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2026,
       "team": 6,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2027,
       "team": 4,
-      "amount": 50,
-      "paid": true,
-      "date": "2025-09-02",
-      "note": "Matt paid on Andrew's behalf (9/2/25)"
+      "paid": 50
     },
     {
       "season": 2027,
       "team": 10,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2027,
       "team": 7,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2027,
       "team": 5,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2027,
       "team": 2,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2027,
       "team": 3,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2027,
       "team": 9,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2027,
       "team": 8,
-      "amount": 50,
-      "paid": true,
-      "date": null,
-      "note": null
+      "paid": 50
     },
     {
       "season": 2027,
       "team": 1,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2027,
       "team": 6,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 4,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 10,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 7,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 5,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 2,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 3,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 9,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 8,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 1,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2028,
       "team": 6,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 4,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 10,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 7,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 5,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 2,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 3,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 9,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 8,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 1,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2029,
       "team": 6,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 4,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 10,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 7,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 5,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 2,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 3,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 9,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 8,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 1,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     },
     {
       "season": 2030,
       "team": 6,
-      "amount": 50,
-      "paid": false,
-      "date": null,
-      "note": null
+      "paid": 0
     }
   ],
   "payouts": [
@@ -491,8 +311,7 @@
       "amount": 30,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-mg-2",
@@ -502,8 +321,7 @@
       "amount": 30,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-mg-3",
@@ -513,8 +331,7 @@
       "amount": 20,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-mg-4",
@@ -524,8 +341,7 @@
       "amount": 10,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-mg-5",
@@ -535,8 +351,7 @@
       "amount": 20,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-mg-6",
@@ -546,8 +361,7 @@
       "amount": 10,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-mg-7",
@@ -557,8 +371,7 @@
       "amount": 30,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-mg-8",
@@ -568,8 +381,7 @@
       "amount": 20,
       "label": "Minigame winnings",
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-pl-1",
@@ -580,8 +392,7 @@
       "label": "1st place",
       "place": 1,
       "paid": true,
-      "date": null,
-      "note": null
+      "date": null
     },
     {
       "id": "po-2025-pl-2",
@@ -592,30 +403,7 @@
       "label": "2nd place",
       "place": 2,
       "paid": true,
-      "date": null,
-      "note": null
-    },
-    {
-      "id": "po-2025-emp-1",
-      "season": 2025,
-      "team": null,
-      "category": "empire",
-      "amount": 150,
-      "label": "Rolling pot set-aside",
-      "paid": false,
-      "date": null,
-      "note": "Stays in the physical bank until the Empire Pot is claimed."
-    },
-    {
-      "id": "po-2026-emp-1",
-      "season": 2026,
-      "team": null,
-      "category": "empire",
-      "amount": 150,
-      "label": "Rolling pot set-aside",
-      "paid": false,
-      "date": null,
-      "note": "Stays in the physical bank until the Empire Pot is claimed."
+      "date": null
     }
   ],
   "empirePoints": [
@@ -694,6 +482,7 @@
   ],
   "empirePot": {
     "claimedBy": null,
-    "claimedSeason": null
+    "claimedSeason": null,
+    "paidAmount": null
   }
 }

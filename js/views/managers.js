@@ -1,4 +1,4 @@
-import { money, esc, icon, teamTag, dot, teamColor, empty } from '../util.js';
+import { money, esc, icon, teamTag, teamColor, empty } from '../util.js';
 
 export function render(db) {
   const led = db.ledger();
