@@ -657,22 +657,25 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .pay-rows li:first-child{border-top:none}
 .pay-rows b{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink)}
 
-/* buy-in rate editor — deliberately box-free: the row already sits inside a
-   card and an accordion, so another border per field was three frames deep. */
-.rates{display:flex;flex-wrap:wrap;gap:10px 28px;padding:2px 0 6px}
-.rate{display:flex;align-items:baseline;gap:9px}
-.rate > span{
+/* buy-in rate row — sits directly under the year headers so every figure in
+   this table is visible at once, no expanding required. */
+table.dt tbody tr.rate-row td{
+  background:rgba(255,255,255,.028);
+  border-bottom:1px solid var(--line);
+  padding-top:9px;padding-bottom:9px;
+}
+table.dt tbody tr.rate-row td.sticky{
+  background:var(--bg-2);
   font-family:var(--f-display);font-size:11px;font-weight:700;
-  letter-spacing:.12em;color:var(--ink-3);flex:none;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
 }
-.rate b{font-family:var(--f-display);font-size:17px;font-weight:700;letter-spacing:.01em}
-.rate input{
-  width:58px;background:none;border:0;border-bottom:1px solid transparent;border-radius:0;
-  padding:1px 0 2px;font-family:var(--f-display);font-size:17px;font-weight:700;
-  letter-spacing:.01em;color:var(--ink);
+.rate-in{
+  width:62px;text-align:right;background:none;border:0;border-bottom:1px solid transparent;
+  border-radius:0;padding:1px 0 2px;font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;color:var(--ink-2);
 }
-.rate input:hover{border-bottom-color:var(--line)}
-.rate input:focus{outline:none;border-bottom-color:var(--heat);color:var(--heat);box-shadow:none}
+.rate-in:hover{border-bottom-color:var(--line)}
+.rate-in:focus{outline:none;border-bottom-color:var(--heat);color:var(--heat);box-shadow:none}
 
 /* editable table cells */
 .cell-in{
@@ -1917,7 +1920,7 @@ const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 /* Which panels are open. Module-scoped so it survives the re-render that an edit
    triggers — expanding a row, changing a value and watching the row collapse
    would be maddening. Not in the URL: this is transient, not worth linking to. */
-const UI = { rates: false, seasons: null, lines: new Set() };
+const UI = { seasons: null, lines: new Set() };
 
 /* ---------- payouts, one collapsible block per season ---------- */
 function seasonPayouts(db, season, open) {
@@ -1978,7 +1981,6 @@ function render(db, state = {}) {
   const admin = db.isAdmin;
   if (UI.seasons === null) UI.seasons = new Set([db.league.currentSeason]);
   const openSeasons = UI.seasons;
-  const ratesOpen = UI.rates;
 
   const paidFor = (t, s) => bank.payins.find((p) => p.team === t && p.season === s)?.paid || 0;
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
@@ -2006,28 +2008,19 @@ function render(db, state = {}) {
 
   <div class="section-title">Buy-ins</div>
   <div class="card">
-    <button class="acc-hd sub first" data-rates aria-expanded="${ratesOpen}">
-      ${icon('chev', 'acc-caret')}
-      <span>Buy-in per season</span>
-    </button>
-    <div class="acc-bd${ratesOpen ? ' open' : ''}">
-      <div class="card-bd" style="padding-top:4px">
-        <div class="rates">
-          ${seasons.map((s) => `<label class="rate">
-            <span>${s}</span>
-            ${admin ? `<input type="text" inputmode="decimal" data-rate="${s}"
-                        value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-                    : `<b>${money(db.buyIn(s))}</b>`}
-          </label>`).join('')}
-        </div>
-      </div>
-    </div>
-
     <div class="card-bd flush"><div class="tw"><table class="dt">
       <thead><tr><th class="sticky">Team</th>
         ${seasons.map((s) => `<th class="n">${s}</th>`).join('')}
         <th class="n">Paid</th></tr></thead>
       <tbody>
+        <tr class="rate-row">
+          <td class="sticky">Buy-in</td>
+          ${seasons.map((s) => `<td class="n">${admin
+            ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
+                 value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
+            : money(db.buyIn(s))}</td>`).join('')}
+          <td class="n dimmer">&mdash;</td>
+        </tr>
         ${teams.map((t) => {
           const paid = seasons.reduce((a, s) => a + paidFor(t.number, s), 0);
           return `<tr><td class="sticky">${teamTag(t)}</td>
@@ -2155,13 +2148,6 @@ function mount(root, db, go, setState, params = {}) {
   /* Accordions toggle the DOM directly — routing through the URL would re-render
      and cost the reader their place. UI state above keeps them open across the
      re-render an edit causes. */
-  const rates = root.querySelector('[data-rates]');
-  rates?.addEventListener('click', () => {
-    UI.rates = !UI.rates;
-    rates.setAttribute('aria-expanded', String(UI.rates));
-    rates.nextElementSibling.classList.toggle('open', UI.rates);
-  });
-
   root.querySelectorAll('[data-season]').forEach((b) => b.addEventListener('click', () => {
     const y = Number(b.dataset.season);
     UI.seasons.has(y) ? UI.seasons.delete(y) : UI.seasons.add(y);

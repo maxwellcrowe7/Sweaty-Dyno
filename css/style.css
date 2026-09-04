@@ -641,22 +641,25 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .pay-rows li:first-child{border-top:none}
 .pay-rows b{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink)}
 
-/* buy-in rate editor — deliberately box-free: the row already sits inside a
-   card and an accordion, so another border per field was three frames deep. */
-.rates{display:flex;flex-wrap:wrap;gap:10px 28px;padding:2px 0 6px}
-.rate{display:flex;align-items:baseline;gap:9px}
-.rate > span{
+/* buy-in rate row — sits directly under the year headers so every figure in
+   this table is visible at once, no expanding required. */
+table.dt tbody tr.rate-row td{
+  background:rgba(255,255,255,.028);
+  border-bottom:1px solid var(--line);
+  padding-top:9px;padding-bottom:9px;
+}
+table.dt tbody tr.rate-row td.sticky{
+  background:var(--bg-2);
   font-family:var(--f-display);font-size:11px;font-weight:700;
-  letter-spacing:.12em;color:var(--ink-3);flex:none;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
 }
-.rate b{font-family:var(--f-display);font-size:17px;font-weight:700;letter-spacing:.01em}
-.rate input{
-  width:58px;background:none;border:0;border-bottom:1px solid transparent;border-radius:0;
-  padding:1px 0 2px;font-family:var(--f-display);font-size:17px;font-weight:700;
-  letter-spacing:.01em;color:var(--ink);
+.rate-in{
+  width:62px;text-align:right;background:none;border:0;border-bottom:1px solid transparent;
+  border-radius:0;padding:1px 0 2px;font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;color:var(--ink-2);
 }
-.rate input:hover{border-bottom-color:var(--line)}
-.rate input:focus{outline:none;border-bottom-color:var(--heat);color:var(--heat);box-shadow:none}
+.rate-in:hover{border-bottom-color:var(--line)}
+.rate-in:focus{outline:none;border-bottom-color:var(--heat);color:var(--heat);box-shadow:none}
 
 /* editable table cells */
 .cell-in{

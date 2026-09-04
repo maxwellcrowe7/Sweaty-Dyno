@@ -11,7 +11,7 @@ const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 /* Which panels are open. Module-scoped so it survives the re-render that an edit
    triggers — expanding a row, changing a value and watching the row collapse
    would be maddening. Not in the URL: this is transient, not worth linking to. */
-const UI = { rates: false, seasons: null, lines: new Set() };
+const UI = { seasons: null, lines: new Set() };
 
 /* ---------- payouts, one collapsible block per season ---------- */
 function seasonPayouts(db, season, open) {
@@ -73,7 +73,6 @@ export function render(db, state = {}) {
   const admin = db.isAdmin;
   if (UI.seasons === null) UI.seasons = new Set([db.league.currentSeason]);
   const openSeasons = UI.seasons;
-  const ratesOpen = UI.rates;
 
   const paidFor = (t, s) => bank.payins.find((p) => p.team === t && p.season === s)?.paid || 0;
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
@@ -101,28 +100,19 @@ export function render(db, state = {}) {
 
   <div class="section-title">Buy-ins</div>
   <div class="card">
-    <button class="acc-hd sub first" data-rates aria-expanded="${ratesOpen}">
-      ${icon('chev', 'acc-caret')}
-      <span>Buy-in per season</span>
-    </button>
-    <div class="acc-bd${ratesOpen ? ' open' : ''}">
-      <div class="card-bd" style="padding-top:4px">
-        <div class="rates">
-          ${seasons.map((s) => `<label class="rate">
-            <span>${s}</span>
-            ${admin ? `<input type="text" inputmode="decimal" data-rate="${s}"
-                        value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-                    : `<b>${money(db.buyIn(s))}</b>`}
-          </label>`).join('')}
-        </div>
-      </div>
-    </div>
-
     <div class="card-bd flush"><div class="tw"><table class="dt">
       <thead><tr><th class="sticky">Team</th>
         ${seasons.map((s) => `<th class="n">${s}</th>`).join('')}
         <th class="n">Paid</th></tr></thead>
       <tbody>
+        <tr class="rate-row">
+          <td class="sticky">Buy-in</td>
+          ${seasons.map((s) => `<td class="n">${admin
+            ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
+                 value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
+            : money(db.buyIn(s))}</td>`).join('')}
+          <td class="n dimmer">&mdash;</td>
+        </tr>
         ${teams.map((t) => {
           const paid = seasons.reduce((a, s) => a + paidFor(t.number, s), 0);
           return `<tr><td class="sticky">${teamTag(t)}</td>
@@ -251,13 +241,6 @@ export function mount(root, db, go, setState, params = {}) {
   /* Accordions toggle the DOM directly — routing through the URL would re-render
      and cost the reader their place. UI state above keeps them open across the
      re-render an edit causes. */
-  const rates = root.querySelector('[data-rates]');
-  rates?.addEventListener('click', () => {
-    UI.rates = !UI.rates;
-    rates.setAttribute('aria-expanded', String(UI.rates));
-    rates.nextElementSibling.classList.toggle('open', UI.rates);
-  });
-
   root.querySelectorAll('[data-season]').forEach((b) => b.addEventListener('click', () => {
     const y = Number(b.dataset.season);
     UI.seasons.has(y) ? UI.seasons.delete(y) : UI.seasons.add(y);
