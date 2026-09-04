@@ -308,3 +308,21 @@ python3 tools/build.py
 Adding a screen: drop a module in `js/views/` exporting `render(db, state)`, then add one
 line to the `VIEWS` map in `js/app.js`. `primary: true` puts it in the phone tab bar;
 without it, it goes in the "More" sheet.
+
+## Running the checks
+
+```bash
+./tools/check.sh
+```
+
+Twelve suites in `tests/`, run on JavaScriptCore (built into macOS, nothing to
+install). They render every view, exercise the write paths, and reconcile the
+derived figures against the source spreadsheet and the Sleeper data — for
+example, the guillotine suite replays 2025 from the weekly scores and checks all
+nine chops and the winner against the rulebook.
+
+`tests/migrate.mjs` is the one to keep an eye on when changing a data shape: it
+rebuilds the *old* shape and asserts the app still reads it correctly, which is
+what stops a structural change from silently corrupting already-published data.
+
+Run this before pushing.

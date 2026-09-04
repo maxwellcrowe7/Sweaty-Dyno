@@ -1,0 +1,61 @@
+const F=['league','managers','bank','minigames','drafts','trades','stats','players','rules'];
+const store={}; for(const f of F) store[f]=JSON.parse(readFile(`data/${f}.json`));
+globalThis.localStorage={_d:{},getItem(k){return this._d[k]??null},setItem(k,v){this._d[k]=v},removeItem(k){delete this._d[k]}};
+globalThis.structuredClone=(o)=>JSON.parse(JSON.stringify(o));
+globalThis.fetch=async(u)=>{const x=String(u);
+ if(x.includes('/rest/v1/'))return{ok:false,status:401,json:async()=>({message:'denied'})};
+ return{ok:true,json:async()=>store[x.split('/').pop().split('.json')[0]]}};
+const {db}=await import('../js/db.js'); await db.init();
+let fail=0; const eq=(l,g,w)=>{const ok=JSON.stringify(g)===JSON.stringify(w);if(!ok)fail++;
+  print(`  ${ok?'ok  ':'FAIL'} ${l}: ${JSON.stringify(g)}${ok?'':' != '+JSON.stringify(w)}`);};
+
+print('— totals survive the restructure —');
+const b=db.bank();
+eq('collected', b.collected, 1100);
+eq('expected (6 seasons x $50 x 10)', b.expected, 3000);
+eq('disbursed', b.disbursed, 320);
+eq('bank cash', b.cash, 780);
+eq('empire pot (2 active seasons)', b.earmarked, 300);
+eq('free cash', b.free, 480);
+eq('owed now (2025+2026 fully paid)', b.owedNow, 0);
+eq('2025 minigames', db.bank(2025).byCat.minigame, 170);
+eq('2025 placement', db.bank(2025).byCat.placement, 150);
+
+print('— partial buy-ins —');
+await db.update('bank',(x)=>{x.payins.find(p=>p.team===3&&p.season===2027).paid=25;});
+eq('partial payment recorded', db.bank(2027).collected, 125);
+eq('team owes the remainder next season', db.ledger().find(t=>t.manager==='Alex').owesNow, 0);
+db.get('league').currentSeason=2027;
+eq('once 2027 is current, shortfall counts', db.bank().owedNow, 375);
+eq('Alex owes $25 of 2027', db.ledger().find(t=>t.manager==='Alex').owesNow, 25);
+eq('empire accrues for 3 active seasons', db.empirePotBalance(), 450);
+db.get('league').currentSeason=2026;
+await db.update('bank',(x)=>{x.payins.find(p=>p.team===3&&p.season===2027).paid=0;});
+
+print('— changing a season buy-in ripples through —');
+await db.update('league',(L)=>{L.buyIn['2026']=75;});
+eq('expected rises', db.bank(2026).expected, 750);
+eq('now short by $250', db.bank().owedNow, 250);
+await db.update('league',(L)=>{L.buyIn['2026']=50;});
+eq('restored', db.bank().owedNow, 0);
+
+print('— empire pot as a payout —');
+eq('unclaimed', db.empireClaim(), null);
+await db.update('bank',(x)=>{x.empirePot={claimedBy:6,claimedSeason:2026,paidAmount:null};});
+const c=db.empireClaim();
+eq('claim amount = contributions to date', [c.team,c.season,c.amount], [6,2026,300]);
+eq('awarded but unpaid: pot still in the bank', [db.empirePotBalance(), db.bank().cash], [300,780]);
+eq('and shows as owed out', db.bank().owedOut, 300);
+await db.update('bank',(x)=>{x.settled.push({season:2026,category:'empire',team:6,date:null});});
+eq('once paid, pot balance zero', db.empirePotBalance(), 0);
+eq('and cash drops', db.bank().cash, 480);
+eq('winner credited in the ledger', db.ledger().find(t=>t.manager==='Max').cat.empire, 300);
+await db.update('bank',(x)=>{x.settled=x.settled.filter(y=>y.category!=='empire');});
+await db.update('bank',(x)=>{x.empirePot={claimedBy:null,claimedSeason:null,paidAmount:null};});
+eq('reverted', [db.bank().cash, db.empirePotBalance()], [780,300]);
+
+print('— no owes column data, no stray notes —');
+eq('payins carry only season/team/paid', Object.keys(db.get('bank').payins[0]).sort(), ['paid','season','team']);
+eq('payout amounts are not stored', 'payouts' in db.get('bank'), false);
+eq('only who was paid is stored', Object.keys(db.get('bank').settled[0]).sort(), ['category','date','season','team']);
+print(fail?`\n${fail} FAILURE(S)`:'\nBank checks passed.');
