@@ -143,6 +143,30 @@ export async function fetchMaxPF(leagueId, weeks, rosterToTeam, onProgress = () 
   return totals;
 }
 
+/**
+ * Final standings from the playoff brackets. Sleeper tags each placement game
+ * with `p`: in the winners bracket p=1 is the championship (1st/2nd), p=3 the
+ * third-place game, p=5 the fifth. The losers bracket numbers from 7th.
+ * Returns { place: rosterId } for every place the brackets decided.
+ */
+export async function fetchStandings(leagueId) {
+  const [win, lose] = await Promise.all([
+    get(`/league/${leagueId}/winners_bracket`).catch(() => []),
+    get(`/league/${leagueId}/losers_bracket`).catch(() => []),
+  ]);
+  const places = {};
+  const take = (bracket, offset) => {
+    for (const m of bracket) {
+      if (!m.p || m.w == null || m.l == null) continue;
+      places[offset + m.p] = m.w;
+      places[offset + m.p + 1] = m.l;
+    }
+  };
+  take(win, 0);
+  take(lose, 6);          // losers bracket p=1 decides 7th
+  return places;
+}
+
 /** Completed regular-season weeks for a season, per Sleeper's own clock. */
 export async function completedWeeks(season, regularSeasonWeeks = 14) {
   const st = await nflState();

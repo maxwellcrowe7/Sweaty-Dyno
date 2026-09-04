@@ -302,68 +302,6 @@
       "paid": 0
     }
   ],
-  "empirePoints": [
-    {
-      "season": 2025,
-      "team": 6,
-      "points": 20,
-      "note": "Champion"
-    },
-    {
-      "season": 2025,
-      "team": 8,
-      "points": 10,
-      "note": "Runner-up"
-    },
-    {
-      "season": 2025,
-      "team": 4,
-      "points": 5,
-      "note": "Semifinalist"
-    },
-    {
-      "season": 2025,
-      "team": 9,
-      "points": 5,
-      "note": "Semifinalist"
-    },
-    {
-      "season": 2025,
-      "team": 7,
-      "points": 3,
-      "note": "Quarterfinalist"
-    },
-    {
-      "season": 2025,
-      "team": 3,
-      "points": 3,
-      "note": "Quarterfinalist"
-    },
-    {
-      "season": 2025,
-      "team": 10,
-      "points": 0,
-      "note": null
-    },
-    {
-      "season": 2025,
-      "team": 5,
-      "points": 0,
-      "note": null
-    },
-    {
-      "season": 2025,
-      "team": 2,
-      "points": 0,
-      "note": null
-    },
-    {
-      "season": 2025,
-      "team": 1,
-      "points": 0,
-      "note": null
-    }
-  ],
   "finishes": [
     {
       "season": 2025,
@@ -374,6 +312,46 @@
       "season": 2025,
       "place": 2,
       "team": 8
+    },
+    {
+      "season": 2025,
+      "place": 3,
+      "team": 9
+    },
+    {
+      "season": 2025,
+      "place": 4,
+      "team": 4
+    },
+    {
+      "season": 2025,
+      "place": 5,
+      "team": 3
+    },
+    {
+      "season": 2025,
+      "place": 6,
+      "team": 7
+    },
+    {
+      "season": 2025,
+      "place": 7,
+      "team": 2
+    },
+    {
+      "season": 2025,
+      "place": 8,
+      "team": 10
+    },
+    {
+      "season": 2025,
+      "place": 9,
+      "team": 1
+    },
+    {
+      "season": 2025,
+      "place": 10,
+      "team": 5
     }
   ],
   "empirePot": {

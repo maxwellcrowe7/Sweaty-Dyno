@@ -59,6 +59,7 @@ const A=st.rows.find(r=>r.manager==='Andrew');
 eq('2025 Andrew season PF (Sleeper)', +A.total.toFixed(2), 2132.00);
 eq('full regular season logged', st.weeks.length, 14);
 eq('weekly ceiling sums to season max PF', +A.maxTotal.toFixed(2), +A.maxPF.toFixed(2));
+eq('every week has a ceiling', db.get('stats').weekly.filter(w=>w.season===2025&&w.maxPoints==null).length, 0);
 eq('Andrew wk1 actual/ceiling', [A.byWeek[1], A.byWeekMax[1]], [143.05, 185.95]);
 eq('efficiency now computable', A.efficiency != null, true);
 eq('bench points = ceiling - actual', +A.left.toFixed(2), +(A.maxPF - A.total).toFixed(2));

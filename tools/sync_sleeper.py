@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pull weekly scores and Max PF from Sleeper into data/stats.json.
+Pull weekly scores, Max PF and final standings from Sleeper.
 
 Each week stores BOTH what the team actually scored (`points`) and what its best
 possible lineup would have scored (`maxPoints`) -- the season Max PF is the sum
@@ -60,6 +60,24 @@ def roster_map(league_id, managers):
     return out, unmatched, ids
 
 
+def standings(league_id):
+    """Final places from the playoff brackets. Sleeper tags placement games with
+    `p`; the losers bracket numbers from 7th."""
+    out = {}
+    for path, offset in ((f'/league/{league_id}/winners_bracket', 0),
+                         (f'/league/{league_id}/losers_bracket', 6)):
+        try:
+            bracket = get(path)
+        except Exception:
+            continue
+        for m in bracket:
+            if not m.get('p') or m.get('w') is None or m.get('l') is None:
+                continue
+            out[offset + m['p']] = m['w']
+            out[offset + m['p'] + 1] = m['l']
+    return out
+
+
 def optimal(players_points, slots, pos_of):
     pool = sorted(({'pid': k, 'p': float(v or 0), 'pos': pos_of(k)} for k, v in players_points.items()),
                   key=lambda x: -x['p'])
@@ -78,7 +96,7 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith('-')]
     want_maxpf = '--no-maxpf' not in sys.argv
 
-    league, managers, stats = load('league'), load('managers'), load('stats')
+    league, managers, stats, bank = load('league'), load('managers'), load('stats'), load('bank')
     ids = {s: i for s, i in league['sleeper']['leagueIds'].items() if i}
     if args:
         ids = {s: i for s, i in ids.items() if s in args}
@@ -117,6 +135,10 @@ def main():
             p = players.get(pid) if players else None
             return (p.get('position') or (p.get('fantasy_positions') or [None])[0]) if p else None
 
+        # --no-maxpf must not DESTROY ceilings that were already computed
+        prior = {(w['week'], w['team']): w.get('maxPoints')
+                 for w in stats['weekly'] if w['season'] == int(season)}
+
         weekly, maxpf = [], {}
         for wk in range(1, last_reg + 1):
             for m in get(f'/league/{lid}/matchups/{wk}'):
@@ -125,12 +147,28 @@ def main():
                     continue
                 row = {'season': int(season), 'week': wk, 'team': t,
                        'points': round(float(m.get('points') or 0), 2),
-                       'maxPoints': None, 'opponent': None, 'result': None}
+                       'maxPoints': prior.get((wk, t)), 'opponent': None, 'result': None}
                 if want_maxpf and m.get('players_points'):
                     best = optimal(m['players_points'], slots, pos_of)
                     row['maxPoints'] = best
                     maxpf[t] = round(maxpf.get(t, 0) + best, 2)
+                elif row['maxPoints'] is not None:
+                    maxpf[t] = round(maxpf.get(t, 0) + row['maxPoints'], 2)
                 weekly.append(row)
+
+        places = standings(lid)
+        if places:
+            finished = [{'season': int(season), 'place': p, 'team': r2t[r]}
+                        for p, r in sorted(places.items()) if r in r2t]
+            old = {f['place']: f['team'] for f in bank.get('finishes', []) if f['season'] == int(season)}
+            bank['finishes'] = [f for f in bank.get('finishes', []) if f['season'] != int(season)] + finished
+            print(f'  final standings: {len(finished)} places')
+            for f in finished:
+                was = old.get(f['place'])
+                if was is not None and was != f['team']:
+                    print(f"    place {f['place']}: T{was} -> T{f['team']}")
+        elif lg.get('status') == 'complete':
+            print('  no bracket data — leaving standings as they are')
 
         before = len([w for w in stats['weekly'] if w['season'] == int(season)])
         stats['weekly'] = [w for w in stats['weekly'] if w['season'] != int(season)] + weekly
@@ -151,8 +189,9 @@ def main():
     stats['weekly'].sort(key=lambda w: (w['season'], w['week'], w['team']))
     stats['maxPF'].sort(key=lambda m: (m['season'], m['team']))
     stats['lastSleeperSync'] = __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')
-    save('stats', stats); save('managers', managers)
-    print('\nWrote data/stats.json and data/managers.json.')
+    bank['finishes'] = sorted(bank.get('finishes', []), key=lambda f: (f['season'], f['place']))
+    save('stats', stats); save('managers', managers); save('bank', bank)
+    print('\nWrote data/stats.json, data/managers.json and data/bank.json.')
     print('Re-run tools/build.py to refresh the single-file build.')
 
 

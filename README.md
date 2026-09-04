@@ -178,6 +178,37 @@ back-filling history: the player dictionary downloads once and you see a diff fi
 > exactly. (Alex week 2 read 173.80 where Sleeper gives 172.80, most likely a typo.) The app
 > now keeps both figures per week, so nothing is lost either way.
 
+## Where each number comes from
+
+Nothing that can be derived is stored twice. Amounts are configuration, results
+come from Sleeper, and only "who has actually been handed cash" is recorded by hand.
+
+| Figure | Source |
+|---|---|
+| Buy-in amount | `league.buyIn` per season |
+| Buy-in paid | typed into the Bank table |
+| Minigame payouts | the minigames themselves (`minigames.json`) |
+| Placement amounts | `league.placementPayouts` — a config line per place |
+| Placement results | Sleeper's playoff brackets → `bank.finishes` |
+| Empire points | `bank.finishes` × `league.empirePointsScale` |
+| Empire pot | `league.empireContribution`, paid out once `empirePot` is claimed |
+| Guillotine chops | the weekly scores in `stats.weekly` |
+| Who has been paid | `bank.settled` |
+
+**Payout amounts are config, not rulebook prose.** It is tempting to have the bank
+read its numbers out of the Rules tab, but the rulebook is prose, it is versioned per
+season, and a season's book may still be a draft or not written at all — money should
+not depend on which draft is published or on how a sentence is worded. The rulebook
+stays the human explanation; `league.json` stays the machine's answer. If they should
+ever be linked, the sound direction is the Rules page *rendering* the configured
+numbers, never the bank parsing the prose.
+
+**Final standings come from Sleeper.** Each placement game in the bracket is tagged
+with `p` — in the winners bracket `p=1` is the championship, `p=3` the third-place
+game; the losers bracket numbers from 7th. `tools/sync_sleeper.py` reads both and
+writes all ten places into `bank.finishes`, which then drives both the placement
+payouts and the empire points. Correct a place and the money and the points both move.
+
 ## Rulebook
 
 One rulebook per season, at `data/rules.json`. The 2025 book is transcribed from

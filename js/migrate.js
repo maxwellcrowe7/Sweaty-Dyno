@@ -41,6 +41,16 @@ export function migrate(data) {
   }
   if (d.bank && !d.bank.settled) d.bank.settled = [];
 
+  // Empire points were kept as their own list. They follow from where a team
+  // finished, so drop the list — but if it holds a season with no recorded
+  // finishes, keep those rows so nothing published is silently lost.
+  if (d.bank?.empirePoints) {
+    const known = new Set((d.bank.finishes || []).map((f) => f.season));
+    const orphaned = d.bank.empirePoints.filter((e) => e.points > 0 && !known.has(e.season));
+    if (orphaned.length) d.bank.empirePointsOrphaned = orphaned;
+    delete d.bank.empirePoints;
+  }
+
   // A legacy season holds only per-team totals. Keep it: it is the sole record
   // of that season's winnings until the real week-by-week data is published,
   // and minigameWinnings() falls back to it rather than reporting $0.

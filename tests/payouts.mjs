@@ -53,14 +53,15 @@ await db.update('minigames',(m)=>{
 });
 eq('back to baseline', [line(2025,'minigame').total, db.bank().cash], [170,780]);
 
-print('\n— placement is config-driven —');
+print('\n— placement: results from Sleeper, amounts from config —');
+eq('all ten places are recorded', db.get('bank').finishes.filter(f=>f.season===2025).length, 10);
+eq('but only the paying places appear', line(2025,'placement').rows.map(r=>r.place), [1,2]);
 eq('scale', db.placementScale(2025), {'1':100,'2':50});
 await db.update('league',(L)=>{L.placementPayouts['2025']={'1':100,'2':50,'3':25};});
-eq('adding a 3rd place needs no new payout row', line(2025,'placement').rows.length, 2);
-await db.update('bank',(b)=>{b.finishes.push({season:2025,place:3,team:4});});
-eq('once a 3rd-place finisher exists it pays', line(2025,'placement').total, 175);
-eq('and shows unpaid', line(2025,'placement').rows.find(r=>r.place===3).paid, false);
-await db.update('bank',(b)=>{b.finishes=b.finishes.filter(f=>f.place!==3);});
+eq('paying a 3rd needs only a config line', line(2025,'placement').rows.map(r=>r.place), [1,2,3]);
+eq('and the money follows', line(2025,'placement').total, 175);
+eq('the new row is unpaid', line(2025,'placement').rows.find(r=>r.place===3).paid, false);
+eq('3rd went to the bracket winner of that game', db.team(line(2025,'placement').rows.find(r=>r.place===3).team).manager, 'Tyler');
 await db.update('league',(L)=>{delete L.placementPayouts['2025'];});
 eq('restored', line(2025,'placement').total, 150);
 

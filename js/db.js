@@ -364,12 +364,15 @@ class Store {
     // Two ways to win: 2 titles, or 1 title AND the points threshold.
     // Points alone never claim it, so progress has to be measured against both.
     const titlesNeeded = L.empireTitlesToWin ?? 2;
+    // Points come from where a team finished, not a second hand-kept list.
+    const scale = Object.fromEntries((L.empirePointsScale || []).map((x) => [x.place, x.points]));
+    const finishes = b.finishes || [];
     const board = this.teams().map((t) => {
-      const rows = b.empirePoints.filter((e) => e.team === t.number);
-      const bySeason = Object.fromEntries(this.seasons.map((s) =>
-        [s, rows.filter((r) => r.season === s).reduce((a, r) => a + r.points, 0)]));
+      const bySeason = Object.fromEntries(this.seasons.map((s) => [s,
+        finishes.filter((f) => f.season === s && f.team === t.number)
+          .reduce((a, f) => a + (Number(scale[f.place]) || 0), 0)]));
       const total = Object.values(bySeason).reduce((a, x) => a + x, 0);
-      const titles = (b.finishes || []).filter((f) => f.team === t.number && f.place === 1).length;
+      const titles = finishes.filter((f) => f.team === t.number && f.place === 1).length;
       const ptsPct = L.empireThreshold ? Math.min(1, total / L.empireThreshold) : 0;
       const titlePct = titlesNeeded ? Math.min(1, titles / titlesNeeded) : 0;
       const eligible = !L.empireRequiresTitle || titles >= 1;
