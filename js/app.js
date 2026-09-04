@@ -107,6 +107,71 @@ function shell() {
 const openSheet  = () => { $('#sheet').classList.add('open'); $('#sheetBd').classList.add('open'); };
 const closeSheet = () => { $('#sheet')?.classList.remove('open'); $('#sheetBd')?.classList.remove('open'); };
 
+
+/* ============================================================
+   COLLAPSIBLE SECTIONS
+   Every top-level `.section-title` gets its following siblings wrapped and
+   becomes a real toggle. Done here rather than in each view so no section
+   can be missed, and so the marker only ever appears where it works.
+   Collapsed state is remembered per view.
+   ============================================================ */
+const COLLAPSE_KEY = 'sweatydyno:collapsed:v1';
+
+const readCollapsed = () => {
+  try { return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '[]')); }
+  catch { return new Set(); }
+};
+const writeCollapsed = (set) => {
+  try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...set])); } catch { /* private mode */ }
+};
+
+function wireSections(main, view) {
+  const collapsed = readCollapsed();
+  // direct children only: titles nested inside cards or modals are labels, not sections
+  for (const title of [...main.children].filter((n) => n.classList?.contains('section-title'))) {
+    const body = document.createElement('div');
+    body.className = 'sec-body';
+    let n = title.nextElementSibling;
+    while (n && !n.classList.contains('section-title')) {
+      const next = n.nextElementSibling;
+      body.appendChild(n);
+      n = next;
+    }
+    if (!body.childElementCount) continue;   // nothing to collapse — leave it inert
+    title.after(body);
+
+    if (!title.querySelector('.sec-mark')) {
+      const mark = document.createElement('i');
+      mark.className = 'sec-mark';
+      mark.setAttribute('aria-hidden', 'true');
+      mark.innerHTML = '<b></b><b></b>';
+      title.prepend(mark);
+    }
+
+    const key = `${view}|${title.textContent.trim().slice(0, 40)}`;
+    const set = (open) => {
+      title.setAttribute('aria-expanded', String(open));
+      title.querySelector('.sec-mark')?.classList.toggle('open', open);
+      body.hidden = !open;
+    };
+    set(!collapsed.has(key));
+
+    title.setAttribute('role', 'button');
+    title.setAttribute('tabindex', '0');
+    const toggle = () => {
+      const open = title.getAttribute('aria-expanded') !== 'true';
+      set(open);
+      const c = readCollapsed();
+      open ? c.delete(key) : c.add(key);
+      writeCollapsed(c);
+    };
+    title.addEventListener('click', toggle);
+    title.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  }
+}
+
 /* ---------- render ---------- */
 function paint() {
   const v = VIEWS[state.view];
@@ -116,6 +181,7 @@ function paint() {
   try {
     main.innerHTML = v.mod.render(db, state);
     v.mod.mount?.(main, db, go, setState, state.params || {});
+    wireSections(main, state.view);
   } catch (err) {
     console.error(err);
     main.innerHTML = `<div class="card"><div class="card-bd">

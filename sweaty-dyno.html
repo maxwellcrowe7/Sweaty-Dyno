@@ -199,9 +199,29 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3);
   margin:26px 0 10px; display:flex; align-items:center; gap:10px;
 }
-.section-title::before{content:"";width:14px;height:2px;border-radius:2px;background:var(--heat);opacity:.75;flex:none}
 .section-title::after{content:"";flex:1;height:1px;
   background:linear-gradient(90deg,var(--line),transparent)}
+
+/* The +/- marker is a real element with two bars, inserted only on titles that
+   actually toggle — so it is never an affordance that does nothing. The vertical
+   bar collapses into the horizontal one, turning the plus into a minus. */
+.section-title[aria-expanded]{cursor:pointer;user-select:none}
+.section-title[aria-expanded]:hover{color:var(--ink-2)}
+.section-title[aria-expanded]:focus-visible{outline:2px solid var(--heat);outline-offset:3px;border-radius:4px}
+.section-title[aria-expanded="false"]{color:var(--ink-2)}
+
+/* Two real bars, not pseudo-elements: Chrome does not reliably restyle a
+   pseudo when an ANCESTOR's attribute changes, which left the plus stuck as a
+   minus. The state class lives on the marker itself. */
+.sec-mark{position:relative;width:13px;height:13px;flex:none;display:block}
+.sec-mark b{position:absolute;background:var(--heat);opacity:.85;border-radius:2px;
+  transition:opacity .16s ease}
+.sec-mark b:first-child{left:0;right:0;top:50%;height:2px;margin-top:-1px}
+.sec-mark b:last-child{top:0;bottom:0;left:50%;width:2px;margin-left:-1px}
+.sec-mark.open b:last-child{display:none}
+.section-title[aria-expanded]:hover .sec-mark b{opacity:1}
+
+.sec-body[hidden]{display:none}
 
 .chip{
   display:inline-flex;align-items:center;gap:5px;
@@ -3806,6 +3826,71 @@ function shell() {
 const openSheet  = () => { $('#sheet').classList.add('open'); $('#sheetBd').classList.add('open'); };
 const closeSheet = () => { $('#sheet')?.classList.remove('open'); $('#sheetBd')?.classList.remove('open'); };
 
+
+/* ============================================================
+   COLLAPSIBLE SECTIONS
+   Every top-level `.section-title` gets its following siblings wrapped and
+   becomes a real toggle. Done here rather than in each view so no section
+   can be missed, and so the marker only ever appears where it works.
+   Collapsed state is remembered per view.
+   ============================================================ */
+const COLLAPSE_KEY = 'sweatydyno:collapsed:v1';
+
+const readCollapsed = () => {
+  try { return new Set(JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '[]')); }
+  catch { return new Set(); }
+};
+const writeCollapsed = (set) => {
+  try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...set])); } catch { /* private mode */ }
+};
+
+function wireSections(main, view) {
+  const collapsed = readCollapsed();
+  // direct children only: titles nested inside cards or modals are labels, not sections
+  for (const title of [...main.children].filter((n) => n.classList?.contains('section-title'))) {
+    const body = document.createElement('div');
+    body.className = 'sec-body';
+    let n = title.nextElementSibling;
+    while (n && !n.classList.contains('section-title')) {
+      const next = n.nextElementSibling;
+      body.appendChild(n);
+      n = next;
+    }
+    if (!body.childElementCount) continue;   // nothing to collapse — leave it inert
+    title.after(body);
+
+    if (!title.querySelector('.sec-mark')) {
+      const mark = document.createElement('i');
+      mark.className = 'sec-mark';
+      mark.setAttribute('aria-hidden', 'true');
+      mark.innerHTML = '<b></b><b></b>';
+      title.prepend(mark);
+    }
+
+    const key = `${view}|${title.textContent.trim().slice(0, 40)}`;
+    const set = (open) => {
+      title.setAttribute('aria-expanded', String(open));
+      title.querySelector('.sec-mark')?.classList.toggle('open', open);
+      body.hidden = !open;
+    };
+    set(!collapsed.has(key));
+
+    title.setAttribute('role', 'button');
+    title.setAttribute('tabindex', '0');
+    const toggle = () => {
+      const open = title.getAttribute('aria-expanded') !== 'true';
+      set(open);
+      const c = readCollapsed();
+      open ? c.delete(key) : c.add(key);
+      writeCollapsed(c);
+    };
+    title.addEventListener('click', toggle);
+    title.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  }
+}
+
 /* ---------- render ---------- */
 function paint() {
   const v = VIEWS[state.view];
@@ -3815,6 +3900,7 @@ function paint() {
   try {
     main.innerHTML = v.mod.render(db, state);
     v.mod.mount?.(main, db, go, setState, state.params || {});
+    wireSections(main, state.view);
   } catch (err) {
     console.error(err);
     main.innerHTML = `<div class="card"><div class="card-bd">

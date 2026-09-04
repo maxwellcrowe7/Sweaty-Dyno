@@ -183,9 +183,29 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3);
   margin:26px 0 10px; display:flex; align-items:center; gap:10px;
 }
-.section-title::before{content:"";width:14px;height:2px;border-radius:2px;background:var(--heat);opacity:.75;flex:none}
 .section-title::after{content:"";flex:1;height:1px;
   background:linear-gradient(90deg,var(--line),transparent)}
+
+/* The +/- marker is a real element with two bars, inserted only on titles that
+   actually toggle — so it is never an affordance that does nothing. The vertical
+   bar collapses into the horizontal one, turning the plus into a minus. */
+.section-title[aria-expanded]{cursor:pointer;user-select:none}
+.section-title[aria-expanded]:hover{color:var(--ink-2)}
+.section-title[aria-expanded]:focus-visible{outline:2px solid var(--heat);outline-offset:3px;border-radius:4px}
+.section-title[aria-expanded="false"]{color:var(--ink-2)}
+
+/* Two real bars, not pseudo-elements: Chrome does not reliably restyle a
+   pseudo when an ANCESTOR's attribute changes, which left the plus stuck as a
+   minus. The state class lives on the marker itself. */
+.sec-mark{position:relative;width:13px;height:13px;flex:none;display:block}
+.sec-mark b{position:absolute;background:var(--heat);opacity:.85;border-radius:2px;
+  transition:opacity .16s ease}
+.sec-mark b:first-child{left:0;right:0;top:50%;height:2px;margin-top:-1px}
+.sec-mark b:last-child{top:0;bottom:0;left:50%;width:2px;margin-left:-1px}
+.sec-mark.open b:last-child{display:none}
+.section-title[aria-expanded]:hover .sec-mark b{opacity:1}
+
+.sec-body[hidden]{display:none}
 
 .chip{
   display:inline-flex;align-items:center;gap:5px;
