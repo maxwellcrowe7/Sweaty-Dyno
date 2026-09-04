@@ -101,11 +101,7 @@ export function render(db, state = {}) {
 
   <div class="section-title">Buy-ins</div>
   <div class="card">
-    <div class="card-hd"><h3>Buy-ins</h3><div class="spacer"></div>
-      ${admin ? '<span class="chip heat">Type an amount in any cell</span>'
-              : `<span class="chip">${money(all.collected)} of ${money(all.expected)}</span>`}</div>
-
-    <button class="acc-hd sub" data-rates aria-expanded="${ratesOpen}">
+    <button class="acc-hd sub first" data-rates aria-expanded="${ratesOpen}">
       ${icon('chev', 'acc-caret')}
       <span>Buy-in per season</span>
     </button>
@@ -114,7 +110,8 @@ export function render(db, state = {}) {
         <div class="rates">
           ${seasons.map((s) => `<label class="rate">
             <span>${s}</span>
-            ${admin ? `<input type="text" inputmode="decimal" data-rate="${s}" value="${money(db.buyIn(s))}">`
+            ${admin ? `<input type="text" inputmode="decimal" data-rate="${s}"
+                        value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
                     : `<b>${money(db.buyIn(s))}</b>`}
           </label>`).join('')}
         </div>
