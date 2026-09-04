@@ -18,7 +18,9 @@ const resultRow = (db, g, place) => {
 };
 
 function guillotineCard(db, G, S, admin) {
-  if (!G) return '';
+  if (!G) return admin ? `<div class="card"><div class="card-bd" style="text-align:center">
+    <div class="s dim" style="font-size:12.5px;margin-bottom:11px">No guillotine set up for ${S}.</div>
+    <button class="btn" data-editguil>${icon('blade')} Add the guillotine</button></div></div>` : '';
   const gone = new Set(G.eliminations.map((e) => e.team));
   const alive = G.entrants.filter((t) => !gone.has(t));
   const order = [...G.eliminations].sort((a, b) => b.week - a.week);
@@ -30,6 +32,7 @@ function guillotineCard(db, G, S, admin) {
         G.awardedInWeek && G.awardedInWeek !== G.startWeek ? ` &middot; paid wk ${G.awardedInWeek}` : ''}</div></div>
       <div class="spacer"></div>
       <span class="chip ${G.winner ? 'gold' : 'heat'}">${money(G.payout?.['1'] || 0)}</span>
+      ${admin ? `<button class="btn sm ghost" data-editguil>${icon('pencil')}</button>` : ''}
     </div>
     <div class="card-bd" style="padding-bottom:10px">
       <div class="s dim" style="font-size:12.5px;line-height:1.55">${esc(G.rules || '')}</div>
@@ -76,6 +79,12 @@ export function render(db) {
       <div class="m">week ${s.guillotine?.startWeek ?? '--'}</div></div>
   </div>
 
+  ${admin ? `<div class="mg-actions">
+    <button class="btn sm" data-setup>${icon('cog')} Season setup</button>
+    <button class="btn sm" data-addweek>${icon('plus')} Add week</button>
+    <button class="btn sm" data-addaward>${icon('trophy')} Add award</button>
+  </div>` : ''}
+
   <div class="section-title">Weekly slate</div>
   ${s.games.length ? s.games.map((g) => {
     const settled = g.results?.['1']?.team;
@@ -100,7 +109,11 @@ export function render(db) {
             ${['1', '2', '3'].map((p) => resultRow(db, g, p)).join('')}</div>`
         : ''}
     </div>`;
-  }).join('') : empty('No slate yet', `Add this season's minigames in Admin, or turn on edit mode to build the schedule week by week.`, 'dice')}
+  }).join('') : `${empty('No slate yet', admin
+      ? `Set up the season below and every week appears here, ready to fill in.`
+      : `The commissioner hasn't set up ${S}'s minigames yet.`, 'dice')}
+    ${admin ? `<div style="text-align:center;margin-top:-14px">
+      <button class="btn primary" data-setup>${icon('plus')} Set up ${S} season</button></div>` : ''}`}
 
   ${(s.awards || []).length ? `
   <div class="section-title">Post-season awards</div>
@@ -116,6 +129,7 @@ export function render(db) {
             <div>${teamTag(db.team(a.result.team), { num: false })}</div>
             <div class="s" style="color:var(--heat);font-family:var(--f-display);font-weight:700">${money(a.payout)}</div>
           </div>` : '<span class="chip ghost">undecided</span>'}
+      ${admin ? `<button class="btn sm ghost" data-editaward="${a.id}">${icon('pencil')}</button>` : ''}
     </div>`).join('')}
   </div></div></div>` : ''}
 
@@ -127,6 +141,147 @@ export function render(db) {
 export function mount(root, db) {
   const S = db.season;
   const teams = db.teams(S);
+
+  /* ---------- season setup, all on this tab ---------- */
+  const season = () => db.get('minigames').seasons[String(S)]
+    ||= { games: [], guillotine: null, awards: [], legacy: null };
+
+  root.querySelectorAll('[data-setup]').forEach((b) => b.addEventListener('click', () => {
+    const cur = db.minigames(S);
+    const d0 = db.get('minigames').defaults || {};
+    openModal({
+      title: `${S} season setup`,
+      confirm: cur.games.length ? 'Update' : 'Create slate',
+      body: `<div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
+          Creates one entry per week. Existing weeks keep whatever you have already entered &mdash;
+          this only adds the missing ones.</div>
+        <div class="fgrid">
+          <div class="field"><label>Weeks</label>
+            <input name="weeks" type="number" min="1" max="18" inputmode="numeric"
+              value="${cur.games.length || d0.weeks || 14}"></div>
+          <div class="field"><label>Default payout</label>
+            <input name="pay" type="number" min="0" inputmode="numeric"
+              value="${d0.weeklyPayout?.['1'] ?? 10}"></div>
+        </div>
+        <div class="field"><label>Guillotine week (blank for none)</label>
+          <input name="guil" type="number" min="1" max="18" inputmode="numeric"
+            value="${cur.guillotine?.week ?? ''}"></div>`,
+      onConfirm: async (f) => {
+        const weeks = Math.max(1, Math.min(18, +f.weeks || 14));
+        const pay = Math.max(0, +f.pay || 0);
+        const guil = f.guil ? Math.max(1, +f.guil) : null;
+        await db.update('minigames', (m) => {
+          const sn = (m.seasons[String(S)] ||= { games: [], guillotine: null, awards: [], legacy: null });
+          sn.awards ||= [];
+          for (let wk = 1; wk <= weeks; wk++) {
+            if (sn.games.some((g) => g.week === wk)) continue;
+            sn.games.push({ id: `${S}-w${String(wk).padStart(2, '0')}`, week: wk, name: null, rules: null,
+              payout: { 1: pay, 2: 0, 3: 0 }, status: 'scheduled', results: { 1: null, 2: null, 3: null } });
+          }
+          sn.games = sn.games.filter((g) => g.week <= weeks).sort((a, b) => a.week - b.week);
+          if (guil && !sn.guillotine) {
+            sn.guillotine = { id: `${S}-guillotine`, week: guil, startWeek: 1, name: 'Guillotine',
+              rules: 'Lowest scoring manager is chopped every week until one remains.',
+              payout: { 1: pay }, status: 'scheduled',
+              entrants: db.teams(S).map((t) => t.number), eliminations: [], winner: null, awardedInWeek: guil };
+          } else if (guil && sn.guillotine) {
+            sn.guillotine.week = guil; sn.guillotine.awardedInWeek = guil;
+          } else if (!guil) sn.guillotine = null;
+        });
+        toast(`${S} slate ready`);
+      },
+    });
+  }));
+
+  root.querySelector('[data-addweek]')?.addEventListener('click', async () => {
+    const cur = db.minigames(S);
+    const wk = Math.max(0, ...cur.games.map((g) => g.week)) + 1;
+    const pay = db.get('minigames').defaults?.weeklyPayout?.['1'] ?? 10;
+    await db.update('minigames', (m) => {
+      const sn = (m.seasons[String(S)] ||= { games: [], guillotine: null, awards: [], legacy: null });
+      sn.games.push({ id: `${S}-w${String(wk).padStart(2, '0')}`, week: wk, name: null, rules: null,
+        payout: { 1: pay, 2: 0, 3: 0 }, status: 'scheduled', results: { 1: null, 2: null, 3: null } });
+    });
+    toast(`Week ${wk} added`);
+  });
+
+  root.querySelector('[data-editguil]')?.addEventListener('click', () => {
+    const G = db.minigames(S).guillotine;
+    openModal({
+      title: 'Guillotine',
+      confirm: 'Save',
+      body: `<div class="field"><label>Rules</label><textarea name="rules">${esc(G?.rules
+          || 'Lowest scoring manager is chopped every week until one remains.')}</textarea></div>
+        <div class="fgrid">
+          <div class="field"><label>Runs from week</label>
+            <input name="start" type="number" min="1" inputmode="numeric" value="${G?.startWeek ?? 1}"></div>
+          <div class="field"><label>Paid out in week</label>
+            <input name="week" type="number" min="1" inputmode="numeric" value="${G?.week ?? 9}"></div>
+        </div>
+        <div class="field"><label>Payout</label>
+          <input name="pay" type="number" min="0" inputmode="numeric" value="${G?.payout?.['1'] ?? 10}"></div>
+        ${G ? '<label class="toggle" style="margin-top:4px"><input type="checkbox" name="remove"><span class="tr"></span><span style="font-size:12.5px">Remove the guillotine</span></label>' : ''}`,
+      onConfirm: async (f) => {
+        await db.update('minigames', (m) => {
+          const sn = (m.seasons[String(S)] ||= { games: [], guillotine: null, awards: [], legacy: null });
+          if (f.remove) { sn.guillotine = null; return; }
+          sn.guillotine = {
+            ...(sn.guillotine || { id: `${S}-guillotine`, name: 'Guillotine', status: 'scheduled',
+                                   entrants: db.teams(S).map((t) => t.number), eliminations: [], winner: null }),
+            rules: f.rules.trim() || null,
+            startWeek: Math.max(1, +f.start || 1),
+            week: Math.max(1, +f.week || 9),
+            awardedInWeek: Math.max(1, +f.week || 9),
+            payout: { 1: Math.max(0, +f.pay || 0) },
+          };
+        });
+        toast('Guillotine saved');
+      },
+    });
+  });
+
+  const awardModal = (award) => {
+    const teams = db.teams(S);
+    openModal({
+      title: award ? 'Edit award' : 'New award',
+      confirm: 'Save award',
+      body: `<div class="field"><label>Award</label>
+          <input name="name" value="${esc(award?.name || '')}" placeholder="e.g. Trade of the Year"></div>
+        <div class="field"><label>How it's won</label>
+          <textarea name="rules">${esc(award?.rules || '')}</textarea></div>
+        <div class="fgrid">
+          <div class="field"><label>Payout</label>
+            <input name="pay" type="number" min="0" inputmode="numeric" value="${award?.payout ?? 10}"></div>
+          <div class="field"><label>Winner</label>
+            <select name="team">${teamOptions(teams, award?.result?.team ?? '')}</select></div>
+        </div>
+        <label class="toggle"><input type="checkbox" name="canceled" ${award?.status === 'canceled' ? 'checked' : ''}>
+          <span class="tr"></span><span style="font-size:12.5px">Cancelled</span></label>
+        ${award ? '<label class="toggle" style="margin-top:9px"><input type="checkbox" name="remove"><span class="tr"></span><span style="font-size:12.5px;color:var(--red)">Delete this award</span></label>' : ''}`,
+      onConfirm: async (f) => {
+        if (!f.name.trim() && !f.remove) { toast('Give it a name'); return false; }
+        await db.update('minigames', (m) => {
+          const sn = (m.seasons[String(S)] ||= { games: [], guillotine: null, awards: [], legacy: null });
+          sn.awards ||= [];
+          if (award && f.remove) { sn.awards = sn.awards.filter((a) => a.id !== award.id); return; }
+          const rec = {
+            id: award?.id || `${S}-aw${Date.now().toString(36)}`,
+            name: f.name.trim(),
+            rules: f.rules.trim() || null,
+            payout: f.canceled ? 0 : Math.max(0, +f.pay || 0),
+            status: f.canceled ? 'canceled' : (f.team ? 'final' : 'scheduled'),
+            result: f.canceled || !f.team ? null : { team: +f.team, value: null },
+          };
+          const i = sn.awards.findIndex((a) => a.id === rec.id);
+          i >= 0 ? sn.awards[i] = rec : sn.awards.push(rec);
+        });
+        toast('Award saved');
+      },
+    });
+  };
+  root.querySelector('[data-addaward]')?.addEventListener('click', () => awardModal(null));
+  root.querySelectorAll('[data-editaward]').forEach((b) => b.addEventListener('click', () =>
+    awardModal(db.minigames(S).awards.find((a) => a.id === b.dataset.editaward))));
 
   root.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
     const g = db.minigames(S).games.find((x) => x.id === b.dataset.edit);
@@ -144,6 +299,13 @@ export function mount(root, db) {
           ${['1', '2', '3'].map((p) => `<div class="field"><label>${PLACES[p]} $</label>
             <input name="pay${p}" type="number" min="0" step="1" inputmode="numeric" value="${Number(g.payout?.[p]) || 0}"></div>`).join('')}
         </div>
+        <div class="field" style="margin-top:2px">
+          <label>Status</label>
+          <select name="status">
+            ${['scheduled', 'final', 'none', 'canceled'].map((k) => `<option value="${k}" ${g.status === k ? 'selected' : ''}>${
+              { scheduled: 'Scheduled', final: 'Decided', none: 'No minigame this week', canceled: 'Cancelled' }[k]}</option>`).join('')}
+          </select>
+        </div>
         <div class="section-title" style="margin-top:2px">Result</div>
         ${['1', '2', '3'].map((p) => `
           <div class="fgrid" style="grid-template-columns:1fr 1fr">
@@ -151,8 +313,18 @@ export function mount(root, db) {
               <select name="team${p}">${teamOptions(teams, r(p).team ?? '')}</select></div>
             <div class="field"><label>What won it</label>
               <input name="val${p}" value="${esc(r(p).value || '')}" placeholder="player / score / note"></div>
-          </div>`).join('')}`,
+          </div>`).join('')}
+        <label class="toggle" style="margin-top:2px"><input type="checkbox" name="remove">
+          <span class="tr"></span><span style="font-size:12.5px;color:var(--red)">Delete week ${g.week}</span></label>`,
       onConfirm: async (d) => {
+        if (d.remove) {
+          await db.update('minigames', (m) => {
+            const sn = m.seasons[String(S)];
+            sn.games = sn.games.filter((x) => x.id !== g.id);
+          });
+          toast(`Week ${g.week} removed`);
+          return;
+        }
         await db.update('minigames', (m) => {
           const gg = m.seasons[String(S)].games.find((x) => x.id === g.id);
           gg.name = d.name.trim() || null;
@@ -161,7 +333,7 @@ export function mount(root, db) {
           gg.results = {};
           for (const p of ['1', '2', '3'])
             gg.results[p] = d[`team${p}`] ? { team: +d[`team${p}`], value: d[`val${p}`].trim() || null } : null;
-          gg.status = gg.results['1']?.team ? 'final' : 'scheduled';
+          gg.status = d.status || (gg.results['1']?.team ? 'final' : 'scheduled');
         });
         toast(`Week ${g.week} saved`);
       },

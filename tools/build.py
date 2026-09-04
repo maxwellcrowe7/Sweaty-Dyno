@@ -76,7 +76,19 @@ def transform(path: str) -> str:
             f'{body}\nreturn {ret};\n}})();\n')
 
 
+def check_config():
+    """Shipping a blanked js/config.js would silently drop the whole league back
+    to the bundled JSON for every visitor. Warn loudly rather than build it."""
+    cfg = (ROOT / 'js' / 'config.js').read_text(encoding='utf-8')
+    url = re.search(r"url:\s*'([^']*)'", cfg)
+    key = re.search(r"anonKey:\s*'([^']*)'", cfg)
+    if not (url and url.group(1)) or not (key and key.group(1)):
+        print('  !! js/config.js has no Supabase URL/key — the build will read the')
+        print('     bundled JSON instead of the database. Intentional?')
+
+
 def main():
+    check_config()
     css = (ROOT / 'css' / 'style.css').read_text(encoding='utf-8')
     data = {k: json.loads((ROOT / 'data' / f'{k}.json').read_text(encoding='utf-8')) for k in DATA}
 

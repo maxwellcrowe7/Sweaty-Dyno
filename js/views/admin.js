@@ -39,8 +39,8 @@ export function render(db) {
                     the league sees it on their next refresh.`
                  : `Editing is still local until the data is published.`}
         </div>
-        ${(!live || db.missingInCloud?.length) ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
-          ${icon('down')} Publish ${live ? 'missing files' : 'local data'} to Supabase</button>
+        ${!live ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
+          ${icon('down')} Publish local data to Supabase</button>
           <div data-pubout class="s dim" style="font-size:12px;margin-bottom:11px"></div>` : ''}
         <button class="btn" data-signout>${icon('lock')} Sign out</button>
       ` : `
@@ -85,6 +85,24 @@ export function render(db) {
     <div class="banner" style="background:rgba(61,220,151,.07);border-color:rgba(61,220,151,.26)">
       ${icon('check')}<div>Everything checks out. No config gaps and nothing unexported.</div></div>
   </div></div>`}
+
+  ${cloud ? `
+  <div class="section-title">Database</div>
+  <div class="card">
+    <div class="card-hd">${icon('sync')}<h3>Site copy vs. database</h3><div class="spacer"></div>
+      <span class="chip" data-diffchip>checking&hellip;</span></div>
+    <div class="card-bd">
+      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:12px">
+        Everyone reads the database. The site ships its own copy of the data, and when I change the
+        structure of a file that shipped copy is newer. This compares the two and pushes the ones that differ.
+      </div>
+      <div data-diff class="s dim" style="font-size:12.5px;margin-bottom:12px">Comparing&hellip;</div>
+      ${admin
+        ? `<button class="btn primary" data-push disabled style="width:100%">${icon('down')} Push to database</button>`
+        : `<div class="banner">${icon('lock')}<div>Sign in above to push changes.</div></div>`}
+      <div data-pushout class="s dim" style="font-size:12px;margin-top:10px"></div>
+    </div>
+  </div>` : ''}
 
   <div class="section-title">Sleeper</div>
   <div class="card">
@@ -186,6 +204,55 @@ export function mount(root, db) {
       err.textContent = ex.message;
       btn.disabled = false; btn.innerHTML = 'Sign in';
     }
+  });
+
+  /* Database sync: compare, then push what differs. */
+  const chip = root.querySelector('[data-diffchip]');
+  const diffBox = root.querySelector('[data-diff]');
+  const pushBtn = root.querySelector('[data-push]');
+  let pending = [];
+  if (chip) {
+    db.cloudDiff().then((diff) => {
+      pending = diff.map((d) => d.key);
+      if (!diff.length) {
+        chip.className = 'chip mint'; chip.textContent = 'in sync';
+        diffBox.innerHTML = 'The database matches the site copy. Nothing to push.';
+        return;
+      }
+      chip.className = 'chip heat';
+      chip.textContent = `${diff.length} to push`;
+      diffBox.innerHTML = diff.map((d) =>
+        `<span class="chip heat" style="margin:0 4px 4px 0">${esc(d.key)}.json${d.missing ? ' · new' : ''}</span>`).join('')
+        + '<div style="margin-top:8px">Pushing replaces the database copy of these files.</div>';
+      if (pushBtn) pushBtn.disabled = false;
+    }).catch((e) => {
+      chip.className = 'chip red'; chip.textContent = 'check failed';
+      diffBox.textContent = e.message;
+    });
+  }
+
+  pushBtn?.addEventListener('click', () => {
+    const out = root.querySelector('[data-pushout]');
+    openModal({
+      title: 'Push to database?',
+      confirm: `Push ${pending.length} file${pending.length === 1 ? '' : 's'}`,
+      body: `<p style="margin:0 0 10px;font-size:13.5px;line-height:1.6">This replaces the database copy of:</p>
+        <p style="margin:0 0 12px">${pending.map((k) => `<span class="chip heat" style="margin:0 4px 4px 0">${esc(k)}.json</span>`).join('')}</p>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--ink-3)">
+          Any edit made in the app that is not also in the site copy will be overwritten.
+          The previous version of each file is kept in the history table.</p>`,
+      onConfirm: async () => {
+        pushBtn.disabled = true;
+        try {
+          await db.publishToCloud(pending, (f) => { out.textContent = `Pushing ${f}.json…`; });
+          out.innerHTML = `<span style="color:var(--mint)">Pushed ${pending.length} file(s). The league sees it on their next refresh.</span>`;
+          toast('Database updated');
+        } catch (ex) {
+          out.innerHTML = `<span style="color:var(--red)">${esc(ex.message)}</span>`;
+          pushBtn.disabled = false;
+        }
+      },
+    });
   });
 
   root.querySelector('[data-publish]')?.addEventListener('click', async (e) => {

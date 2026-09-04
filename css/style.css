@@ -699,3 +699,6 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
   box-shadow:0 0 7px -1px var(--red);
 }
 .owed-flag{color:var(--gold);font-weight:700;margin-left:3px}
+
+.mg-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 2px}
+.mg-actions .btn{flex:1;min-width:110px}

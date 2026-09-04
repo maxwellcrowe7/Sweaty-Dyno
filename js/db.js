@@ -94,17 +94,47 @@ class Store {
   get auth() { return this.cloud ?? null; }
   get backend() { return this.live ? 'supabase' : this.cloud ? 'local-fallback' : 'local'; }
 
-  /** Push every local file up to Supabase. Requires an allowlisted sign-in. */
-  async publishToCloud(onStep = () => {}) {
+  /** The copy shipped with the site, whatever backend is currently active. */
+  async repoSnapshot() {
+    const a = new JsonAdapter();
+    await a.load();
+    return a.data;
+  }
+
+  /**
+   * Which files differ between the shipped copy and the database. Comparing
+   * content rather than presence is the point: every key can exist and still
+   * be months out of date, which is exactly what went wrong before.
+   */
+  async cloudDiff() {
+    if (!this.cloud) return [];
+    const repo = await this.repoSnapshot();
+    const cloud = this.live ? this.a.data : {};
+    return FILES
+      .filter((f) => repo[f] !== undefined)
+      .map((f) => ({
+        key: f,
+        differs: JSON.stringify(repo[f]) !== JSON.stringify(cloud[f]),
+        missing: cloud[f] === undefined,
+      }))
+      .filter((x) => x.differs);
+  }
+
+  /** Overwrite the named files in the database with the shipped copy. */
+  async publishToCloud(keys = null, onStep = () => {}) {
     if (!this.cloud) throw new Error('Supabase is not configured.');
     if (!this.cloud.signedIn) throw new Error('Sign in as commissioner first.');
-    for (const f of FILES) {
+    const repo = await this.repoSnapshot();
+    const list = keys || FILES;
+    for (const f of list) {
+      if (repo[f] === undefined) continue;
       onStep(f);
-      await this.cloud.set(f, this.get(f));
+      await this.cloud.set(f, repo[f]);
     }
     await this.cloud.load();
     this.a = this.cloud;
     this.cloudError = null;
+    this.missingInCloud = [];
     try { localStorage.removeItem(LS_KEY); } catch {}
     this.emit();
   }
