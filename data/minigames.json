@@ -1,13 +1,15 @@
 {
-  "_README": "One entry per week per season. status: final | scheduled | none (no minigame that week) | canceled | guillotine (a pointer to the guillotine, not a separate payout). results maps place -> {team, value}. awards are post-season and not tied to a week. The guillotine stores only its setup — startWeek, payout, entrants — because the chops are worked out from the weekly scores;  forces a specific chop for a week when a tie or a missing result needs a call.",
+  "_README": "One list of minigames per season. `phase` is pre | week | post. Weekly games carry a `week`; preseason and post-season games carry an `order`. status: final | scheduled | none (no minigame that week) | canceled | guillotine (a pointer, not a separate payout). results maps place -> {team, value}. The guillotine stores only its setup — startWeek, payout, entrants — because the chops are worked out from the weekly scores; `overrides` forces a specific chop when a tie or missing result needs a call.",
   "defaults": {
+    "weeks": 14,
+    "preseason": 0,
+    "postseason": 0,
     "weeklyPayout": {
       "1": 10,
       "2": 0,
       "3": 0
     },
-    "weeks": 14,
-    "guillotineWeek": 9
+    "guillotineStartWeek": 1
   },
   "seasons": {
     "2025": {
@@ -31,7 +33,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w02",
@@ -52,7 +55,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w03",
@@ -73,7 +77,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w04",
@@ -94,7 +99,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w05",
@@ -115,7 +121,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w06",
@@ -136,7 +143,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w07",
@@ -157,7 +165,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w08",
@@ -178,7 +187,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w09",
@@ -195,7 +205,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w10",
@@ -213,7 +224,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w11",
@@ -234,7 +246,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w12",
@@ -255,7 +268,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w13",
@@ -276,7 +290,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w14",
@@ -297,7 +312,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w15",
@@ -318,7 +334,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w16",
@@ -335,7 +352,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w17",
@@ -352,7 +370,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2025-w18",
@@ -366,6 +385,92 @@
           },
           "status": "canceled",
           "note": "The league setup prevents managers from setting a week 18 lineup.",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          },
+          "phase": "week"
+        },
+        {
+          "id": "2025-aw1",
+          "phase": "post",
+          "order": 1,
+          "week": null,
+          "name": "Trade of the Year",
+          "rules": "Biggest ‘win’ in a trade (value bump)",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "results": {
+            "1": {
+              "team": 10,
+              "value": null
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-aw2",
+          "phase": "post",
+          "order": 2,
+          "week": null,
+          "name": "Waiver Wire Wizard",
+          "rules": "Best waiver wire additions. Emphasis on starting-lineup impact",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "results": {
+            "1": {
+              "team": 6,
+              "value": null
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-aw3",
+          "phase": "post",
+          "order": 3,
+          "week": null,
+          "name": "League Favorite Manager",
+          "rules": "Who are we most thankful for?",
+          "payout": {
+            "1": 10,
+            "2": 0,
+            "3": 0
+          },
+          "status": "final",
+          "results": {
+            "1": {
+              "team": 4,
+              "value": null
+            },
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2025-aw4",
+          "phase": "post",
+          "order": 4,
+          "week": null,
+          "name": "GM Jiu-Jitsu",
+          "rules": "Roster moves and start/sit decisions deemed most positively impactful",
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "canceled",
           "results": {
             "1": null,
             "2": null,
@@ -396,50 +501,7 @@
         ],
         "winner": 4,
         "overrides": []
-      },
-      "awards": [
-        {
-          "id": "2025-aw1",
-          "name": "Trade of the Year",
-          "rules": "Biggest ‘win’ in a trade (value bump)",
-          "payout": 10,
-          "status": "final",
-          "result": {
-            "team": 10,
-            "value": null
-          }
-        },
-        {
-          "id": "2025-aw2",
-          "name": "Waiver Wire Wizard",
-          "rules": "Best waiver wire additions. Emphasis on starting-lineup impact",
-          "payout": 10,
-          "status": "final",
-          "result": {
-            "team": 6,
-            "value": null
-          }
-        },
-        {
-          "id": "2025-aw3",
-          "name": "League Favorite Manager",
-          "rules": "Who are we most thankful for?",
-          "payout": 10,
-          "status": "final",
-          "result": {
-            "team": 4,
-            "value": null
-          }
-        },
-        {
-          "id": "2025-aw4",
-          "name": "GM Jiu-Jitsu",
-          "rules": "Roster moves and start/sit decisions deemed most positively impactful",
-          "payout": 0,
-          "status": "canceled",
-          "result": null
-        }
-      ]
+      }
     },
     "2026": {
       "games": [
@@ -458,7 +520,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w02",
@@ -475,7 +538,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w03",
@@ -492,7 +556,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w04",
@@ -509,7 +574,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w05",
@@ -526,7 +592,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w06",
@@ -543,7 +610,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w07",
@@ -560,7 +628,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w08",
@@ -577,7 +646,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w10",
@@ -594,7 +664,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w11",
@@ -611,7 +682,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w12",
@@ -628,7 +700,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w13",
@@ -645,7 +718,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         },
         {
           "id": "2026-w14",
@@ -662,7 +736,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "phase": "week"
         }
       ],
       "guillotine": {
@@ -688,8 +763,7 @@
         ],
         "winner": null,
         "overrides": []
-      },
-      "awards": []
+      }
     }
   }
 }

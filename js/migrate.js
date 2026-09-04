@@ -47,9 +47,24 @@ export function migrate(data) {
   if (d.bank && !d.bank.empirePot) d.bank.empirePot = { claimedBy: null, claimedSeason: null, paidAmount: null };
   if (d.bank?.empirePot && !('paidAmount' in d.bank.empirePot)) d.bank.empirePot.paidAmount = null;
 
-  // minigames gained per-season awards; the guillotine stopped storing its result
+  // Minigames gained phases (pre / week / post). Post-season awards were a
+  // separate list; they are the same thing, so fold them in.
   for (const s of Object.values(d.minigames?.seasons || {})) {
-    if (!s.awards) s.awards = [];
+    for (const g of s.games || []) g.phase ||= 'week';
+    if (Array.isArray(s.awards)) {
+      s.games ||= [];
+      s.awards.forEach((a, i) => {
+        if (s.games.some((g) => g.id === a.id)) return;
+        s.games.push({
+          id: a.id, phase: 'post', order: i + 1, week: null,
+          name: a.name ?? null, rules: a.rules ?? null,
+          payout: { 1: a.payout || 0, 2: 0, 3: 0 },
+          status: a.status || 'scheduled',
+          results: { 1: a.result || null, 2: null, 3: null },
+        });
+      });
+      delete s.awards;
+    }
     const g = s.guillotine;
     if (!g) continue;
     g.overrides ||= [];

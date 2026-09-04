@@ -227,7 +227,7 @@ class Store {
       for (const pl of ['1', '2', '3']) add(g.results?.[pl]?.team, Number(g.payout?.[pl]) || 0);
     const run = this.guillotineRun(season);
     if (run?.winner) add(run.winner, Number(s.guillotine.payout?.['1']) || 0);
-    for (const a of s.awards || []) add(a.result?.team, Number(a.payout) || 0);
+
 
     // A season recorded before week-by-week tracking existed carries only totals.
     // Fall back to those rather than reporting $0 for a season that was paid.
@@ -393,16 +393,28 @@ class Store {
     const s = this.get('minigames').seasons[String(season)];
     return s || { games: [], guillotine: null, legacy: null };
   }
+  /** Minigames grouped by phase, each already in the order they are played. */
+  minigamePhases(season = this.season) {
+    const games = this.minigames(season).games || [];
+    const ord = (g) => (g.phase === 'week' ? g.week : g.order) ?? 0;
+    const pick = (ph) => games.filter((g) => (g.phase || 'week') === ph).sort((a, b) => ord(a) - ord(b));
+    return [
+      { phase: 'pre',  title: 'Preseason',   games: pick('pre') },
+      { phase: 'week', title: 'Weekly slate', games: pick('week') },
+      { phase: 'post', title: 'Post-season',  games: pick('post') },
+    ];
+  }
+
   minigameSpend(season = this.season) {
     const s = this.minigames(season);
     const won = (g) => Object.entries(g.results || {})
       .filter(([, r]) => r?.team).reduce((a, [pl]) => a + (Number(g.payout?.[pl]) || 0), 0);
     const paid = s.games.reduce((a, g) => a + won(g), 0)
       + (s.guillotine?.winner ? (Number(s.guillotine.payout?.['1']) || 0) : 0)
-      + (s.awards || []).reduce((a, x) => a + (x.result?.team ? Number(x.payout) || 0 : 0), 0);
+
     const committed = s.games.reduce((a, g) => a + Object.values(g.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0), 0)
       + Object.values(s.guillotine?.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0)
-      + (s.awards || []).reduce((a, x) => a + (Number(x.payout) || 0), 0);
+
     return { paid: paid + (s.legacy?.total || 0), committed, remaining: committed - paid };
   }
 
