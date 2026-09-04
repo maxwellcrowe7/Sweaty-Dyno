@@ -173,11 +173,81 @@ class Store {
   /** Seasons that have actually started — the empire pot only accrues for these. */
   activeSeasons() { return this.seasons.filter((s) => s <= this.league.currentSeason); }
 
+  /* ---------- payouts ----------
+     Amounts are never stored. Each category derives from whatever produced it,
+     so a corrected minigame result moves the money automatically and the books
+     cannot drift from the results. `settled` records only who has been paid. */
+
+  placementScale(season) {
+    const p = this.league.placementPayouts || {};
+    return p[String(season)] || p.default || {};
+  }
+
+  isSettled(season, category, team) {
+    return (this.get('bank').settled || [])
+      .some((x) => x.season === season && x.category === category && x.team === team);
+  }
+
+  /** Minigame winnings per team for a season, straight from the games. */
+  minigameWinnings(season) {
+    const s = this.minigames(season);
+    const out = {};
+    const add = (team, amt) => { if (team && amt) out[team] = (out[team] || 0) + amt; };
+    for (const g of s.games || [])
+      for (const pl of ['1', '2', '3']) add(g.results?.[pl]?.team, Number(g.payout?.[pl]) || 0);
+    if (s.guillotine?.winner) add(s.guillotine.winner, Number(s.guillotine.payout?.['1']) || 0);
+    for (const a of s.awards || []) add(a.result?.team, Number(a.payout) || 0);
+
+    // A season recorded before week-by-week tracking existed carries only totals.
+    // Fall back to those rather than reporting $0 for a season that was paid.
+    if (!Object.keys(out).length && s.legacy?.totalsByTeam)
+      for (const [team, amt] of Object.entries(s.legacy.totalsByTeam)) add(Number(team), Number(amt) || 0);
+    return out;
+  }
+
+  /** One block per category for a season, each with its rows and paid state. */
+  payoutLines(season) {
+    const claim = this.empireClaim();
+    const settled = (c, t) => this.isSettled(season, c, t);
+
+    const empireRows = claim && claim.season === season
+      ? [{ team: claim.team, amount: claim.amount, paid: settled('empire', claim.team) }] : [];
+
+    const scale = this.placementScale(season);
+    const placementRows = (this.get('bank').finishes || [])
+      .filter((f) => f.season === season)
+      .map((f) => ({ team: f.team, place: f.place, amount: Number(scale[String(f.place)]) || 0,
+                     paid: settled('placement', f.team) }))
+      .filter((r) => r.amount > 0)
+      .sort((a, b) => a.place - b.place);
+
+    const minigameRows = Object.entries(this.minigameWinnings(season))
+      .map(([team, amount]) => ({ team: Number(team), amount, paid: settled('minigame', Number(team)) }))
+      .sort((a, b) => b.amount - a.amount || a.team - b.team);
+
+    return [
+      { category: 'empire',    rows: empireRows },
+      { category: 'placement', rows: placementRows },
+      { category: 'minigame',  rows: minigameRows },
+    ].map((l) => ({
+      ...l,
+      total: l.rows.reduce((a, r) => a + r.amount, 0),
+      paidTotal: l.rows.filter((r) => r.paid).reduce((a, r) => a + r.amount, 0),
+      paidCount: l.rows.filter((r) => r.paid).length,
+    }));
+  }
+
+  /** Flat payout rows, all seasons or one. */
+  payouts(season = null) {
+    const seasons = season == null ? this.seasons : [season];
+    return seasons.flatMap((s) => this.payoutLines(s)
+      .flatMap((l) => l.rows.map((r) => ({ ...r, season: s, category: l.category }))));
+  }
+
   bank(season = null) {
     const b = this.get('bank');
     const inSeason = (x) => season == null || x.season === season;
     const payins = b.payins.filter(inSeason);
-    const payouts = b.payouts.filter(inSeason);
     const teamCount = this.get('managers').teams.length;
 
     const collected = payins.reduce((a, p) => a + (Number(p.paid) || 0), 0);
@@ -190,33 +260,35 @@ class Store {
       .reduce((a, s) => a + Math.max(0, this.buyIn(s) * teamCount
         - b.payins.filter((p) => p.season === s).reduce((x, p) => x + (Number(p.paid) || 0), 0)), 0);
 
-    const disbursed = payouts.filter((p) => p.paid).reduce((a, p) => a + p.amount, 0);
-    const claim = this.empireClaim();
-    const empirePaid = claim && (season == null || claim.season === season) ? claim.amount : 0;
+    const rows = this.payouts(season);
+    const disbursed = rows.filter((r) => r.paid).reduce((a, r) => a + r.amount, 0);
+    const committed = rows.reduce((a, r) => a + r.amount, 0);
 
-    const byCat = {};
-    for (const p of payouts) byCat[p.category] = (byCat[p.category] || 0) + p.amount;
-    if (empirePaid) byCat.empire = empirePaid;
+    const byCat = {}, byCatCommitted = {};
+    for (const r of rows) {
+      byCatCommitted[r.category] = (byCatCommitted[r.category] || 0) + r.amount;
+      if (r.paid) byCat[r.category] = (byCat[r.category] || 0) + r.amount;
+    }
 
     const earmarked = season == null ? this.empirePotBalance() : 0;
-    const out = collected - disbursed - empirePaid;
+    const cash = collected - disbursed;
     return {
-      payins, payouts, collected, expected,
+      payins, payouts: rows, collected, expected,
       outstanding: Math.max(0, expected - collected),
       owedNow, future: Math.max(0, expected - collected - owedNow),
-      disbursed: disbursed + empirePaid, empirePaid, earmarked,
-      cash: out,
-      free: out - earmarked,
-      byCat, teamCount,
+      disbursed, committed, owedOut: committed - disbursed,
+      earmarked, cash, free: cash - earmarked,
+      byCat, byCatCommitted, teamCount,
     };
   }
 
-  /** Money set aside for the Empire so far, less anything already claimed. */
+  /** Money set aside for the Empire so far, less anything already paid out. */
   empirePotBalance() {
     const contributed = this.activeSeasons()
       .reduce((a, s) => a + (Number(this.league.empireContribution?.[String(s)]) || 0), 0);
     const claim = this.empireClaim();
-    return contributed - (claim ? claim.amount : 0);
+    const paid = claim && this.isSettled(claim.season, 'empire', claim.team) ? claim.amount : 0;
+    return contributed - paid;
   }
 
   /** The season the pot was won, if it has been. */
@@ -232,22 +304,20 @@ class Store {
   ledger(season = null) {
     const b = this.get('bank');
     const cur = this.league.currentSeason;
-    const claim = this.empireClaim();
+    const rows = this.payouts(season);
     return this.teams().map((t) => {
       const ins = b.payins.filter((p) => p.team === t.number && (season == null || p.season === season));
-      const outs = b.payouts.filter((p) => p.team === t.number && (season == null || p.season === season));
+      const mine = rows.filter((r) => r.team === t.number);
       const paidIn = ins.reduce((a, p) => a + (Number(p.paid) || 0), 0);
       const owesNow = (season == null ? this.seasons : [season])
         .filter((s) => s <= cur)
         .reduce((a, s) => a + Math.max(0, this.buyIn(s)
           - (ins.find((p) => p.season === s)?.paid || 0)), 0);
       const cat = {};
-      for (const p of outs) cat[p.category] = (cat[p.category] || 0) + p.amount;
-      let won = outs.reduce((a, p) => a + p.amount, 0);
-      if (claim && claim.team === t.number && (season == null || claim.season === season)) {
-        won += claim.amount; cat.empire = claim.amount;
-      }
-      return { ...t, paidIn, owes: owesNow, owesNow, won, net: won - paidIn, cat };
+      for (const r of mine) cat[r.category] = (cat[r.category] || 0) + r.amount;
+      const won = mine.reduce((a, r) => a + r.amount, 0);
+      const awaiting = mine.filter((r) => !r.paid).reduce((a, r) => a + r.amount, 0);
+      return { ...t, paidIn, owes: owesNow, owesNow, won, awaiting, net: won - paidIn, cat };
     });
   }
 

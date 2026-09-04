@@ -1,9 +1,9 @@
 import { money, esc, icon, teamTag, empty, toast } from '../util.js';
 
 const CATS = {
-  empire:    { label: 'Empire / rolling pot', chip: 'violet', order: 0 },
-  placement: { label: 'Placement',            chip: 'gold',   order: 1 },
-  minigame:  { label: 'Minigames',            chip: 'heat',   order: 2 },
+  empire:    { label: 'Empire Pot', chip: 'violet' },
+  placement: { label: 'Placement',  chip: 'gold' },
+  minigame:  { label: 'Minigames',  chip: 'heat' },
 };
 
 const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
@@ -14,27 +14,15 @@ const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 const UI = { seasons: null, lines: new Set() };
 
 /* ---------- payouts, one collapsible block per season ---------- */
-function seasonPayouts(db, season, open) {
-  const b = db.get('bank');
-  const rows = b.payouts.filter((p) => p.season === season);
-  const claim = db.empireClaim();
-  const empire = claim && claim.season === season ? claim : null;
+const label = (db, r, cat) => cat === 'placement'
+  ? `${ORD[(r.place || 1) - 1]} &mdash; ${esc(db.team(r.team)?.manager ?? '')}`
+  : esc(db.team(r.team)?.manager ?? '');
 
-  const placement = rows.filter((p) => p.category === 'placement').sort((a, x) => (a.place || 9) - (x.place || 9));
-  const minigames = rows.filter((p) => p.category === 'minigame').sort((a, x) => x.amount - a.amount);
-
-  const lines = [
-    { cat: 'empire', total: empire ? empire.amount : 0,
-      sub: empire ? `Won by ${esc(db.team(empire.team)?.manager ?? '')}` : 'Empire criteria not met — rolls over',
-      rows: empire ? [{ label: db.team(empire.team)?.manager ?? '', amount: empire.amount }] : [] },
-    { cat: 'placement', total: placement.reduce((a, p) => a + p.amount, 0),
-      sub: `${placement.length} place${placement.length === 1 ? '' : 's'} paid`,
-      rows: placement.map((p) => ({ label: `${ORD[(p.place || 1) - 1]} — ${db.team(p.team)?.manager ?? ''}`, amount: p.amount })) },
-    { cat: 'minigame', total: minigames.reduce((a, p) => a + p.amount, 0),
-      sub: `${minigames.length} manager${minigames.length === 1 ? '' : 's'} cashed`,
-      rows: minigames.map((p) => ({ label: db.team(p.team)?.manager ?? '', amount: p.amount })) },
-  ];
+function seasonPayouts(db, season, open, admin) {
+  const lines = db.payoutLines(season);
   const total = lines.reduce((a, l) => a + l.total, 0);
+  const paid = lines.reduce((a, l) => a + l.paidTotal, 0);
+  const owed = total - paid;
 
   return `
   <div class="card acc${open ? ' open' : ''}" style="margin-bottom:10px">
@@ -42,21 +30,35 @@ function seasonPayouts(db, season, open) {
       ${icon('chev', 'acc-caret')}
       <h3>${season}</h3>
       <div class="spacer" style="margin-left:auto"></div>
-      <span class="chip${total ? ' mint' : ''}">${money(total)}</span>
+      ${owed > 0 ? `<span class="chip red">${money(owed)} to pay</span>` : ''}
+      <span class="chip${total ? (owed ? '' : ' mint') : ''}">${money(total)}</span>
     </button>
     <div class="acc-bd">
       ${lines.map((l) => {
-        const c = CATS[l.cat];
+        const c = CATS[l.category];
         const can = l.rows.length > 0;
-        return `<div class="pay-line${can ? ' can' : ''}${UI.lines.has(`${season}:${l.cat}`) ? ' open' : ''}">
-          <button class="pay-hd" ${can ? `data-line="${season}:${l.cat}"` : 'disabled'}>
+        const sub = l.category === 'empire' && !can
+          ? 'Not claimed — nothing to pay out'
+          : !can ? 'Nothing yet'
+          : l.paidCount === l.rows.length ? 'All paid'
+          : `${l.paidCount} of ${l.rows.length} paid`;
+        return `<div class="pay-line${can ? ' can' : ''}${UI.lines.has(`${season}:${l.category}`) ? ' open' : ''}">
+          <button class="pay-hd" ${can ? `data-line="${season}:${l.category}"` : 'disabled'}>
             ${can ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
             <span class="chip ${c.chip}">${c.label}</span>
-            <div class="grow"><div class="s">${l.sub}</div></div>
+            <div class="grow"><div class="s">${sub}</div></div>
+            ${can && l.paidCount < l.rows.length ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
             <div class="pay-val${l.total ? '' : ' zero'}">${money(l.total)}</div>
           </button>
           ${can ? `<ul class="pay-rows">
-            ${l.rows.map((r) => `<li><span>${esc(r.label)}</span><b>${money(r.amount)}</b></li>`).join('')}
+            ${l.rows.map((r) => `<li>
+              <span class="pay-who">${label(db, r, l.category)}</span>
+              <b>${money(r.amount)}</b>
+              ${admin
+                ? `<button class="paid-btn${r.paid ? ' on' : ''}" data-paid="${season}:${l.category}:${r.team}"
+                     aria-pressed="${r.paid}">${r.paid ? icon('check') : ''}<span>${r.paid ? 'Paid' : 'Mark paid'}</span></button>`
+                : `<span class="paid-tag${r.paid ? ' on' : ''}">${r.paid ? 'Paid' : 'Unpaid'}</span>`}
+            </li>`).join('')}
           </ul>` : ''}
         </div>`;
       }).join('')}
@@ -71,18 +73,24 @@ export function render(db, state = {}) {
   const teams = db.teams();
   const bank = db.get('bank');
   const admin = db.isAdmin;
-  if (UI.seasons === null) UI.seasons = new Set([db.league.currentSeason]);
+  // Open the most recent season that actually has payouts — defaulting to the
+  // current season would leave the only populated block collapsed.
+  const paidSeasons = seasons.filter((s) => db.payoutLines(s).some((l) => l.rows.length));
+  if (UI.seasons === null)
+    UI.seasons = new Set([paidSeasons.at(-1) ?? db.league.currentSeason]);
   const openSeasons = UI.seasons;
 
   const paidFor = (t, s) => bank.payins.find((p) => p.team === t && p.season === s)?.paid || 0;
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
   const seasonDue = (s) => db.buyIn(s) * teams.length;
 
+  // Live from what has actually been paid out, so this reconciles the real bank.
   const sheet = seasons.map((s) => {
     const bs = db.bank(s);
     const contrib = s <= db.league.currentSeason ? (Number(db.league.empireContribution[String(s)]) || 0) : 0;
     const mini = bs.byCat.minigame || 0, place = bs.byCat.placement || 0;
     return { season: s, inn: bs.collected, empire: contrib, mini, place,
+             owedOut: bs.owedOut,
              surplus: bs.collected - contrib - mini - place };
   });
 
@@ -137,6 +145,11 @@ export function render(db, state = {}) {
       </tbody></table></div></div>
   </div>
 
+  <div class="section-title">Payouts</div>
+  ${[...paidSeasons].sort((a, b) => b - a)
+    .map((s) => seasonPayouts(db, s, openSeasons.has(s), admin)).join('')
+    || empty('No payouts yet', 'Minigame and placement winners will appear here, grouped by season.', 'wallet')}
+
   <div class="section-title">Balance sheet</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
     <thead><tr><th class="sticky">Season</th><th class="n">In</th><th class="n">Empire</th>
@@ -147,20 +160,20 @@ export function render(db, state = {}) {
         <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
-        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${r.inn ? money(r.surplus) : '&mdash;'}</td></tr>`).join('')}
+        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${r.inn ? money(r.surplus) : '&mdash;'}${
+          r.owedOut ? `<span class="owed-flag" title="${money(r.owedOut)} awarded but not yet paid">*</span>` : ''}</td></tr>`).join('')}
       <tr class="total"><td class="sticky">All time</td>
         <td class="n">${money(all.collected)}</td>
         <td class="n">${money(db.empirePotBalance() + (db.empireClaim()?.amount || 0))}</td>
         <td class="n">${money(all.byCat.minigame || 0)}</td>
         <td class="n">${money(all.byCat.placement || 0)}</td>
         <td class="n ${all.free >= 0 ? 'pos' : 'neg'}">${money(all.free)}</td></tr>
-    </tbody></table></div></div></div>
-
-  <div class="section-title">Payouts</div>
-  ${seasons.filter((s) => bank.payouts.some((p) => p.season === s) || db.empireClaim()?.season === s)
-    .sort((a, b) => b - a)
-    .map((s) => seasonPayouts(db, s, openSeasons.has(s))).join('')
-    || empty('No payouts yet', 'Minigame and placement winners will appear here, grouped by season.', 'wallet')}
+    </tbody></table></div></div>
+    ${all.owedOut ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px"><span class="owed-flag">*</span>
+        ${money(all.owedOut)} has been awarded but not handed over yet, so it is still sitting in the bank.</div>
+    </div>` : ''}
+  </div>
 
   <div class="section-title">Manager ledger</div>
   <div class="card">
@@ -171,7 +184,9 @@ export function render(db, state = {}) {
         <div class="row">
           <div class="grow">
             <div class="t">${teamTag(t)}</div>
-            <div class="s">${money(t.paidIn)} in &middot; ${money(t.won)} won${t.owesNow ? ` &middot; <span class="neg">${money(t.owesNow)} owed</span>` : ''}</div>
+            <div class="s">${money(t.paidIn)} in &middot; ${money(t.won)} won${
+              t.awaiting ? ` &middot; <span style="color:var(--gold)">${money(t.awaiting)} to collect</span>` : ''}${
+              t.owesNow ? ` &middot; <span class="neg">${money(t.owesNow)} owed</span>` : ''}</div>
             <div style="display:flex;gap:3px;margin-top:7px;height:5px;border-radius:99px;overflow:hidden;background:var(--surface-3)">
               ${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) => `
                 <i style="display:block;height:100%;width:${t.won ? (v / t.won * 100).toFixed(1) : 0}%;background:${
@@ -247,6 +262,19 @@ export function mount(root, db, go, setState, params = {}) {
     const open = UI.seasons.has(y);
     b.setAttribute('aria-expanded', String(open));
     b.closest('.acc').classList.toggle('open', open);
+  }));
+
+  root.querySelectorAll('[data-paid]').forEach((b) => b.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const [season, category, team] = b.dataset.paid.split(':');
+    const s = Number(season), t = Number(team);
+    const was = db.isSettled(s, category, t);
+    await db.update('bank', (x) => {
+      x.settled ||= [];
+      if (was) x.settled = x.settled.filter((y) => !(y.season === s && y.category === category && y.team === t));
+      else x.settled.push({ season: s, category, team: t, date: new Date().toISOString().slice(0, 10) });
+    });
+    toast(`${db.team(t).manager} ${was ? 'marked unpaid' : 'marked paid'}`);
   }));
 
   root.querySelectorAll('[data-line]').forEach((b) => b.addEventListener('click', () => {

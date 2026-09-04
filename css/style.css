@@ -674,3 +674,28 @@ table.dt tbody tr.rate-row td.sticky{
 td.cell-full .cell-in{color:var(--mint);font-weight:600}
 td.cell-part .cell-in{color:var(--gold);font-weight:600}
 table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
+
+/* ---------- payout paid state ---------- */
+.pay-rows li{display:flex;align-items:center;gap:12px}
+.pay-who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pay-rows b{flex:none;min-width:56px;text-align:right}
+.paid-btn{
+  display:inline-flex;align-items:center;gap:5px;flex:none;
+  padding:4px 9px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface-2);font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  transition:background .14s,color .14s,border-color .14s;
+}
+.paid-btn svg{width:12px;height:12px;stroke-width:2.6}
+.paid-btn:hover{border-color:var(--ink-3);color:var(--ink-2)}
+.paid-btn.on{background:rgba(61,220,151,.12);border-color:rgba(61,220,151,.35);color:var(--mint)}
+.paid-tag{
+  flex:none;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink-3);
+}
+.paid-tag.on{color:var(--mint);border-color:rgba(61,220,151,.3);background:rgba(61,220,151,.09)}
+.dot-owed{
+  width:7px;height:7px;border-radius:50%;background:var(--red);flex:none;margin-right:2px;
+  box-shadow:0 0 7px -1px var(--red);
+}
+.owed-flag{color:var(--gold);font-weight:700;margin-left:3px}

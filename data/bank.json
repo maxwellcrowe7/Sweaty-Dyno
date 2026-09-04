@@ -1,5 +1,5 @@
 {
-  "_README": "payins[].paid is the dollar amount that team has actually handed over for that season (0 = nothing yet, partial amounts are fine — the rules allow paying half a buy-in to trade a pick). What is OWED comes from league.buyIn for that season. payouts are real disbursements only: minigame and placement. The Empire pot is an accrual, not a payout — it grows by league.empireContribution each season and only becomes a payout in the season it is claimed (see empirePot).",
+  "_README": "payins[].paid is the dollar amount a team has actually handed over for that season; what is OWED comes from league.buyIn. Payout AMOUNTS are never stored — they are derived from their source: minigames from minigames.json, placement from `finishes` x league.placementPayouts, and the Empire pot from league.empireContribution once empirePot is claimed. `settled` records only WHO HAS BEEN PAID, so the figures can never drift from the results that produced them.",
   "payins": [
     {
       "season": 2025,
@@ -302,110 +302,6 @@
       "paid": 0
     }
   ],
-  "payouts": [
-    {
-      "id": "po-2025-mg-1",
-      "season": 2025,
-      "team": 4,
-      "category": "minigame",
-      "amount": 30,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-mg-2",
-      "season": 2025,
-      "team": 10,
-      "category": "minigame",
-      "amount": 30,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-mg-3",
-      "season": 2025,
-      "team": 7,
-      "category": "minigame",
-      "amount": 20,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-mg-4",
-      "season": 2025,
-      "team": 5,
-      "category": "minigame",
-      "amount": 10,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-mg-5",
-      "season": 2025,
-      "team": 2,
-      "category": "minigame",
-      "amount": 20,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-mg-6",
-      "season": 2025,
-      "team": 3,
-      "category": "minigame",
-      "amount": 10,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-mg-7",
-      "season": 2025,
-      "team": 9,
-      "category": "minigame",
-      "amount": 30,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-mg-8",
-      "season": 2025,
-      "team": 6,
-      "category": "minigame",
-      "amount": 20,
-      "label": "Minigame winnings",
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-pl-1",
-      "season": 2025,
-      "team": 6,
-      "category": "placement",
-      "amount": 100,
-      "label": "1st place",
-      "place": 1,
-      "paid": true,
-      "date": null
-    },
-    {
-      "id": "po-2025-pl-2",
-      "season": 2025,
-      "team": 8,
-      "category": "placement",
-      "amount": 50,
-      "label": "2nd place",
-      "place": 2,
-      "paid": true,
-      "date": null
-    }
-  ],
   "empirePoints": [
     {
       "season": 2025,
@@ -484,5 +380,67 @@
     "claimedBy": null,
     "claimedSeason": null,
     "paidAmount": null
-  }
+  },
+  "settled": [
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 2,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 3,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 4,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 5,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 6,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 7,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 9,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "minigame",
+      "team": 10,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "placement",
+      "team": 6,
+      "date": null
+    },
+    {
+      "season": 2025,
+      "category": "placement",
+      "team": 8,
+      "date": null
+    }
+  ]
 }

@@ -67,22 +67,6 @@ export function render(db) {
   const admin = db.isAdmin;
   const done = s.games.filter((g) => g.status === 'final').length;
 
-  if (s.legacy && !s.games.length) {
-    const totals = Object.entries(s.legacy.totalsByTeam).sort((a, b) => b[1] - a[1]);
-    return `
-    <div class="banner" style="margin-bottom:14px">${icon('alert')}
-      <div>${esc(s.legacy.note)}</div></div>
-    <div class="card">
-      <div class="card-hd"><h3>${S} minigame winnings</h3><div class="spacer"></div>
-        <span class="chip heat">${money(s.legacy.total)}</span></div>
-      <div class="card-bd flush"><div class="rows">
-        ${totals.map(([t, v]) => `<div class="row">
-          <div class="grow">${teamTag(db.team(Number(t)))}</div>
-          <div class="val" style="color:var(--heat)">${money(v)}</div></div>`).join('')}
-      </div></div>
-    </div>`;
-  }
-
   return `
   <div class="tiles">
     <div class="tile accent"><div class="k">Budget</div><div class="v">${money(spend.committed)}</div><div class="m">${S} minigames</div></div>
@@ -179,7 +163,6 @@ export function mount(root, db) {
             gg.results[p] = d[`team${p}`] ? { team: +d[`team${p}`], value: d[`val${p}`].trim() || null } : null;
           gg.status = gg.results['1']?.team ? 'final' : 'scheduled';
         });
-        syncPayouts(db, S);
         toast(`Week ${g.week} saved`);
       },
     });
@@ -220,31 +203,6 @@ export function mount(root, db) {
   root.querySelectorAll('[data-crown]').forEach((b) => b.addEventListener('click', async () => {
     const t = Number(b.dataset.crown);
     await db.update('minigames', (m) => { m.seasons[String(S)].guillotine.winner = t; });
-    syncPayouts(db, S);
     toast(`${db.team(t).manager} survives`);
   }));
-}
-
-/**
- * Rebuild the season's `minigame` payout lines from the minigame results, so the
- * bank always agrees with what was actually awarded. Legacy seasons are left alone.
- */
-export async function syncPayouts(db, season) {
-  const s = db.minigames(season);
-  if (s.legacy) return;
-  const tally = {};
-  const add = (team, amt) => { if (team && amt) tally[team] = (tally[team] || 0) + amt; };
-  for (const g of s.games)
-    for (const p of ['1', '2', '3']) add(g.results?.[p]?.team, Number(g.payout?.[p]) || 0);
-  if (s.guillotine?.winner) add(s.guillotine.winner, Number(s.guillotine.payout?.['1']) || 0);
-  for (const a of s.awards || []) add(a.result?.team, Number(a.payout) || 0);
-
-  await db.update('bank', (b) => {
-    b.payouts = b.payouts.filter((p) => !(p.season === season && p.category === 'minigame'));
-    for (const [team, amount] of Object.entries(tally))
-      b.payouts.push({
-        id: `po-${season}-mg-${team}`, season, team: +team, category: 'minigame',
-        amount, label: 'Minigame winnings', paid: true, date: null, note: null,
-      });
-  });
 }

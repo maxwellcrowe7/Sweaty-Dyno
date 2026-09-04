@@ -18,8 +18,32 @@ export function migrate(data) {
       delete p.date;
     }
   }
-  // the empire set-aside is an accrual now, not a payout row
-  if (d.bank?.payouts) d.bank.payouts = d.bank.payouts.filter((p) => p.category !== 'empire');
+  // Payout amounts used to be stored rows. They are derived now, so convert the
+  // old rows into placement config plus a record of who was actually paid.
+  if (d.bank?.payouts) {
+    d.bank.settled ||= [];
+    const seen = new Set(d.bank.settled.map((x) => `${x.season}:${x.category}:${x.team}`));
+    d.league ||= {};
+    d.league.placementPayouts ||= { default: {} };
+    for (const p of d.bank.payouts) {
+      if (p.category === 'empire') continue;              // an accrual, never a payout row
+      if (p.category === 'placement' && p.place != null) {
+        const scale = d.league.placementPayouts.default;
+        if (scale[String(p.place)] == null) scale[String(p.place)] = p.amount;
+      }
+      const key = `${p.season}:${p.category}:${p.team}`;
+      if (p.paid && p.team && !seen.has(key)) {
+        seen.add(key);
+        d.bank.settled.push({ season: p.season, category: p.category, team: p.team, date: null });
+      }
+    }
+    delete d.bank.payouts;
+  }
+  if (d.bank && !d.bank.settled) d.bank.settled = [];
+
+  // A legacy season holds only per-team totals. Keep it: it is the sole record
+  // of that season's winnings until the real week-by-week data is published,
+  // and minigameWinnings() falls back to it rather than reporting $0.
   if (d.bank && !d.bank.empirePot) d.bank.empirePot = { claimedBy: null, claimedSeason: null, paidAmount: null };
   if (d.bank?.empirePot && !('paidAmount' in d.bank.empirePot)) d.bank.empirePot.paidAmount = null;
 
