@@ -701,7 +701,63 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 .owed-flag{color:var(--gold);font-weight:700;margin-left:3px}
 
 .mg-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 2px}
-.mg-actions .btn{flex:1;min-width:110px}
+.mg-actions .btn{flex:1;min-width:104px}
+
+/* ---------- minigame rows ---------- */
+.mg-list{display:flex;flex-direction:column}
+.mg{border-bottom:1px solid var(--line-soft)}
+.mg:last-child{border-bottom:none}
+.mg.quiet{opacity:.55}
+.mg-hd{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 14px;min-height:46px}
+.mg-hd:disabled{cursor:default}
+.mg-hd:not(:disabled):active{background:var(--surface-2)}
+.mg .acc-caret{transition:transform .18s;color:var(--ink-3)}
+.mg.open .acc-caret{transform:rotate(90deg)}
+
+.mg-wk{
+  font-family:var(--f-display);font-size:10px;font-weight:700;letter-spacing:.09em;
+  color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line);border-radius:4px;
+  padding:2px 5px;flex:none;min-width:38px;text-align:center;
+}
+.mg-title{
+  flex:1;min-width:0;font-size:13.5px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mg-title.unset{color:var(--ink-3);font-weight:500}
+.mg-win{
+  flex:none;max-width:34%;font-size:13px;color:var(--ink-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mg-win.none{color:var(--ink-3)}
+.mg-prize{
+  flex:none;min-width:44px;text-align:right;
+  font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink-3);
+}
+.mg-prize.won{color:var(--heat)}
+
+.mg-bd{display:none;padding:0 14px 13px 62px}
+.mg.open .mg-bd{display:block}
+.mg-rules{margin:0 0 10px;font-size:12.5px;line-height:1.55;color:var(--ink-2)}
+.mg-places{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.mg-places li{
+  display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:13px;
+  border-top:1px solid var(--line-soft);
+}
+.mg-places li:first-child{border-top:none}
+.mg-places .pl{
+  font-family:var(--f-display);font-size:9.5px;font-weight:700;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);flex:none;min-width:58px;
+}
+.mg-places .who{flex:1;min-width:0}
+.mg-places .val{display:block;margin-top:2px;font-size:12px;color:var(--ink-3);line-height:1.4}
+.mg-places b{font-family:var(--f-display);font-size:14px;font-weight:700;flex:none;padding-top:1px}
+.mg-edit{margin-top:11px}
+
+@media (max-width:420px){
+  .mg-bd{padding-left:14px}
+  .mg-win{max-width:28%}
+  .mg-places .pl{min-width:52px}
+}
 
 /* ---------- guillotine weeks ---------- */
 .guil-weeks{display:flex;flex-direction:column}

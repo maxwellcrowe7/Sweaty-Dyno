@@ -2,46 +2,58 @@ import { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts } 
 
 const PLACES = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
 
-const resultRow = (db, g, place) => {
-  const r = g.results?.[place];
-  const pay = Number(g.payout?.[place]) || 0;
-  if (!r?.team) return pay ? `<div class="row" style="padding:8px 0">
-      <span class="chip ghost">${PLACES[place]}</span>
-      <div class="grow"><div class="s">not decided</div></div>
-      <div class="dimmer" style="font-size:13px">${money(pay)}</div></div>` : '';
-  return `<div class="row" style="padding:8px 0">
-    <span class="chip ${place === '1' ? 'heat' : 'ghost'}">${PLACES[place]}</span>
-    <div class="grow"><div class="t">${teamTag(db.team(r.team))}</div>
-      ${r.value ? `<div class="s">${esc(r.value)}</div>` : ''}</div>
-    <div style="font-family:var(--f-display);font-weight:700;font-size:16px;color:${place === '1' ? 'var(--heat)' : 'var(--ink-2)'}">${money(pay)}</div>
-  </div>`;
-};
+const PLACE_LABEL = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
 
+/* Which minigames are expanded — module scope so an edit does not close them. */
+const MG_OPEN = new Set();
 
 const phaseLabel = (g) => g.phase === 'week' ? `WK ${g.week}` : g.phase === 'pre' ? 'PRE' : 'POST';
 
-function gameCard(db, g, S, admin) {
-  const settled = g.results?.['1']?.team;
-  const off = g.status === 'none' || g.status === 'canceled' || g.status === 'guillotine';
-  const title = g.status === 'none' ? 'No minigame this week'
+/** One line: what it was, who won, what it paid. Everything else is inside. */
+function gameRow(db, g, S, admin) {
+  const inert = g.status === 'none' || g.status === 'guillotine';
+  const canceled = g.status === 'canceled';
+  const win = g.results?.['1'];
+  const winner = win?.team ? db.team(win.team)?.manager : null;
+  const prize = Number(g.payout?.['1']) || 0;
+  const open = MG_OPEN.has(g.id);
+  const detail = !inert && (g.rules || win?.value || g.results?.['2']?.team || g.results?.['3']?.team || admin);
+
+  const title = g.status === 'none' ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
+    : g.status === 'guillotine' ? 'Guillotine'
     : g.name ? esc(g.name) : 'Not set yet';
-  return `<div class="card" style="margin-bottom:10px${off ? ';opacity:.62' : ''}">
-    <div class="card-hd">
-      <span class="chip ${settled ? 'mint' : off ? '' : 'ghost'}">${phaseLabel(g)}</span>
-      <div style="min-width:0">
-        <h3 style="font-size:15px;${g.name && !off ? '' : 'color:var(--ink-3)'}">${title}</h3>
-        ${g.rules ? `<div class="sub" style="text-transform:none;letter-spacing:0;font-size:11.5px">${esc(g.rules)}</div>` : ''}
-      </div>
-      <div class="spacer"></div>
-      ${g.status === 'canceled' ? '<span class="chip red">Cancelled</span>' : ''}
-      ${g.status === 'guillotine' ? '<span class="chip heat">See below</span>' : ''}
-      ${admin ? `<button class="btn sm" data-edit="${g.id}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
-    </div>
-    ${g.note ? `<div class="card-bd" style="padding-top:0"><div class="s dim" style="font-size:12px">${esc(g.note)}</div></div>` : ''}
-    ${!off && (settled || Object.values(g.payout || {}).some((v) => v > 0))
-      ? `<div class="card-bd" style="padding-top:4px;padding-bottom:4px">
-          ${['1', '2', '3'].map((p) => resultRow(db, g, p)).join('')}</div>`
-      : ''}
+
+  return `<div class="mg${open ? ' open' : ''}${inert || canceled ? ' quiet' : ''}">
+    <button class="mg-hd" ${detail ? `data-mg="${esc(g.id)}"` : 'disabled'}>
+      <span class="mg-wk">${phaseLabel(g)}</span>
+      <span class="mg-title${g.name && !inert ? '' : ' unset'}">${title}</span>
+      ${canceled ? '<span class="chip red">Cancelled</span>'
+        : g.status === 'guillotine' ? '<span class="chip heat">below</span>'
+        : winner ? `<span class="mg-win">${esc(winner)}</span>`
+        : inert ? ''
+        : '<span class="mg-win none">&mdash;</span>'}
+      <span class="mg-prize${prize && winner ? ' won' : ''}">${prize ? money(prize) : ''}</span>
+      ${detail ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
+    </button>
+    ${detail ? `<div class="mg-bd">
+      ${g.rules ? `<p class="mg-rules">${esc(g.rules)}</p>` : ''}
+      <ul class="mg-places">
+        ${['1', '2', '3'].map((pl) => {
+          const r = g.results?.[pl];
+          const pay = Number(g.payout?.[pl]) || 0;
+          if (!r?.team && !pay) return '';
+          return `<li>
+            <span class="pl">${PLACE_LABEL[pl]}</span>
+            <span class="who">
+              ${r?.team ? teamTag(db.team(r.team)) : '<span class="dimmer">not decided</span>'}
+              ${r?.value ? `<span class="val">${esc(r.value)}</span>` : ''}
+            </span>
+            <b>${pay ? money(pay) : '&mdash;'}</b>
+          </li>`;
+        }).join('')}
+      </ul>
+      ${admin ? `<div class="mg-edit"><button class="btn sm" data-edit="${esc(g.id)}">${icon('pencil')} Edit</button></div>` : ''}
+    </div>` : ''}
   </div>`;
 }
 
@@ -158,7 +170,9 @@ export function render(db) {
           <button class="btn primary" data-setup>${icon('plus')} Set up ${S} season</button></div>` : ''}`;
     }
     return `<div class="section-title">${ph.title}</div>
-      ${ph.games.map((g) => gameCard(db, g, S, admin)).join('')}`;
+      <div class="card"><div class="card-bd flush"><div class="mg-list">
+        ${ph.games.map((g) => gameRow(db, g, S, admin)).join('')}
+      </div></div></div>`;
   }).join('')}
 
   <div class="section-title">Elimination</div>
@@ -169,6 +183,13 @@ export function render(db) {
 export function mount(root, db) {
   const S = db.season;
   const teams = db.teams(S);
+
+  /* minigame rows expand in place */
+  root.querySelectorAll('[data-mg]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.mg;
+    MG_OPEN.has(id) ? MG_OPEN.delete(id) : MG_OPEN.add(id);
+    b.closest('.mg').classList.toggle('open', MG_OPEN.has(id));
+  }));
 
   /* guillotine week rows expand in place */
   root.querySelectorAll('[data-gweek]').forEach((b) => b.addEventListener('click', () => {

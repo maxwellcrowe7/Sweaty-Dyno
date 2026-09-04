@@ -717,7 +717,63 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 .owed-flag{color:var(--gold);font-weight:700;margin-left:3px}
 
 .mg-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 2px}
-.mg-actions .btn{flex:1;min-width:110px}
+.mg-actions .btn{flex:1;min-width:104px}
+
+/* ---------- minigame rows ---------- */
+.mg-list{display:flex;flex-direction:column}
+.mg{border-bottom:1px solid var(--line-soft)}
+.mg:last-child{border-bottom:none}
+.mg.quiet{opacity:.55}
+.mg-hd{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 14px;min-height:46px}
+.mg-hd:disabled{cursor:default}
+.mg-hd:not(:disabled):active{background:var(--surface-2)}
+.mg .acc-caret{transition:transform .18s;color:var(--ink-3)}
+.mg.open .acc-caret{transform:rotate(90deg)}
+
+.mg-wk{
+  font-family:var(--f-display);font-size:10px;font-weight:700;letter-spacing:.09em;
+  color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line);border-radius:4px;
+  padding:2px 5px;flex:none;min-width:38px;text-align:center;
+}
+.mg-title{
+  flex:1;min-width:0;font-size:13.5px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mg-title.unset{color:var(--ink-3);font-weight:500}
+.mg-win{
+  flex:none;max-width:34%;font-size:13px;color:var(--ink-2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mg-win.none{color:var(--ink-3)}
+.mg-prize{
+  flex:none;min-width:44px;text-align:right;
+  font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink-3);
+}
+.mg-prize.won{color:var(--heat)}
+
+.mg-bd{display:none;padding:0 14px 13px 62px}
+.mg.open .mg-bd{display:block}
+.mg-rules{margin:0 0 10px;font-size:12.5px;line-height:1.55;color:var(--ink-2)}
+.mg-places{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.mg-places li{
+  display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:13px;
+  border-top:1px solid var(--line-soft);
+}
+.mg-places li:first-child{border-top:none}
+.mg-places .pl{
+  font-family:var(--f-display);font-size:9.5px;font-weight:700;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);flex:none;min-width:58px;
+}
+.mg-places .who{flex:1;min-width:0}
+.mg-places .val{display:block;margin-top:2px;font-size:12px;color:var(--ink-3);line-height:1.4}
+.mg-places b{font-family:var(--f-display);font-size:14px;font-weight:700;flex:none;padding-top:1px}
+.mg-edit{margin-top:11px}
+
+@media (max-width:420px){
+  .mg-bd{padding-left:14px}
+  .mg-win{max-width:28%}
+  .mg-places .pl{min-width:52px}
+}
 
 /* ---------- guillotine weeks ---------- */
 .guil-weeks{display:flex;flex-direction:column}
@@ -2483,46 +2539,58 @@ __M["js/views/minigames.js"] = (function () {
 const { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts } = __M["js/util.js"];
 const PLACES = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
 
-const resultRow = (db, g, place) => {
-  const r = g.results?.[place];
-  const pay = Number(g.payout?.[place]) || 0;
-  if (!r?.team) return pay ? `<div class="row" style="padding:8px 0">
-      <span class="chip ghost">${PLACES[place]}</span>
-      <div class="grow"><div class="s">not decided</div></div>
-      <div class="dimmer" style="font-size:13px">${money(pay)}</div></div>` : '';
-  return `<div class="row" style="padding:8px 0">
-    <span class="chip ${place === '1' ? 'heat' : 'ghost'}">${PLACES[place]}</span>
-    <div class="grow"><div class="t">${teamTag(db.team(r.team))}</div>
-      ${r.value ? `<div class="s">${esc(r.value)}</div>` : ''}</div>
-    <div style="font-family:var(--f-display);font-weight:700;font-size:16px;color:${place === '1' ? 'var(--heat)' : 'var(--ink-2)'}">${money(pay)}</div>
-  </div>`;
-};
+const PLACE_LABEL = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
 
+/* Which minigames are expanded — module scope so an edit does not close them. */
+const MG_OPEN = new Set();
 
 const phaseLabel = (g) => g.phase === 'week' ? `WK ${g.week}` : g.phase === 'pre' ? 'PRE' : 'POST';
 
-function gameCard(db, g, S, admin) {
-  const settled = g.results?.['1']?.team;
-  const off = g.status === 'none' || g.status === 'canceled' || g.status === 'guillotine';
-  const title = g.status === 'none' ? 'No minigame this week'
+/** One line: what it was, who won, what it paid. Everything else is inside. */
+function gameRow(db, g, S, admin) {
+  const inert = g.status === 'none' || g.status === 'guillotine';
+  const canceled = g.status === 'canceled';
+  const win = g.results?.['1'];
+  const winner = win?.team ? db.team(win.team)?.manager : null;
+  const prize = Number(g.payout?.['1']) || 0;
+  const open = MG_OPEN.has(g.id);
+  const detail = !inert && (g.rules || win?.value || g.results?.['2']?.team || g.results?.['3']?.team || admin);
+
+  const title = g.status === 'none' ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
+    : g.status === 'guillotine' ? 'Guillotine'
     : g.name ? esc(g.name) : 'Not set yet';
-  return `<div class="card" style="margin-bottom:10px${off ? ';opacity:.62' : ''}">
-    <div class="card-hd">
-      <span class="chip ${settled ? 'mint' : off ? '' : 'ghost'}">${phaseLabel(g)}</span>
-      <div style="min-width:0">
-        <h3 style="font-size:15px;${g.name && !off ? '' : 'color:var(--ink-3)'}">${title}</h3>
-        ${g.rules ? `<div class="sub" style="text-transform:none;letter-spacing:0;font-size:11.5px">${esc(g.rules)}</div>` : ''}
-      </div>
-      <div class="spacer"></div>
-      ${g.status === 'canceled' ? '<span class="chip red">Cancelled</span>' : ''}
-      ${g.status === 'guillotine' ? '<span class="chip heat">See below</span>' : ''}
-      ${admin ? `<button class="btn sm" data-edit="${g.id}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
-    </div>
-    ${g.note ? `<div class="card-bd" style="padding-top:0"><div class="s dim" style="font-size:12px">${esc(g.note)}</div></div>` : ''}
-    ${!off && (settled || Object.values(g.payout || {}).some((v) => v > 0))
-      ? `<div class="card-bd" style="padding-top:4px;padding-bottom:4px">
-          ${['1', '2', '3'].map((p) => resultRow(db, g, p)).join('')}</div>`
-      : ''}
+
+  return `<div class="mg${open ? ' open' : ''}${inert || canceled ? ' quiet' : ''}">
+    <button class="mg-hd" ${detail ? `data-mg="${esc(g.id)}"` : 'disabled'}>
+      <span class="mg-wk">${phaseLabel(g)}</span>
+      <span class="mg-title${g.name && !inert ? '' : ' unset'}">${title}</span>
+      ${canceled ? '<span class="chip red">Cancelled</span>'
+        : g.status === 'guillotine' ? '<span class="chip heat">below</span>'
+        : winner ? `<span class="mg-win">${esc(winner)}</span>`
+        : inert ? ''
+        : '<span class="mg-win none">&mdash;</span>'}
+      <span class="mg-prize${prize && winner ? ' won' : ''}">${prize ? money(prize) : ''}</span>
+      ${detail ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
+    </button>
+    ${detail ? `<div class="mg-bd">
+      ${g.rules ? `<p class="mg-rules">${esc(g.rules)}</p>` : ''}
+      <ul class="mg-places">
+        ${['1', '2', '3'].map((pl) => {
+          const r = g.results?.[pl];
+          const pay = Number(g.payout?.[pl]) || 0;
+          if (!r?.team && !pay) return '';
+          return `<li>
+            <span class="pl">${PLACE_LABEL[pl]}</span>
+            <span class="who">
+              ${r?.team ? teamTag(db.team(r.team)) : '<span class="dimmer">not decided</span>'}
+              ${r?.value ? `<span class="val">${esc(r.value)}</span>` : ''}
+            </span>
+            <b>${pay ? money(pay) : '&mdash;'}</b>
+          </li>`;
+        }).join('')}
+      </ul>
+      ${admin ? `<div class="mg-edit"><button class="btn sm" data-edit="${esc(g.id)}">${icon('pencil')} Edit</button></div>` : ''}
+    </div>` : ''}
   </div>`;
 }
 
@@ -2638,7 +2706,9 @@ function render(db) {
           <button class="btn primary" data-setup>${icon('plus')} Set up ${S} season</button></div>` : ''}`;
     }
     return `<div class="section-title">${ph.title}</div>
-      ${ph.games.map((g) => gameCard(db, g, S, admin)).join('')}`;
+      <div class="card"><div class="card-bd flush"><div class="mg-list">
+        ${ph.games.map((g) => gameRow(db, g, S, admin)).join('')}
+      </div></div></div>`;
   }).join('')}
 
   <div class="section-title">Elimination</div>
@@ -2648,6 +2718,13 @@ function render(db) {
 function mount(root, db) {
   const S = db.season;
   const teams = db.teams(S);
+
+  /* minigame rows expand in place */
+  root.querySelectorAll('[data-mg]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.mg;
+    MG_OPEN.has(id) ? MG_OPEN.delete(id) : MG_OPEN.add(id);
+    b.closest('.mg').classList.toggle('open', MG_OPEN.has(id));
+  }));
 
   /* guillotine week rows expand in place */
   root.querySelectorAll('[data-gweek]').forEach((b) => b.addEventListener('click', () => {
