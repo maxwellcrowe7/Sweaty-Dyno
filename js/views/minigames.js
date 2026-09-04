@@ -17,49 +17,82 @@ const resultRow = (db, g, place) => {
   </div>`;
 };
 
+/* Which guillotine weeks are expanded — module scope so an edit does not close them. */
+const GUIL_OPEN = new Set();
+
 function guillotineCard(db, G, S, admin) {
   if (!G) return admin ? `<div class="card"><div class="card-bd" style="text-align:center">
     <div class="s dim" style="font-size:12.5px;margin-bottom:11px">No guillotine set up for ${S}.</div>
     <button class="btn" data-editguil>${icon('blade')} Add the guillotine</button></div></div>` : '';
-  const gone = new Set(G.eliminations.map((e) => e.team));
-  const alive = G.entrants.filter((t) => !gone.has(t));
-  const order = [...G.eliminations].sort((a, b) => b.week - a.week);
+
+  const run = db.guillotineRun(S);
+  const alive = run.survivors.length;
+  const pct = run.entrants.length > 1 ? run.chopped / (run.entrants.length - 1) : 0;
+
   return `
   <div class="card">
     <div class="card-hd">
       ${icon('blade')}
-      <div><h3>Guillotine</h3><div class="sub">from week ${G.startWeek}${
-        G.awardedInWeek && G.awardedInWeek !== G.startWeek ? ` &middot; paid wk ${G.awardedInWeek}` : ''}</div></div>
+      <div><h3>Guillotine</h3><div class="sub">wk ${run.startWeek}&ndash;${run.lastWeek} &middot; ${run.entrants.length} in</div></div>
       <div class="spacer"></div>
-      <span class="chip ${G.winner ? 'gold' : 'heat'}">${money(G.payout?.['1'] || 0)}</span>
+      <span class="chip ${run.winner ? 'gold' : 'heat'}">${money(G.payout?.['1'] || 0)}</span>
       ${admin ? `<button class="btn sm ghost" data-editguil>${icon('pencil')}</button>` : ''}
     </div>
-    <div class="card-bd" style="padding-bottom:10px">
+    <div class="card-bd" style="padding-bottom:12px">
       <div class="s dim" style="font-size:12.5px;line-height:1.55">${esc(G.rules || '')}</div>
       <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
-        <div class="meter" style="flex:1"><i style="width:${G.entrants.length ? ((G.entrants.length - alive.length) / (G.entrants.length - 1) * 100).toFixed(1) : 0}%"></i></div>
-        <span class="chip ${alive.length === 1 ? 'gold' : 'mint'}">${alive.length} alive</span>
+        <div class="meter" style="flex:1"><i style="width:${(pct * 100).toFixed(1)}%"></i></div>
+        <span class="chip ${run.winner || alive === 1 ? 'gold' : 'mint'}">${
+          run.winner ? 'Decided' : `${alive} alive`}</span>
       </div>
     </div>
-    <div class="card-bd flush"><div class="guillo">
-      ${alive.map((t) => `<div class="g-row alive">
-          <span class="wk">IN</span>
-          <div class="grow" style="flex:1">${teamTag(db.team(t))}</div>
-          ${admin && alive.length > 1 ? `<button class="btn sm" data-chop="${t}">Chop</button>` : ''}
-        </div>`).join('')}
-      ${order.map((e) => `<div class="g-row out">
-          <span class="wk">W${e.week}</span>
-          <div class="grow" style="flex:1">${teamTag(db.team(e.team))}</div>
-          <div class="dimmer" style="font-size:12.5px">${e.points != null ? pts(e.points) : ''}</div>
-          ${admin ? `<button class="btn sm ghost" data-unchop="${e.team}" aria-label="Undo">${icon('sync')}</button>` : ''}
-        </div>`).join('')}
+
+    <div class="card-bd flush"><div class="guil-weeks">
+      ${run.weeks.map((w) => {
+        const key = `${S}:${w.week}`;
+        const open = GUIL_OPEN.has(key);
+        const isFinal = w.week === run.lastWeek && w.settled;
+        return `<div class="gw${open ? ' open' : ''}">
+          <button class="gw-hd" data-gweek="${key}">
+            ${icon('chev', 'acc-caret')}
+            <span class="wk">W${w.week}</span>
+            <div class="grow">
+              ${w.settled ? `<div class="gw-out">${esc(db.team(w.chopped)?.manager ?? '')} chopped${
+                    w.forced ? ' <span class="chip red" style="margin-left:6px">forced</span>'
+                    : w.tied ? ' <span class="chip gold" style="margin-left:6px">tie</span>' : ''}</div>
+                  ${isFinal && run.winner ? `<div class="gw-win">${icon('crown')} ${esc(db.team(run.winner)?.manager ?? '')} survives</div>` : ''}`
+                : `<div class="gw-wait">${w.waiting ? 'Awaiting scores' : 'Not played'}</div>`}
+            </div>
+            <span class="gw-score">${w.settled ? pts(w.scores[0].points) : `${w.scores.length} left`}</span>
+          </button>
+          <div class="gw-bd">
+            <ol class="gw-scores">
+              ${w.scores.map((x, i) => `<li class="${x.chopped ? 'out' : ''}">
+                <span class="rank">${i + 1}</span>
+                <span class="who">${teamTag(db.team(x.team))}</span>
+                <b>${x.points == null ? '&mdash;' : pts(x.points)}</b>
+              </li>`).join('')}
+            </ol>
+            ${admin && w.scores.length > 1 ? `<div class="gw-force">
+              <label>Override the chop</label>
+              <select data-force="${key}">
+                <option value="">Lowest score (${esc(db.team(w.scores[0].team)?.manager ?? '')})</option>
+                ${w.scores.map((x) => `<option value="${x.team}" ${w.forced && w.chopped === x.team ? 'selected' : ''}>${
+                  esc(db.team(x.team)?.manager ?? '')}</option>`).join('')}
+              </select>
+            </div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
     </div></div>
-    ${alive.length === 1 && !G.winner && admin ? `<div class="card-bd">
-      <button class="btn primary" data-crown="${alive[0]}" style="width:100%">${icon('crown')} Crown ${esc(db.team(alive[0]).manager)}</button></div>` : ''}
-    ${G.winner ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+
+    ${run.winner ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
       <div class="banner" style="background:rgba(245,196,81,.08);border-color:rgba(245,196,81,.3)">
-        ${icon('crown')}<div>Last one standing: <b style="color:var(--gold)">${esc(db.team(G.winner)?.manager)}</b> takes ${money(G.payout?.['1'] || 0)}.</div></div>
-    </div>` : ''}
+        ${icon('crown')}<div>Last one standing: <b style="color:var(--gold)">${esc(db.team(run.winner)?.manager ?? '')}</b>
+        takes ${money(G.payout?.['1'] || 0)}.</div></div>
+    </div>` : `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px">Chops are worked out from the weekly scores, so this fills in
+      on its own as ${S} is synced.</div></div>`}
   </div>`;
 }
 
@@ -142,6 +175,24 @@ export function mount(root, db) {
   const S = db.season;
   const teams = db.teams(S);
 
+  /* guillotine week rows expand in place */
+  root.querySelectorAll('[data-gweek]').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.gweek;
+    GUIL_OPEN.has(k) ? GUIL_OPEN.delete(k) : GUIL_OPEN.add(k);
+    b.closest('.gw').classList.toggle('open', GUIL_OPEN.has(k));
+  }));
+
+  root.querySelectorAll('[data-force]').forEach((sel) => sel.addEventListener('change', async () => {
+    const wk = Number(sel.dataset.force.split(':')[1]);
+    const team = sel.value ? Number(sel.value) : null;
+    await db.update('minigames', (m) => {
+      const g = m.seasons[String(S)].guillotine;
+      g.overrides = (g.overrides || []).filter((o) => o.week !== wk);
+      if (team) g.overrides.push({ week: wk, team });
+    });
+    toast(team ? `Week ${wk} chop forced` : `Week ${wk} back to the lowest score`);
+  }));
+
   /* ---------- season setup, all on this tab ---------- */
   const season = () => db.get('minigames').seasons[String(S)]
     ||= { games: [], guillotine: null, awards: [], legacy: null };
@@ -163,9 +214,9 @@ export function mount(root, db) {
             <input name="pay" type="number" min="0" inputmode="numeric"
               value="${d0.weeklyPayout?.['1'] ?? 10}"></div>
         </div>
-        <div class="field"><label>Guillotine week (blank for none)</label>
+        <div class="field"><label>Guillotine starts week (blank for none)</label>
           <input name="guil" type="number" min="1" max="18" inputmode="numeric"
-            value="${cur.guillotine?.week ?? ''}"></div>`,
+            value="${cur.guillotine?.startWeek ?? ''}"></div>`,
       onConfirm: async (f) => {
         const weeks = Math.max(1, Math.min(18, +f.weeks || 14));
         const pay = Math.max(0, +f.pay || 0);
@@ -180,12 +231,12 @@ export function mount(root, db) {
           }
           sn.games = sn.games.filter((g) => g.week <= weeks).sort((a, b) => a.week - b.week);
           if (guil && !sn.guillotine) {
-            sn.guillotine = { id: `${S}-guillotine`, week: guil, startWeek: 1, name: 'Guillotine',
+            sn.guillotine = { id: `${S}-guillotine`, startWeek: guil, name: 'Guillotine',
               rules: 'Lowest scoring manager is chopped every week until one remains.',
               payout: { 1: pay }, status: 'scheduled',
-              entrants: db.teams(S).map((t) => t.number), eliminations: [], winner: null, awardedInWeek: guil };
+              entrants: db.teams(S).map((t) => t.number), overrides: [], winner: null };
           } else if (guil && sn.guillotine) {
-            sn.guillotine.week = guil; sn.guillotine.awardedInWeek = guil;
+            sn.guillotine.startWeek = guil;
           } else if (!guil) sn.guillotine = null;
         });
         toast(`${S} slate ready`);
@@ -213,11 +264,14 @@ export function mount(root, db) {
       body: `<div class="field"><label>Rules</label><textarea name="rules">${esc(G?.rules
           || 'Lowest scoring manager is chopped every week until one remains.')}</textarea></div>
         <div class="fgrid">
-          <div class="field"><label>Runs from week</label>
+          <div class="field"><label>Starts week</label>
             <input name="start" type="number" min="1" inputmode="numeric" value="${G?.startWeek ?? 1}"></div>
-          <div class="field"><label>Paid out in week</label>
-            <input name="week" type="number" min="1" inputmode="numeric" value="${G?.week ?? 9}"></div>
+          <div class="field"><label>Last chop</label>
+            <input value="week ${(G?.startWeek ?? 1) + db.teams(S).length - 2}" disabled style="opacity:.55"></div>
         </div>
+        <div class="s dim" style="font-size:12px;margin:-4px 0 12px;line-height:1.5">
+          One chop a week until a single manager is left, so ${db.teams(S).length} managers means
+          ${db.teams(S).length - 1} chops &mdash; the last week follows from the start week.</div>
         <div class="field"><label>Payout</label>
           <input name="pay" type="number" min="0" inputmode="numeric" value="${G?.payout?.['1'] ?? 10}"></div>
         ${G ? '<label class="toggle" style="margin-top:4px"><input type="checkbox" name="remove"><span class="tr"></span><span style="font-size:12.5px">Remove the guillotine</span></label>' : ''}`,
@@ -230,8 +284,6 @@ export function mount(root, db) {
                                    entrants: db.teams(S).map((t) => t.number), eliminations: [], winner: null }),
             rules: f.rules.trim() || null,
             startWeek: Math.max(1, +f.start || 1),
-            week: Math.max(1, +f.week || 9),
-            awardedInWeek: Math.max(1, +f.week || 9),
             payout: { 1: Math.max(0, +f.pay || 0) },
           };
         });
@@ -340,41 +392,9 @@ export function mount(root, db) {
     });
   }));
 
-  root.querySelectorAll('[data-chop]').forEach((b) => b.addEventListener('click', () => {
-    const t = Number(b.dataset.chop);
-    const G = db.minigames(S).guillotine;
-    const wk = G.startWeek + G.eliminations.length;
-    openModal({
-      title: `Chop ${db.team(t).manager}`,
-      confirm: 'Chop',
-      body: `<div class="field"><label>Week</label>
-          <input name="week" type="number" inputmode="numeric" value="${wk}"></div>
-        <div class="field"><label>Their score (optional)</label>
-          <input name="points" type="number" step="0.01" inputmode="decimal" placeholder="lowest remaining"></div>
-        <p class="s dim" style="font-size:12.5px;margin:0">Lowest-scoring survivor gets cut. This can be undone.</p>`,
-      onConfirm: async (d) => {
-        await db.update('minigames', (m) => {
-          m.seasons[String(S)].guillotine.eliminations.push(
-            { week: +d.week || wk, team: t, points: d.points ? +d.points : null });
-        });
-        toast(`${db.team(t).manager} chopped`);
-      },
-    });
-  }));
 
-  root.querySelectorAll('[data-unchop]').forEach((b) => b.addEventListener('click', async () => {
-    const t = Number(b.dataset.unchop);
-    await db.update('minigames', (m) => {
-      const G = m.seasons[String(S)].guillotine;
-      G.eliminations = G.eliminations.filter((e) => e.team !== t);
-      if (G.winner === t) G.winner = null;
-    });
-    toast('Back in the pool');
-  }));
 
-  root.querySelectorAll('[data-crown]').forEach((b) => b.addEventListener('click', async () => {
-    const t = Number(b.dataset.crown);
-    await db.update('minigames', (m) => { m.seasons[String(S)].guillotine.winner = t; });
-    toast(`${db.team(t).manager} survives`);
-  }));
+
+
+
 }

@@ -47,8 +47,20 @@ export function migrate(data) {
   if (d.bank && !d.bank.empirePot) d.bank.empirePot = { claimedBy: null, claimedSeason: null, paidAmount: null };
   if (d.bank?.empirePot && !('paidAmount' in d.bank.empirePot)) d.bank.empirePot.paidAmount = null;
 
-  // minigames gained per-season awards
-  for (const s of Object.values(d.minigames?.seasons || {})) if (!s.awards) s.awards = [];
+  // minigames gained per-season awards; the guillotine stopped storing its result
+  for (const s of Object.values(d.minigames?.seasons || {})) {
+    if (!s.awards) s.awards = [];
+    const g = s.guillotine;
+    if (!g) continue;
+    g.overrides ||= [];
+    // Chops used to be typed in. They are derived from the weekly scores now, so
+    // carry any hand-entered ones across as overrides rather than dropping them.
+    if (Array.isArray(g.eliminations) && g.eliminations.length && !g.overrides.length)
+      g.overrides = g.eliminations.map((e) => ({ week: e.week, team: e.team }));
+    delete g.eliminations;
+    delete g.awardedInWeek;
+    delete g.week;
+  }
 
   // weekly scores gained a ceiling alongside actual points
   for (const w of d.stats?.weekly || []) if (!('maxPoints' in w)) w.maxPoints = null;

@@ -225,7 +225,8 @@ class Store {
     const add = (team, amt) => { if (team && amt) out[team] = (out[team] || 0) + amt; };
     for (const g of s.games || [])
       for (const pl of ['1', '2', '3']) add(g.results?.[pl]?.team, Number(g.payout?.[pl]) || 0);
-    if (s.guillotine?.winner) add(s.guillotine.winner, Number(s.guillotine.payout?.['1']) || 0);
+    const run = this.guillotineRun(season);
+    if (run?.winner) add(run.winner, Number(s.guillotine.payout?.['1']) || 0);
     for (const a of s.awards || []) add(a.result?.team, Number(a.payout) || 0);
 
     // A season recorded before week-by-week tracking existed carries only totals.
@@ -403,6 +404,64 @@ class Store {
       + Object.values(s.guillotine?.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0)
       + (s.awards || []).reduce((a, x) => a + (Number(x.payout) || 0), 0);
     return { paid: paid + (s.legacy?.total || 0), committed, remaining: committed - paid };
+  }
+
+  /**
+   * The guillotine, played out from the weekly scores rather than typed in.
+   * Each week the lowest-scoring survivor is chopped, so the run is a pure
+   * function of the results — it cannot disagree with the scoreboard.
+   * `overrides` force a specific chop where a tie or a missing week needs a call.
+   */
+  guillotineRun(season = this.season) {
+    const G = this.minigames(season).guillotine;
+    if (!G) return null;
+
+    const entrants = G.entrants?.length ? [...G.entrants] : this.teams(season).map((t) => t.number);
+    const start = Number(G.startWeek) || 1;
+    // one chop a week until a single manager is left
+    const lastWeek = start + entrants.length - 2;
+
+    const byWeek = {};
+    for (const w of this.get('stats').weekly)
+      if (w.season === season) (byWeek[w.week] ||= {})[w.team] = w.points;
+
+    const overrides = new Map((G.overrides || []).map((o) => [o.week, o.team]));
+
+    let pool = [...entrants];
+    const weeks = [];
+    for (let wk = start; wk <= lastWeek; wk++) {
+      const scores = pool
+        .map((t) => ({ team: t, points: byWeek[wk]?.[t] ?? null }))
+        .sort((a, b) => (a.points ?? Infinity) - (b.points ?? Infinity) || a.team - b.team);
+      const haveAll = scores.length > 0 && scores.every((x) => x.points != null);
+
+      let chopped = overrides.has(wk) ? overrides.get(wk) : null;
+      let tied = false;
+      if (chopped == null && haveAll) {
+        const low = scores[0].points;
+        tied = scores.filter((x) => x.points === low).length > 1;
+        chopped = scores[0].team;
+      }
+      weeks.push({
+        week: wk,
+        scores: scores.map((x) => ({ ...x, chopped: x.team === chopped })),
+        chopped, tied,
+        forced: overrides.has(wk),
+        settled: chopped != null,
+        waiting: !haveAll && chopped == null,
+      });
+      if (chopped == null) break;
+      pool = pool.filter((t) => t !== chopped);
+    }
+
+    const done = weeks.length === entrants.length - 1 && weeks.every((w) => w.settled);
+    return {
+      startWeek: start, lastWeek, entrants,
+      weeks, survivors: pool,
+      winner: G.winner ?? (done && pool.length === 1 ? pool[0] : null),
+      complete: done,
+      chopped: weeks.filter((w) => w.settled).length,
+    };
   }
 
   /* ---------- stats ---------- */

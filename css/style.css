@@ -702,3 +702,37 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 
 .mg-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 2px}
 .mg-actions .btn{flex:1;min-width:110px}
+
+/* ---------- guillotine weeks ---------- */
+.guil-weeks{display:flex;flex-direction:column}
+.gw{border-bottom:1px solid var(--line-soft)}
+.gw:last-child{border-bottom:none}
+.gw-hd{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 16px}
+.gw-hd .wk{font-family:var(--f-display);font-size:10.5px;font-weight:700;letter-spacing:.09em;
+  color:var(--ink-3);background:var(--surface-2);border:1px solid var(--line);border-radius:4px;
+  padding:2px 6px;flex:none;min-width:34px;text-align:center}
+.gw-hd .grow{flex:1;min-width:0}
+.gw .acc-caret{transition:transform .18s}
+.gw.open .acc-caret{transform:rotate(90deg)}
+.gw-out{font-size:13.5px;font-weight:600}
+.gw-win{font-size:11.5px;color:var(--gold);display:flex;align-items:center;gap:5px;margin-top:3px}
+.gw-win svg{width:13px;height:13px}
+.gw-wait{font-size:13px;color:var(--ink-3)}
+.gw-score{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink-2);flex:none}
+.gw-bd{display:none}
+.gw.open .gw-bd{display:block}
+.gw-scores{list-style:none;margin:0;padding:2px 16px 12px 44px}
+.gw-scores li{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;
+  border-top:1px solid var(--line-soft)}
+.gw-scores li:first-child{border-top:none}
+.gw-scores .rank{font-family:var(--f-display);font-size:10.5px;font-weight:700;color:var(--ink-3);
+  width:16px;flex:none}
+.gw-scores .who{flex:1;min-width:0}
+.gw-scores b{font-family:var(--f-display);font-size:14px;font-weight:700;flex:none}
+.gw-scores li.out .who b{color:var(--red)}
+.gw-scores li.out b{color:var(--red)}
+.gw-scores li.out .rank{color:var(--red)}
+.gw-force{padding:0 16px 13px 44px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.gw-force label{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.gw-force select{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:5px 8px;font-size:12.5px}

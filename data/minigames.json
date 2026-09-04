@@ -1,5 +1,5 @@
 {
-  "_README": "One entry per week per season. `status`: final | scheduled | none (no minigame that week) | canceled. `results` maps place -> {team, value, note}; `value` is the free-text stat or player that won it. `awards` are post-season, league-voted, and not tied to a week. The guillotine is a separate multi-week object: it runs from `startWeek` and is paid out in `week`. A week whose status is `guillotine` is a pointer to the guillotine object, not a separate payout — it exists so the week is not missing from the slate.",
+  "_README": "One entry per week per season. status: final | scheduled | none (no minigame that week) | canceled | guillotine (a pointer to the guillotine, not a separate payout). results maps place -> {team, value}. awards are post-season and not tied to a week. The guillotine stores only its setup — startWeek, payout, entrants — because the chops are worked out from the weekly scores;  forces a specific chop for a week when a tie or a missing result needs a call.",
   "defaults": {
     "weeklyPayout": {
       "1": 10,
@@ -375,10 +375,9 @@
       ],
       "guillotine": {
         "id": "2025-guillotine",
-        "week": 10,
         "name": "Guillotine",
         "startWeek": 1,
-        "rules": "Lowest scoring manager is chopped every week until one remains. Paid out in week 10.",
+        "rules": "Lowest scoring manager is chopped every week until one remains.",
         "payout": {
           "1": 10
         },
@@ -395,55 +394,8 @@
           9,
           10
         ],
-        "eliminations": [
-          {
-            "week": 1,
-            "team": 10,
-            "points": 99.35
-          },
-          {
-            "week": 2,
-            "team": 1,
-            "points": 73.4
-          },
-          {
-            "week": 3,
-            "team": 5,
-            "points": 114.2
-          },
-          {
-            "week": 4,
-            "team": 3,
-            "points": 121.0
-          },
-          {
-            "week": 5,
-            "team": 2,
-            "points": 128.7
-          },
-          {
-            "week": 6,
-            "team": 7,
-            "points": 113.55
-          },
-          {
-            "week": 7,
-            "team": 6,
-            "points": 111.7
-          },
-          {
-            "week": 8,
-            "team": 9,
-            "points": 144.9
-          },
-          {
-            "week": 9,
-            "team": 8,
-            "points": 124.3
-          }
-        ],
         "winner": 4,
-        "awardedInWeek": 10
+        "overrides": []
       },
       "awards": [
         {
@@ -715,7 +667,6 @@
       ],
       "guillotine": {
         "id": "2026-guillotine",
-        "week": 9,
         "name": "Guillotine",
         "startWeek": 9,
         "rules": "Starting week 9, the lowest-scoring team still in the pool is chopped each week. Last manager standing takes the pot.",
@@ -735,9 +686,8 @@
           1,
           6
         ],
-        "eliminations": [],
         "winner": null,
-        "awardedInWeek": 9
+        "overrides": []
       },
       "awards": []
     }
