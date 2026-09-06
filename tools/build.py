@@ -4,6 +4,7 @@ Bundle the modular app into ONE self-contained HTML file that works from
 file:// (double-click, no server, no network except fonts).
 
     python3 tools/build.py
+    python3 tools/build.py --pull   # refresh data/ from the database first
 
 Writes ./sweaty-dyno.html. The modular version in index.html stays the source
 of truth -- rerun this whenever you change js/, css/ or data/.
@@ -88,6 +89,18 @@ def check_config():
 
 
 def main():
+    # The offline single-file build bundles a snapshot. Refresh it from the
+    # database first so it is not shipping something months out of date.
+    if '--pull' in sys.argv:
+        sys.path.insert(0, str(ROOT / 'tools'))
+        from store import Store, banner
+        st = Store()
+        if not st.remote:
+            print('  --pull needs SUPABASE_URL and SUPABASE_SERVICE_KEY; using data/ as-is')
+        else:
+            st.load()
+            print(f'  pulled {len(st.snapshot_to_files())} files from the database into data/')
+
     check_config()
     css = (ROOT / 'css' / 'style.css').read_text(encoding='utf-8')
     data = {k: json.loads((ROOT / 'data' / f'{k}.json').read_text(encoding='utf-8')) for k in DATA}

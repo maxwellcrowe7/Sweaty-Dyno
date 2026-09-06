@@ -10,9 +10,8 @@ Safe to re-run: it always maps from whatever is committed right now.
 """
 import json, sys
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-D = ROOT / 'data'
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from store import Store, banner
 
 # managerId -> team number.  <<< EDIT THIS <<<
 TARGET = {
@@ -38,14 +37,6 @@ TEAM_MAP_KEYS = {'totalsByTeam'}
 FILES = ['bank', 'minigames', 'drafts', 'trades', 'stats']
 
 
-def load(name):
-    return json.loads((D / f'{name}.json').read_text(encoding='utf-8'))
-
-
-def save(name, obj):
-    (D / f'{name}.json').write_text(json.dumps(obj, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-
-
 def walk(node, shift):
     if isinstance(node, dict):
         out = {}
@@ -65,7 +56,10 @@ def walk(node, shift):
 
 
 def main():
-    mg = load('managers')
+    store = Store(prefer_local='--local' in sys.argv)
+    banner(store)
+    all_data = store.load()
+    mg = all_data['managers']
     ids = {m['id'] for m in mg['managers']}
     unknown = set(TARGET) - ids
     if unknown:
@@ -91,15 +85,16 @@ def main():
         print(f'  T{o:<2} -> T{changed[o]:<2}  ({inv[o]})')
 
     for f in FILES:
-        save(f, walk(load(f), shift))
-        print(f'  rewrote data/{f}.json')
+        store.save(f, walk(all_data[f], shift))
+        print(f'  rewrote {f}')
 
     for t in mg['teams']:
         t['number'] = shift[t['number']]
     mg['teams'].sort(key=lambda t: t['number'])
-    save('managers', mg)
-    print('  rewrote data/managers.json')
-    print('\nDone. Re-run tools/build.py to refresh the single-file build.')
+    store.save('managers', mg)
+    print('  rewrote managers')
+    store.commit()
+    print(f'\nWritten to {store.where}.')
 
 
 if __name__ == '__main__':

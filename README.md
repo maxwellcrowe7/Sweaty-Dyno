@@ -178,10 +178,35 @@ back-filling history: the player dictionary downloads once and you see a diff fi
 > exactly. (Alex week 2 read 173.80 where Sleeper gives 172.80, most likely a typo.) The app
 > now keeps both figures per week, so nothing is lost either way.
 
-## Where each number comes from
+## Where the data lives
 
-Nothing that can be derived is stored twice. Amounts are configuration, results
-come from Sleeper, and only "who has actually been handed cash" is recorded by hand.
+**The database is the source of truth.** The app reads it and writes to it — you sign
+in, edit, and the league sees it. There is no publishing step in normal use.
+
+`data/*.json` is two things and neither of them is authoritative:
+
+1. the **seed** used to populate an empty database once, and
+2. the **offline snapshot** bundled into `sweaty-dyno.html`.
+
+The CLI tools read and write the database directly when the environment is set:
+
+```bash
+export SUPABASE_URL=https://vxykjkuqhtfrzfktymja.supabase.co
+export SUPABASE_SERVICE_KEY=...          # Settings -> API -> service_role
+python3 tools/sync_sleeper.py            # writes straight to the database
+```
+
+Without those variables they fall back to `data/*.json`, which is useful offline but
+means the result then has to reach the database somehow. Add `--local` to force that.
+
+To refresh the offline copy from the database: `python3 tools/build.py --pull`.
+
+> Earlier versions of these tools only wrote `data/*.json`, which is why there was a
+> "push to database" step at all. That was a second source of truth and it should not
+> have existed. Admin still has a push, but it is now a seed-and-repair tool rather
+> than part of the routine.
+
+## Where each number comes from
 
 | Figure | Source |
 |---|---|

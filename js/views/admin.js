@@ -89,12 +89,13 @@ export function render(db) {
   ${cloud ? `
   <div class="section-title">Database</div>
   <div class="card">
-    <div class="card-hd">${icon('sync')}<h3>Site copy vs. database</h3><div class="spacer"></div>
+    <div class="card-hd">${icon('sync')}<h3>Seed &amp; repair</h3><div class="spacer"></div>
       <span class="chip" data-diffchip>checking&hellip;</span></div>
     <div class="card-bd">
       <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:12px">
-        Everyone reads the database. The site ships its own copy of the data, and when I change the
-        structure of a file that shipped copy is newer. This compares the two and pushes the ones that differ.
+        The database is the source of truth &mdash; your edits already save there and nothing needs pushing.
+        This is for seeding and repair: the site also ships a copy of the data, and pushing overwrites the
+        database with it. Use it to fill an empty database, or to recover after something went wrong.
       </div>
       <div data-diff class="s dim" style="font-size:12.5px;margin-bottom:12px">Comparing&hellip;</div>
       ${admin

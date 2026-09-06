@@ -9,13 +9,19 @@ of the latter.
     python3 tools/sync_sleeper.py            # every configured season
     python3 tools/sync_sleeper.py 2025       # one season
     python3 tools/sync_sleeper.py --no-maxpf # scores only (skips the 5 MB player file)
+    python3 tools/sync_sleeper.py --local    # write data/*.json instead of the database
+
+Writes straight to the database when SUPABASE_URL and SUPABASE_SERVICE_KEY are
+set, so there is nothing to push afterwards.
 
 League IDs come from data/league.json. Doing this from the CLI is nicer than the
 in-app button for back-filling history: the player dictionary downloads once and
 you get a diff printed before anything is written.
 """
-import json, sys, urllib.request
+import json, os, sys, urllib.request
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from store import Store, banner
 
 API = 'https://api.sleeper.app/v1'
 ROOT = Path(__file__).resolve().parent.parent
@@ -29,14 +35,6 @@ SKIP = {'BN', 'IR', 'TAXI'}
 def get(path):
     with urllib.request.urlopen(API + path) as r:
         return json.load(r)
-
-
-def load(n):
-    return json.loads((D / f'{n}.json').read_text(encoding='utf-8'))
-
-
-def save(n, o):
-    (D / f'{n}.json').write_text(json.dumps(o, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
 
 
 def roster_map(league_id, managers):
@@ -96,7 +94,10 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith('-')]
     want_maxpf = '--no-maxpf' not in sys.argv
 
-    league, managers, stats, bank = load('league'), load('managers'), load('stats'), load('bank')
+    store = Store(prefer_local='--local' in sys.argv)
+    banner(store)
+    d = store.load()
+    league, managers, stats, bank = d['league'], d['managers'], d['stats'], d['bank']
     ids = {s: i for s, i in league['sleeper']['leagueIds'].items() if i}
     if args:
         ids = {s: i for s, i in ids.items() if s in args}
@@ -190,9 +191,13 @@ def main():
     stats['maxPF'].sort(key=lambda m: (m['season'], m['team']))
     stats['lastSleeperSync'] = __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')
     bank['finishes'] = sorted(bank.get('finishes', []), key=lambda f: (f['season'], f['place']))
-    save('stats', stats); save('managers', managers); save('bank', bank)
-    print('\nWrote data/stats.json, data/managers.json and data/bank.json.')
-    print('Re-run tools/build.py to refresh the single-file build.')
+    store.save('stats', stats); store.save('managers', managers); store.save('bank', bank)
+    written = store.commit()
+    print(f"\nWrote {', '.join(written)} to {store.where}.")
+    if store.remote:
+        print('The league sees it on their next refresh. Nothing to push.')
+    else:
+        print('Run tools/build.py to refresh the offline copy.')
 
 
 if __name__ == '__main__':

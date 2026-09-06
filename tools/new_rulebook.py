@@ -15,9 +15,8 @@ rulebook" if you would rather not use the terminal.
 """
 import argparse, copy, json, sys
 from pathlib import Path
-
-ROOT = Path(__file__).resolve().parent.parent
-P = ROOT / 'data' / 'rules.json'
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from store import Store, banner
 
 
 def main():
@@ -26,9 +25,12 @@ def main():
     ap.add_argument('--from', dest='src', type=int, default=None)
     ap.add_argument('--summary', default=None)
     ap.add_argument('--publish', action='store_true')
+    ap.add_argument('--local', action='store_true', help='write data/*.json instead of the database')
     a = ap.parse_args()
 
-    d = json.loads(P.read_text(encoding='utf-8'))
+    store = Store(prefer_local='--local' in sys.argv)
+    banner(store)
+    d = store.load()['rules']
     seasons = d['seasons']
     if str(a.season) in seasons:
         sys.exit(f'{a.season} already exists. Delete it from data/rules.json first, or edit it in the app.')
@@ -45,14 +47,15 @@ def main():
         'summary': a.summary,
         'sections': copy.deepcopy(base['sections']),
     }
-    P.write_text(json.dumps(d, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+    store.save('rules', d)
+    store.commit()
 
     n = sum(len(s['items']) for s in base['sections'])
     print(f"Created {a.season} from {src}: {len(base['sections'])} sections, {n} rules.")
     print(f"  status: {'published' if a.publish else 'draft (only a signed-in commissioner sees it)'}")
-    print('\nNext: edit data/rules.json (or Rules -> Edit section in the app),')
-    print('then run tools/build.py. The diff against '
-          f'{src} is generated automatically.')
+    print(f'\nWritten to {store.where}. Edit it in the app under Rules,')
+    print(f'or in data/rules.json if you are working offline. The diff against {src}')
+    print('is generated automatically.')
 
 
 if __name__ == '__main__':
