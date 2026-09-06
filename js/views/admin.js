@@ -120,13 +120,16 @@ export function render(db) {
           </div>
         </div>`).join('')}
       <div class="s dim" style="font-size:12px;margin:4px 0 14px;line-height:1.6">
+        <b>Sync</b> pulls weekly scores and, once the playoffs are done, the final standings that drive
+        placement payouts and empire points. <b>Max PF</b> works out each team's best possible lineup;
+        it downloads a large player file, so run it on wifi.<br><br>
         Open your league on sleeper.com &mdash; the ID is the long number in the URL
         (<span class="dimmer">sleeper.com/leagues/<b style="color:var(--heat)">1124…</b>/team</span>).
         Sleeper's read API is public, so nothing here needs a password.
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" data-save-ids>${icon('check')} Save IDs</button>
-        <button class="btn primary" data-sync="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Sync ${S} scores</button>
+        <button class="btn primary" data-sync="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Sync ${S} from Sleeper</button>
         <button class="btn" data-maxpf="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('chart')} Compute Max PF</button>
       </div>
       <div data-syncout class="s dim" style="font-size:12px;margin-top:12px"></div>
@@ -317,12 +320,39 @@ export function mount(root, db) {
         rows.push(...(await SL.fetchWeek(id, w, map.rosterToTeam)));
       }
       await db.update('stats', (s) => {
+        const prior = new Map(s.weekly.filter((x) => x.season === S)
+          .map((x) => [`${x.week}:${x.team}`, x.maxPoints]));
         s.weekly = s.weekly.filter((x) => x.season !== S);
-        for (const r of rows) s.weekly.push({ season: S, week: r.week, team: r.team, points: r.points, opponent: null, result: null });
+        for (const r of rows) s.weekly.push({
+          season: S, week: r.week, team: r.team, points: r.points,
+          maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,   // never wipe computed ceilings
+          opponent: null, result: null,
+        });
         s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
       });
-      say(`Synced ${rows.length} scores across ${weeks.length} weeks. Export stats.json to keep it.`);
-      toast(`${S} scores synced`);
+
+      // Final standings drive the placement payouts and the empire points, so
+      // pull them here too rather than making it a separate errand.
+      say('Reading the playoff brackets…');
+      let placed = 0;
+      try {
+        const places = await SL.fetchStandings(id);
+        const finished = Object.entries(places)
+          .map(([place, roster]) => ({ season: S, place: Number(place), team: map.rosterToTeam[roster] }))
+          .filter((f) => f.team)
+          .sort((a, b) => a.place - b.place);
+        if (finished.length) {
+          await db.update('bank', (b) => {
+            b.finishes = [...(b.finishes || []).filter((f) => f.season !== S), ...finished]
+              .sort((x, y) => x.season - y.season || x.place - y.place);
+          });
+          placed = finished.length;
+        }
+      } catch { /* brackets appear only once the playoffs start */ }
+
+      say(`Synced ${rows.length} scores across ${weeks.length} weeks`
+        + (placed ? `, and ${placed} final places.` : '. No playoff bracket yet.'));
+      toast(`${S} synced`);
     } catch (e) { say(`Sync failed — ${e.message}`); }
     ev.currentTarget.disabled = false;
   });
