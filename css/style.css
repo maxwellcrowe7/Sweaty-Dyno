@@ -793,3 +793,24 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 .gw-force select{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:5px 8px;font-size:12.5px}
 .carry{font-size:10.5px;color:var(--ink-3);font-weight:500;margin-top:2px;white-space:nowrap}
+
+/* ---------- info popover ---------- */
+.info{
+  display:inline-grid;place-items:center;width:15px;height:15px;flex:none;
+  border-radius:50%;border:1px solid var(--line);background:var(--surface-2);
+  font-family:var(--f-body);font-size:9.5px;font-weight:700;font-style:italic;
+  line-height:1;color:var(--ink-3);cursor:pointer;vertical-align:middle;
+  margin-left:5px;letter-spacing:0;text-transform:none;
+  transition:color .14s,border-color .14s,background .14s;
+}
+.info:hover,.info:focus-visible{color:var(--heat);border-color:rgba(255,107,44,.45);
+  background:rgba(255,107,44,.10);outline:none}
+.info-pop{
+  position:absolute;z-index:80;
+  background:var(--surface-3);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--ink-2);
+  box-shadow:var(--shadow);pointer-events:none;
+  opacity:0;transform:translateY(-3px);transition:opacity .14s,transform .14s;
+  text-align:left;font-weight:400;letter-spacing:0;text-transform:none;
+}
+.info-pop.show{opacity:1;transform:translateY(0)}

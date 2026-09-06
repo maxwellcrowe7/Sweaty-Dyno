@@ -1,4 +1,4 @@
-import { money, esc, icon, teamTag, empty, toast } from '../util.js';
+import { money, esc, icon, teamTag, empty, toast, info } from '../util.js';
 
 const CATS = {
   empire:    { label: 'Empire Pot', chip: 'violet' },
@@ -155,16 +155,14 @@ export function render(db, state = {}) {
 
   <div class="section-title">Balance sheet</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
-    <thead><tr><th class="sticky">Season</th><th class="n">Available</th><th class="n">Empire</th>
-      <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus</th></tr></thead>
+    <thead><tr><th class="sticky">Season</th><th class="n">Available${info(`That season's buy-ins plus anything the season before did not spend. Surplus belongs to the league, so it rolls forward instead of disappearing.`)}</th><th class="n">Empire</th>
+      <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus${info(`What is left after the empire set-aside and the payouts that have actually been handed over. It becomes the next season's carry.`)}</th></tr></thead>
     <tbody>${sheet.map((r) => !r.active
       ? `<tr><td class="sticky dim">${r.season}</td>
           ${[0, 1, 2, 3, 4].map(() => '<td class="n dimmer">&mdash;</td>').join('')}</tr>`
       : `<tr><td class="sticky" style="font-weight:700">${r.season}</td>
-        <td class="n">
-          <div style="font-weight:700">${money(r.available)}</div>
-          ${r.carryIn ? `<div class="carry">${money(r.fees)} + ${money(r.carryIn)} carried</div>` : ''}
-        </td>
+        <td class="n" style="font-weight:700"
+            title="${r.carryIn ? `${money(r.fees)} in buy-ins + ${money(r.carryIn)} carried from ${r.season - 1}` : `${money(r.fees)} in buy-ins`}">${money(r.available)}</td>
         <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
@@ -177,14 +175,10 @@ export function render(db, state = {}) {
         <td class="n">${money(all.byCat.placement || 0)}</td>
         <td class="n ${all.free >= 0 ? 'pos' : 'neg'}">${money(all.free)}</td></tr>
     </tbody></table></div></div>
-    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px;line-height:1.6">
-        <b>Available</b> is that season's buy-ins plus anything the season before did not spend &mdash;
-        surplus belongs to the league, so it rolls forward instead of disappearing.
-        ${all.owedOut ? `<br><span class="owed-flag">*</span> ${money(all.owedOut)} has been awarded but not
-          handed over yet, so it is still sitting in the bank.` : ''}
-      </div>
-    </div>
+    ${all.owedOut ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px;line-height:1.6"><span class="owed-flag">*</span>
+        ${money(all.owedOut)} has been awarded but not handed over yet, so it is still sitting in the bank.</div>
+    </div>` : ''}
   </div>
 
   <div class="section-title">Manager ledger</div>

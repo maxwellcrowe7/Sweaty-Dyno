@@ -810,6 +810,27 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
   padding:5px 8px;font-size:12.5px}
 .carry{font-size:10.5px;color:var(--ink-3);font-weight:500;margin-top:2px;white-space:nowrap}
 
+/* ---------- info popover ---------- */
+.info{
+  display:inline-grid;place-items:center;width:15px;height:15px;flex:none;
+  border-radius:50%;border:1px solid var(--line);background:var(--surface-2);
+  font-family:var(--f-body);font-size:9.5px;font-weight:700;font-style:italic;
+  line-height:1;color:var(--ink-3);cursor:pointer;vertical-align:middle;
+  margin-left:5px;letter-spacing:0;text-transform:none;
+  transition:color .14s,border-color .14s,background .14s;
+}
+.info:hover,.info:focus-visible{color:var(--heat);border-color:rgba(255,107,44,.45);
+  background:rgba(255,107,44,.10);outline:none}
+.info-pop{
+  position:absolute;z-index:80;
+  background:var(--surface-3);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--ink-2);
+  box-shadow:var(--shadow);pointer-events:none;
+  opacity:0;transform:translateY(-3px);transition:opacity .14s,transform .14s;
+  text-align:left;font-weight:400;letter-spacing:0;text-transform:none;
+}
+.info-pop.show{opacity:1;transform:translateY(0)}
+
 </style>
 </head>
 <body>
@@ -1192,6 +1213,10 @@ const toast = (msg) => {
   clearTimeout(t._h);
   t._h = setTimeout(() => t.classList.remove('show'), 2200);
 };
+
+/** A small "i" that reveals an explanation on hover or tap. Wired globally by app.js. */
+const info = (text, label = 'What this means') =>
+  `<button class="info" type="button" data-info="${esc(text)}" aria-label="${esc(label)}">i</button>`;
 const empty = (title, sub, ic = 'inbox') =>
   `<div class="empty">${icon(ic)}<p>${esc(title)}</p><small>${esc(sub)}</small></div>`;
 const sum = (arr, f = (x) => x) => arr.reduce((a, b) => a + (Number(f(b)) || 0), 0);
@@ -1243,7 +1268,7 @@ const teamOptions = (teams, sel = '', blank = '— none —') =>
   `<option value="">${esc(blank)}</option>` + teams.map((t) =>
     `<option value="${t.number}" ${String(sel) === String(t.number) ? 'selected' : ''}>T${t.number} · ${esc(t.manager)}</option>`).join('');
 
-return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, empty, sum, by, openModal, teamOptions };
+return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, teamOptions };
 })();
 
 /* ===== js/db.js ===== */
@@ -2313,7 +2338,7 @@ return { render, mount };
 
 /* ===== js/views/bank.js ===== */
 __M["js/views/bank.js"] = (function () {
-const { money, esc, icon, teamTag, empty, toast } = __M["js/util.js"];
+const { money, esc, icon, teamTag, empty, toast, info } = __M["js/util.js"];
 const CATS = {
   empire:    { label: 'Empire Pot', chip: 'violet' },
   placement: { label: 'Placement',  chip: 'gold' },
@@ -2468,16 +2493,14 @@ function render(db, state = {}) {
 
   <div class="section-title">Balance sheet</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
-    <thead><tr><th class="sticky">Season</th><th class="n">Available</th><th class="n">Empire</th>
-      <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus</th></tr></thead>
+    <thead><tr><th class="sticky">Season</th><th class="n">Available${info(`That season's buy-ins plus anything the season before did not spend. Surplus belongs to the league, so it rolls forward instead of disappearing.`)}</th><th class="n">Empire</th>
+      <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus${info(`What is left after the empire set-aside and the payouts that have actually been handed over. It becomes the next season's carry.`)}</th></tr></thead>
     <tbody>${sheet.map((r) => !r.active
       ? `<tr><td class="sticky dim">${r.season}</td>
           ${[0, 1, 2, 3, 4].map(() => '<td class="n dimmer">&mdash;</td>').join('')}</tr>`
       : `<tr><td class="sticky" style="font-weight:700">${r.season}</td>
-        <td class="n">
-          <div style="font-weight:700">${money(r.available)}</div>
-          ${r.carryIn ? `<div class="carry">${money(r.fees)} + ${money(r.carryIn)} carried</div>` : ''}
-        </td>
+        <td class="n" style="font-weight:700"
+            title="${r.carryIn ? `${money(r.fees)} in buy-ins + ${money(r.carryIn)} carried from ${r.season - 1}` : `${money(r.fees)} in buy-ins`}">${money(r.available)}</td>
         <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
@@ -2490,14 +2513,10 @@ function render(db, state = {}) {
         <td class="n">${money(all.byCat.placement || 0)}</td>
         <td class="n ${all.free >= 0 ? 'pos' : 'neg'}">${money(all.free)}</td></tr>
     </tbody></table></div></div>
-    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px;line-height:1.6">
-        <b>Available</b> is that season's buy-ins plus anything the season before did not spend &mdash;
-        surplus belongs to the league, so it rolls forward instead of disappearing.
-        ${all.owedOut ? `<br><span class="owed-flag">*</span> ${money(all.owedOut)} has been awarded but not
-          handed over yet, so it is still sitting in the bank.` : ''}
-      </div>
-    </div>
+    ${all.owedOut ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px;line-height:1.6"><span class="owed-flag">*</span>
+        ${money(all.owedOut)} has been awarded but not handed over yet, so it is still sitting in the bank.</div>
+    </div>` : ''}
   </div>
 
   <div class="section-title">Manager ledger</div>
@@ -4552,16 +4571,66 @@ function wireSections(main, view) {
   }
 }
 
+/* ---------- info popovers ----------
+   One handler for every `info()` button. Hover on pointer devices, tap
+   elsewhere; Escape and an outside tap close it. */
+let infoPop = null;
+const closeInfo = () => { infoPop?.remove(); infoPop = null; };
+
+function showInfo(btn) {
+  closeInfo();
+  const pop = el('div', { class: 'info-pop', role: 'tooltip' });
+  pop.textContent = btn.dataset.info;
+  document.body.appendChild(pop);
+  infoPop = pop;
+
+  const r = btn.getBoundingClientRect();
+  const w = Math.min(280, window.innerWidth - 24);
+  pop.style.width = `${w}px`;
+  let left = r.left + r.width / 2 - w / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
+  pop.style.left = `${left}px`;
+  // flip above when there is no room below
+  const below = window.innerHeight - r.bottom;
+  if (below < pop.offsetHeight + 16) {
+    pop.style.top = `${r.top + window.scrollY - pop.offsetHeight - 8}px`;
+  } else {
+    pop.style.top = `${r.bottom + window.scrollY + 8}px`;
+  }
+  requestAnimationFrame(() => pop.classList.add('show'));
+}
+
+function wireInfo(root) {
+  const canHover = window.matchMedia?.('(hover: hover)').matches;
+  root.querySelectorAll('[data-info]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      infoPop && infoPop._for === btn ? closeInfo() : (showInfo(btn), infoPop._for = btn);
+    });
+    if (canHover) {
+      btn.addEventListener('mouseenter', () => { showInfo(btn); infoPop._for = btn; });
+      btn.addEventListener('mouseleave', closeInfo);
+      btn.addEventListener('focus', () => { showInfo(btn); infoPop._for = btn; });
+      btn.addEventListener('blur', closeInfo);
+    }
+  });
+}
+document.addEventListener('click', closeInfo);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInfo(); });
+window.addEventListener('scroll', closeInfo, { passive: true });
+
 /* ---------- render ---------- */
 function paint() {
   const v = VIEWS[state.view];
   const main = $('#main');
   if (!main) return;
   if (main._spy) { window.removeEventListener('scroll', main._spy); main._spy = null; }
+  closeInfo();
   try {
     main.innerHTML = v.mod.render(db, state);
     v.mod.mount?.(main, db, go, setState, state.params || {});
     wireSections(main, state.view);
+    wireInfo(main);
   } catch (err) {
     console.error(err);
     main.innerHTML = `<div class="card"><div class="card-bd">

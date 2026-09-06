@@ -172,16 +172,66 @@ function wireSections(main, view) {
   }
 }
 
+/* ---------- info popovers ----------
+   One handler for every `info()` button. Hover on pointer devices, tap
+   elsewhere; Escape and an outside tap close it. */
+let infoPop = null;
+const closeInfo = () => { infoPop?.remove(); infoPop = null; };
+
+function showInfo(btn) {
+  closeInfo();
+  const pop = el('div', { class: 'info-pop', role: 'tooltip' });
+  pop.textContent = btn.dataset.info;
+  document.body.appendChild(pop);
+  infoPop = pop;
+
+  const r = btn.getBoundingClientRect();
+  const w = Math.min(280, window.innerWidth - 24);
+  pop.style.width = `${w}px`;
+  let left = r.left + r.width / 2 - w / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
+  pop.style.left = `${left}px`;
+  // flip above when there is no room below
+  const below = window.innerHeight - r.bottom;
+  if (below < pop.offsetHeight + 16) {
+    pop.style.top = `${r.top + window.scrollY - pop.offsetHeight - 8}px`;
+  } else {
+    pop.style.top = `${r.bottom + window.scrollY + 8}px`;
+  }
+  requestAnimationFrame(() => pop.classList.add('show'));
+}
+
+function wireInfo(root) {
+  const canHover = window.matchMedia?.('(hover: hover)').matches;
+  root.querySelectorAll('[data-info]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      infoPop && infoPop._for === btn ? closeInfo() : (showInfo(btn), infoPop._for = btn);
+    });
+    if (canHover) {
+      btn.addEventListener('mouseenter', () => { showInfo(btn); infoPop._for = btn; });
+      btn.addEventListener('mouseleave', closeInfo);
+      btn.addEventListener('focus', () => { showInfo(btn); infoPop._for = btn; });
+      btn.addEventListener('blur', closeInfo);
+    }
+  });
+}
+document.addEventListener('click', closeInfo);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInfo(); });
+window.addEventListener('scroll', closeInfo, { passive: true });
+
 /* ---------- render ---------- */
 function paint() {
   const v = VIEWS[state.view];
   const main = $('#main');
   if (!main) return;
   if (main._spy) { window.removeEventListener('scroll', main._spy); main._spy = null; }
+  closeInfo();
   try {
     main.innerHTML = v.mod.render(db, state);
     v.mod.mount?.(main, db, go, setState, state.params || {});
     wireSections(main, state.view);
+    wireInfo(main);
   } catch (err) {
     console.error(err);
     main.innerHTML = `<div class="card"><div class="card-bd">

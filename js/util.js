@@ -102,6 +102,10 @@ export const toast = (msg) => {
   t._h = setTimeout(() => t.classList.remove('show'), 2200);
 };
 
+/** A small "i" that reveals an explanation on hover or tap. Wired globally by app.js. */
+export const info = (text, label = 'What this means') =>
+  `<button class="info" type="button" data-info="${esc(text)}" aria-label="${esc(label)}">i</button>`;
+
 export const empty = (title, sub, ic = 'inbox') =>
   `<div class="empty">${icon(ic)}<p>${esc(title)}</p><small>${esc(sub)}</small></div>`;
 
