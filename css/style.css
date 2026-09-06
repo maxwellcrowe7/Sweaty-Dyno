@@ -792,3 +792,4 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 .gw-force label{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .gw-force select{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:5px 8px;font-size:12.5px}
+.carry{font-size:10.5px;color:var(--ink-3);font-weight:500;margin-top:2px;white-space:nowrap}

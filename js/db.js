@@ -313,6 +313,33 @@ class Store {
     };
   }
 
+  /**
+   * The balance sheet, season by season, with surplus carried forward.
+   * Leftover money was never meant to be leftover — it belongs to the league and
+   * should show up as available cash next year, not quietly vanish. So each
+   * season's available = its own buy-ins + whatever the previous season did not
+   * spend, and its surplus becomes the next season's carry.
+   */
+  balanceSheet() {
+    let carry = 0;
+    return this.seasons.map((season) => {
+      const b = this.bank(season);
+      const empire = season <= this.league.currentSeason
+        ? (Number(this.league.empireContribution?.[String(season)]) || 0) : 0;
+      const mini = b.byCat.minigame || 0;
+      const place = b.byCat.placement || 0;
+      const active = b.collected > 0 || mini > 0 || place > 0 || empire > 0;
+      if (!active) return { season, active: false, fees: 0, carryIn: 0, available: 0,
+                            empire: 0, mini: 0, place: 0, surplus: 0, owedOut: b.owedOut };
+      const carryIn = carry;
+      const available = b.collected + carryIn;
+      const surplus = available - empire - mini - place;
+      carry = surplus;
+      return { season, active: true, fees: b.collected, carryIn, available,
+               empire, mini, place, surplus, owedOut: b.owedOut };
+    });
+  }
+
   /** Money set aside for the Empire so far, less anything already paid out. */
   empirePotBalance() {
     const contributed = this.activeSeasons()

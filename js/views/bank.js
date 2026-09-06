@@ -95,15 +95,7 @@ export function render(db, state = {}) {
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
   const seasonDue = (s) => db.buyIn(s) * teams.length;
 
-  // Live from what has actually been paid out, so this reconciles the real bank.
-  const sheet = seasons.map((s) => {
-    const bs = db.bank(s);
-    const contrib = s <= db.league.currentSeason ? (Number(db.league.empireContribution[String(s)]) || 0) : 0;
-    const mini = bs.byCat.minigame || 0, place = bs.byCat.placement || 0;
-    return { season: s, inn: bs.collected, empire: contrib, mini, place,
-             owedOut: bs.owedOut,
-             surplus: bs.collected - contrib - mini - place };
-  });
+  const sheet = db.balanceSheet();
 
   return `
   <div class="tiles">
@@ -163,15 +155,20 @@ export function render(db, state = {}) {
 
   <div class="section-title">Balance sheet</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
-    <thead><tr><th class="sticky">Season</th><th class="n">In</th><th class="n">Empire</th>
+    <thead><tr><th class="sticky">Season</th><th class="n">Available</th><th class="n">Empire</th>
       <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus</th></tr></thead>
-    <tbody>${sheet.map((r) => `
-      <tr><td class="sticky" style="font-weight:700">${r.season}</td>
-        <td class="n">${r.inn ? money(r.inn) : '<span class="dimmer">&mdash;</span>'}</td>
+    <tbody>${sheet.map((r) => !r.active
+      ? `<tr><td class="sticky dim">${r.season}</td>
+          ${[0, 1, 2, 3, 4].map(() => '<td class="n dimmer">&mdash;</td>').join('')}</tr>`
+      : `<tr><td class="sticky" style="font-weight:700">${r.season}</td>
+        <td class="n">
+          <div style="font-weight:700">${money(r.available)}</div>
+          ${r.carryIn ? `<div class="carry">${money(r.fees)} + ${money(r.carryIn)} carried</div>` : ''}
+        </td>
         <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
-        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${r.inn ? money(r.surplus) : '&mdash;'}${
+        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${money(r.surplus)}${
           r.owedOut ? `<span class="owed-flag" title="${money(r.owedOut)} awarded but not yet paid">*</span>` : ''}</td></tr>`).join('')}
       <tr class="total"><td class="sticky">All time</td>
         <td class="n">${money(all.collected)}</td>
@@ -180,10 +177,14 @@ export function render(db, state = {}) {
         <td class="n">${money(all.byCat.placement || 0)}</td>
         <td class="n ${all.free >= 0 ? 'pos' : 'neg'}">${money(all.free)}</td></tr>
     </tbody></table></div></div>
-    ${all.owedOut ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px"><span class="owed-flag">*</span>
-        ${money(all.owedOut)} has been awarded but not handed over yet, so it is still sitting in the bank.</div>
-    </div>` : ''}
+    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px;line-height:1.6">
+        <b>Available</b> is that season's buy-ins plus anything the season before did not spend &mdash;
+        surplus belongs to the league, so it rolls forward instead of disappearing.
+        ${all.owedOut ? `<br><span class="owed-flag">*</span> ${money(all.owedOut)} has been awarded but not
+          handed over yet, so it is still sitting in the bank.` : ''}
+      </div>
+    </div>
   </div>
 
   <div class="section-title">Manager ledger</div>
