@@ -78,3 +78,12 @@ print('\n— no legacy blocks in the repo data —');
 eq('2025 has real games, not totals', [db.minigames(2025).games.length, db.minigames(2025).legacy], [22,undefined]);
 eq('2025 has post-season minigames', db.minigames(2025).games.filter(g=>g.phase==='post').length, 4);
 print(fail?`\n${fail} FAILURE(S)`:'\nDerived payouts passed.');
+
+print('\n— an empty placement line explains itself —');
+const sub=(s)=>{const L=db.payoutLines(s).find(l=>l.category==='placement');return L.rows.length;};
+await db.update('league',(L)=>{L.placementPayouts={default:{}};});
+eq('no scale -> no rows', sub(2025), 0);
+eq('finishes are still recorded', db.get('bank').finishes.filter(f=>f.season===2025).length, 10);
+await db.update('league',(L)=>{L.placementPayouts={default:{'1':100,'2':50}};});
+eq('scale restored -> rows return', sub(2025), 2);
+eq('and the money is right', line(2025,'placement').total, 150);

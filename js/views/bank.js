@@ -37,11 +37,22 @@ function seasonPayouts(db, season, open, admin) {
       ${lines.map((l) => {
         const c = CATS[l.category];
         const can = l.rows.length > 0;
-        const sub = l.category === 'empire' && !can
-          ? 'Not claimed — nothing to pay out'
-          : !can ? 'Nothing yet'
-          : l.paidCount === l.rows.length ? 'All paid'
-          : `${l.paidCount} of ${l.rows.length} paid`;
+        // Say WHY a category is empty. "Nothing yet" hid a missing payout scale
+        // behind wording that looked like a season simply had no results.
+        let sub;
+        if (can) {
+          sub = l.paidCount === l.rows.length ? 'All paid' : `${l.paidCount} of ${l.rows.length} paid`;
+        } else if (l.category === 'empire') {
+          sub = 'Not claimed — nothing to pay out';
+        } else if (l.category === 'placement') {
+          const finished = (db.get('bank').finishes || []).some((f) => f.season === season);
+          const scaled = Object.keys(db.placementScale(season)).length > 0;
+          sub = !scaled ? 'No payout amounts set for any place'
+              : !finished ? 'Final standings not recorded yet'
+              : 'Nobody finished in a paying place';
+        } else {
+          sub = 'Nothing yet';
+        }
         return `<div class="pay-line${can ? ' can' : ''}${UI.lines.has(`${season}:${l.category}`) ? ' open' : ''}">
           <button class="pay-hd" ${can ? `data-line="${season}:${l.category}"` : 'disabled'}>
             ${can ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
