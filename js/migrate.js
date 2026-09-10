@@ -60,7 +60,10 @@ export function migrate(data) {
   // Minigames gained phases (pre / week / post). Post-season awards were a
   // separate list; they are the same thing, so fold them in.
   for (const s of Object.values(d.minigames?.seasons || {})) {
-    for (const g of s.games || []) g.phase ||= 'week';
+    for (const g of s.games || []) {
+      g.phase ||= 'week';
+      if (!('summary' in g)) g.summary = null;
+    }
     if (Array.isArray(s.awards)) {
       s.games ||= [];
       s.awards.forEach((a, i) => {

@@ -1,7 +1,7 @@
 {
-  "_README": "One list of minigames per season. `phase` is pre | week | post. Weekly games carry a `week`; preseason and post-season games carry an `order`. status: final | scheduled | none (no minigame that week) | canceled | guillotine (a pointer, not a separate payout). results maps place -> {team, value}. The guillotine stores only its setup — startWeek, payout, entrants — because the chops are worked out from the weekly scores; `overrides` forces a specific chop when a tie or missing result needs a call.",
+  "_README": "One list of minigames per season. `phase` is pre | week | post. Weekly games carry a `week`; preseason and post-season games carry an `order`. A fresh slate is every week of the season with status `none` — an empty slot you fill in if that week has a game. `summary` is a short line shown on the collapsed row (see defaults.summaryMax); `rules` is the full explanation shown when expanded. status: final | scheduled | none | canceled | guillotine (a pointer, not a payout). The guillotine stores only its setup; chops are worked out from the weekly scores.",
   "defaults": {
-    "weeks": 14,
+    "weeks": 18,
     "preseason": 0,
     "postseason": 0,
     "weeklyPayout": {
@@ -9,7 +9,8 @@
       "2": 0,
       "3": 0
     },
-    "guillotineStartWeek": 1
+    "guillotineStartWeek": 1,
+    "summaryMax": 48
   },
   "seasons": {
     "2025": {
@@ -34,7 +35,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w02",
@@ -56,7 +58,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w03",
@@ -78,7 +81,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w04",
@@ -100,7 +104,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w05",
@@ -122,7 +127,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w06",
@@ -144,7 +150,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w07",
@@ -166,7 +173,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w08",
@@ -188,7 +196,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w09",
@@ -206,7 +215,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w10",
@@ -225,7 +235,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w11",
@@ -247,7 +258,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w12",
@@ -269,7 +281,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w13",
@@ -291,7 +304,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w14",
@@ -313,7 +327,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w15",
@@ -335,7 +350,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w16",
@@ -353,7 +369,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w17",
@@ -371,7 +388,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-w18",
@@ -390,7 +408,8 @@
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2025-aw1",
@@ -412,7 +431,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "summary": null
         },
         {
           "id": "2025-aw2",
@@ -434,7 +454,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "summary": null
         },
         {
           "id": "2025-aw3",
@@ -456,7 +477,8 @@
             },
             "2": null,
             "3": null
-          }
+          },
+          "summary": null
         },
         {
           "id": "2025-aw4",
@@ -475,7 +497,8 @@
             "1": null,
             "2": null,
             "3": null
-          }
+          },
+          "summary": null
         }
       ],
       "guillotine": {
@@ -511,17 +534,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w02",
@@ -529,17 +553,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w03",
@@ -547,17 +572,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w04",
@@ -565,17 +591,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w05",
@@ -583,17 +610,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w06",
@@ -601,17 +629,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w07",
@@ -619,17 +648,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w08",
@@ -637,17 +667,38 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
+        },
+        {
+          "id": "2026-w09",
+          "phase": "week",
+          "week": 9,
+          "order": null,
+          "name": null,
+          "summary": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
         },
         {
           "id": "2026-w10",
@@ -655,17 +706,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w11",
@@ -673,17 +725,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w12",
@@ -691,17 +744,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w13",
@@ -709,17 +763,18 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
         },
         {
           "id": "2026-w14",
@@ -727,17 +782,98 @@
           "name": null,
           "rules": null,
           "payout": {
-            "1": 10,
+            "1": 0,
             "2": 0,
             "3": 0
           },
-          "status": "scheduled",
+          "status": "none",
           "results": {
             "1": null,
             "2": null,
             "3": null
           },
-          "phase": "week"
+          "phase": "week",
+          "summary": null
+        },
+        {
+          "id": "2026-w15",
+          "phase": "week",
+          "week": 15,
+          "order": null,
+          "name": null,
+          "summary": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w16",
+          "phase": "week",
+          "week": 16,
+          "order": null,
+          "name": null,
+          "summary": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w17",
+          "phase": "week",
+          "week": 17,
+          "order": null,
+          "name": null,
+          "summary": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
+        },
+        {
+          "id": "2026-w18",
+          "phase": "week",
+          "week": 18,
+          "order": null,
+          "name": null,
+          "summary": null,
+          "rules": null,
+          "payout": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "status": "none",
+          "results": {
+            "1": null,
+            "2": null,
+            "3": null
+          }
         }
       ],
       "guillotine": {

@@ -707,8 +707,25 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 .mg-list{display:flex;flex-direction:column}
 .mg{border-bottom:1px solid var(--line-soft)}
 .mg:last-child{border-bottom:none}
-.mg.quiet{opacity:.55}
-.mg-hd{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 14px;min-height:46px}
+.mg.quiet{opacity:.42}
+/* A grid so the summary can span the full width on a second line instead of
+   fighting the winner and prize for room. */
+.mg-hd{
+  display:grid;width:100%;text-align:left;padding:10px 14px;min-height:46px;
+  /* max-content on the right-hand tracks so the TITLE absorbs any squeeze
+     rather than the winner's name being shaved to an initial. */
+  grid-template-columns:auto minmax(0,1fr) max-content max-content max-content;
+  grid-template-areas:"wk title win prize chev" "sum sum sum sum sum";
+  align-items:center;column-gap:10px;row-gap:2px;
+}
+.mg-wk{grid-area:wk}
+.mg-title{grid-area:title}
+.mg-win{grid-area:win}
+.mg-prize{grid-area:prize}
+.mg-hd > .acc-caret,.mg-nochev{grid-area:chev}
+.mg-nochev{width:18px}
+.mg-sum{grid-area:sum;padding-left:48px}
+.mg-hd .chip{grid-area:win;justify-self:end}
 .mg-hd:disabled{cursor:default}
 .mg-hd:not(:disabled):active{background:var(--surface-2)}
 .mg .acc-caret{transition:transform .18s;color:var(--ink-3)}
@@ -720,17 +737,21 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
   padding:2px 5px;flex:none;min-width:38px;text-align:center;
 }
 .mg-title{
-  flex:1;min-width:0;font-size:13.5px;font-weight:600;
+  font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:.005em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.mg-title.unset{color:var(--ink-3);font-weight:500}
+.mg-title.unset{font-size:13px;color:var(--ink-3);font-weight:500}
+.mg-sum{
+  font-size:11.5px;font-weight:400;color:var(--ink-3);line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+}
 .mg-win{
-  flex:none;max-width:34%;font-size:13px;color:var(--ink-2);
+  max-width:104px;font-size:13px;color:var(--ink-2);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .mg-win.none{color:var(--ink-3)}
 .mg-prize{
-  flex:none;min-width:44px;text-align:right;
+  min-width:44px;text-align:right;
   font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink-3);
 }
 .mg-prize.won{color:var(--heat)}
@@ -755,7 +776,8 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 
 @media (max-width:420px){
   .mg-bd{padding-left:14px}
-  .mg-win{max-width:28%}
+  .mg-win{max-width:88px}
+  .mg-sum{padding-left:48px}
   .mg-places .pl{min-width:52px}
 }
 

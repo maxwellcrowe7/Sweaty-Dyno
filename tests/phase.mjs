@@ -35,16 +35,17 @@ await db.update('minigames',(m)=>{
     rules:'League vote',payout:{1:10,2:0,3:0},status:'scheduled',results:{1:null,2:null,3:null}});
 });
 const p26=db.minigamePhases(2026);
-eq('2026 now pre/week/post', p26.map(p=>p.games.length), [1,13,1]);
+eq('2026 now pre/week/post', p26.map(p=>p.games.length), [1,18,1]);
 eq('preseason winner pays out', db.payoutLines(2026).find(l=>l.category==='minigame').total, 10);
 eq('undecided post-season pays nothing yet', db.minigameWinnings(2026)[undefined], undefined);
-eq('budget counts all three phases', db.minigameSpend(2026).committed, 13*10+10+10+10);
+eq('empty slots cost nothing', db.minigames(2026).games.filter(g=>g.status==='none').length, 18);
+eq('allocated counts only real prizes', db.minigameSpend(2026).committed, 10+10+10);
 print(fail?`\n${fail} FAILURE(S)`:'\nPhases passed.');
 
 print('\n— allowance vs what is allocated —');
 eq('allowance comes from the rules ($200)', db.minigameBudget(2026), 200);
 const sp=db.minigameSpend(2026);
-eq('allocated is the sum of the slate', sp.committed, 13*10+10+10+10);
+eq('allocated is the sum of the slate', sp.committed, 30);  // guillotine + the pre/post added above
 eq('unallocated = allowance - allocated', sp.unallocated, 200-sp.committed);
 eq('2025 slate matches its payouts', db.minigameSpend(2025).committed, 170);
 eq('2025 fully allocated? no — under by $30', db.minigameSpend(2025).unallocated, 30);
@@ -54,6 +55,27 @@ eq('a season override applies', db.minigameBudget(2026), 150);
 eq('and can go negative when over', db.minigameSpend(2026).unallocated, 150-sp.committed);
 await db.update('league',(L)=>{L.minigameBudget={default:200};});
 eq('restored', db.minigameBudget(2026), 200);
+
+print('\n— filling an empty slot activates it —');
+{
+  const before=db.minigameSpend(2026).committed;
+  await db.update('minigames',(m)=>{
+    const g=m.seasons['2026'].games.find(x=>x.phase==='week'&&x.week===1);
+    g.name='First Blood'; g.summary='Highest scoring manager off the bat';
+    g.payout={'1':10,'2':0,'3':0}; g.status='scheduled';
+  });
+  const g1=db.minigames(2026).games.find(x=>x.phase==='week'&&x.week===1);
+  eq('slot now has a name', g1.name, 'First Blood');
+  eq('and a short summary', g1.summary, 'Highest scoring manager off the bat');
+  eq('summary within the cap', g1.summary.length <= db.get('minigames').defaults.summaryMax, true);
+  eq('no longer an empty slot', g1.status, 'scheduled');
+  eq('allocated rose by its prize', db.minigameSpend(2026).committed, before+10);
+  await db.update('minigames',(m)=>{
+    const g=m.seasons['2026'].games.find(x=>x.phase==='week'&&x.week===1);
+    g.name=null; g.summary=null; g.payout={'1':0,'2':0,'3':0}; g.status='none';
+  });
+  eq('emptied again', db.minigameSpend(2026).committed, before);
+}
 
 print('\n— allocated moves with the slate, allowance does not —');
 const b0=db.minigameBudget(2026), c0=db.minigameSpend(2026).committed;

@@ -3,41 +3,48 @@ import { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts, i
 const PLACES = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
 
 const PLACE_LABEL = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
+const SUMMARY_MAX = 48;
 
 /* Which minigames are expanded — module scope so an edit does not close them. */
 const MG_OPEN = new Set();
 
 const phaseLabel = (g) => g.phase === 'week' ? `WK ${g.week}` : g.phase === 'pre' ? 'PRE' : 'POST';
 
-/** One line: what it was, who won, what it paid. Everything else is inside. */
+/** Name and a short summary stacked, then who won and what it paid. */
 function gameRow(db, g, S, admin) {
-  const inert = g.status === 'none' || g.status === 'guillotine';
+  const empty = g.status === 'none';
+  const pointer = g.status === 'guillotine';
   const canceled = g.status === 'canceled';
   const win = g.results?.['1'];
   const winner = win?.team ? db.team(win.team)?.manager : null;
   const prize = Number(g.payout?.['1']) || 0;
   const open = MG_OPEN.has(g.id);
-  const detail = !inert && (g.rules || win?.value || g.results?.['2']?.team || g.results?.['3']?.team || admin);
+  // an empty slot is still worth opening if you are the one who can fill it in
+  const detail = !pointer && (admin || g.rules || win?.value
+    || g.results?.['2']?.team || g.results?.['3']?.team);
 
-  const title = g.status === 'none' ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
-    : g.status === 'guillotine' ? 'Guillotine'
-    : g.name ? esc(g.name) : 'Not set yet';
+  const title = pointer ? 'Guillotine'
+    : g.name ? esc(g.name)
+    : empty ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
+    : 'Not set yet';
 
-  return `<div class="mg${open ? ' open' : ''}${inert || canceled ? ' quiet' : ''}">
+  return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}">
     <button class="mg-hd" ${detail ? `data-mg="${esc(g.id)}"` : 'disabled'}>
       <span class="mg-wk">${phaseLabel(g)}</span>
-      <span class="mg-title${g.name && !inert ? '' : ' unset'}">${title}</span>
+      <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
       ${canceled ? '<span class="chip red">Cancelled</span>'
-        : g.status === 'guillotine' ? '<span class="chip heat">below</span>'
+        : pointer ? '<span class="chip heat">below</span>'
         : winner ? `<span class="mg-win">${esc(winner)}</span>`
-        : inert ? ''
+        : empty ? ''
         : '<span class="mg-win none">&mdash;</span>'}
       <span class="mg-prize${prize && winner ? ' won' : ''}">${prize ? money(prize) : ''}</span>
-      ${detail ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
+      ${detail ? icon('chev', 'acc-caret') : '<span class="mg-nochev"></span>'}
+      ${g.summary && !empty ? `<span class="mg-sum">${esc(g.summary)}</span>` : ''}
     </button>
     ${detail ? `<div class="mg-bd">
       ${g.rules ? `<p class="mg-rules">${esc(g.rules)}</p>` : ''}
-      <ul class="mg-places">
+      ${empty && admin && !g.rules ? '<p class="mg-rules dimmer">Nothing set for this week yet.</p>' : ''}
+      ${!empty ? `<ul class="mg-places">
         ${['1', '2', '3'].map((pl) => {
           const r = g.results?.[pl];
           const pay = Number(g.payout?.[pl]) || 0;
@@ -51,8 +58,9 @@ function gameRow(db, g, S, admin) {
             <b>${pay ? money(pay) : '&mdash;'}</b>
           </li>`;
         }).join('')}
-      </ul>
-      ${admin ? `<div class="mg-edit"><button class="btn sm" data-edit="${esc(g.id)}">${icon('pencil')} Edit</button></div>` : ''}
+      </ul>` : ''}
+      ${admin ? `<div class="mg-edit"><button class="btn sm" data-edit="${esc(g.id)}">${
+        icon(g.name ? 'pencil' : 'plus')} ${g.name ? 'Edit' : 'Add a minigame'}</button></div>` : ''}
     </div>` : ''}
   </div>`;
 }
@@ -369,6 +377,9 @@ export function mount(root, db) {
       body: `
         <div class="field"><label>Minigame</label>
           <input name="name" value="${esc(g.name || '')}" placeholder="e.g. Closest to the Number"></div>
+        <div class="field"><label>Summary <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">&mdash; one line, shown collapsed</span></label>
+          <input name="summary" value="${esc(g.summary || '')}" maxlength="${SUMMARY_MAX}"
+            placeholder="e.g. Highest scoring manager off the bat"></div>
         <div class="field"><label>Rules / notes</label>
           <textarea name="rules" placeholder="How it's won${
             g.phase !== 'week' ? ' — league vote is fine' : ''}">${esc(g.rules || '')}</textarea></div>
@@ -408,12 +419,16 @@ export function mount(root, db) {
         await db.update('minigames', (m) => {
           const gg = m.seasons[String(S)].games.find((x) => x.id === g.id);
           gg.name = d.name.trim() || null;
+          gg.summary = d.summary.trim().slice(0, SUMMARY_MAX) || null;
           gg.rules = d.rules.trim() || null;
           gg.payout = { 1: +d.pay1 || 0, 2: +d.pay2 || 0, 3: +d.pay3 || 0 };
           gg.results = {};
           for (const p of ['1', '2', '3'])
             gg.results[p] = d[`team${p}`] ? { team: +d[`team${p}`], value: d[`val${p}`].trim() || null } : null;
-          gg.status = d.status || (gg.results['1']?.team ? 'final' : 'scheduled');
+          // naming a slot takes it out of the empty state without being asked
+          gg.status = d.status && d.status !== 'none' ? d.status
+            : gg.name ? (gg.results['1']?.team ? 'final' : 'scheduled')
+            : 'none';
         });
         toast(`Week ${g.week} saved`);
       },
