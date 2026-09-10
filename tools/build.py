@@ -17,7 +17,8 @@ DATA = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 
 
 # Dependency order: a module must appear after everything it imports.
 ORDER = [
-    'js/config.js', 'js/migrate.js', 'js/supabase.js', 'js/util.js', 'js/db.js', 'js/sleeper.js',
+    'js/config.js', 'js/migrate.js', 'js/supabase.js', 'js/util.js', 'js/db.js',
+    'js/sleeper.js', 'js/autosync.js',
     'js/views/dashboard.js', 'js/views/bank.js', 'js/views/minigames.js',
     'js/views/drafts.js', 'js/views/trades.js', 'js/views/stats.js', 'js/views/rules.js',
     'js/views/empire.js', 'js/views/managers.js', 'js/views/admin.js',
@@ -108,6 +109,17 @@ def main():
     missing = [p for p in ORDER if not (ROOT / p).exists()]
     if missing:
         sys.exit(f'Missing modules: {missing}')
+
+    # A module must appear after everything it imports, or the bundle throws at
+    # load time while the build itself looks fine.
+    seen = set()
+    for path in ORDER:
+        src = (ROOT / path).read_text(encoding='utf-8')
+        for m in IMPORT_RE.finditer(src):
+            dep = key_for(path, m.group(2))
+            if dep not in seen:
+                sys.exit(f'Build order: {path} imports {dep}, which comes later in ORDER.')
+        seen.add(path)
 
     bundle = '\n'.join(transform(p) for p in ORDER)
     html = (ROOT / 'index.html').read_text(encoding='utf-8')

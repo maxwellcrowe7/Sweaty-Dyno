@@ -1,4 +1,5 @@
 import { db } from './db.js';
+import * as Auto from './autosync.js';
 import { $, el, icon, esc, toast } from './util.js';
 
 import * as Dashboard from './views/dashboard.js';
@@ -272,6 +273,12 @@ function paint() {
   shell();
   paint();
   window.addEventListener('hashchange', () => setState(parseHash()));
+
+  // Pull anything new from Sleeper on open. Only runs for a signed-in
+  // commissioner, and only when the cheap checks say it is worth a look.
+  if (Auto.shouldConsider(db)) {
+    Auto.run(db, (msg) => toast(msg)).then((summary) => { if (summary) toast(summary); });
+  }
   db.on(() => {
     const sel = $('#seasonSel');
     if (sel) sel.value = db.season;

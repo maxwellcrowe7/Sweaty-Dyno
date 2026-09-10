@@ -57,3 +57,16 @@ for (const S of seasons) {
   }
 }
 print(fails ? `\n${fails} failure(s)` : '\nAll views rendered clean.');
+
+// auto-sync must never fire for a visitor, and must not throw when it does run
+{
+  const A = await import('../js/autosync.js');
+  const before = db.isAdmin;
+  print('\n— auto-sync gating —');
+  print(`  ${A.shouldConsider(db) === false ? 'ok  ' : 'FAIL'} signed out: does not consider syncing: ${A.shouldConsider(db)}`);
+  db.get('league').sleeper.autoSync = false;
+  print(`  ${A.shouldConsider(db) === false ? 'ok  ' : 'FAIL'} disabled in config: stays off: ${A.shouldConsider(db)}`);
+  db.get('league').sleeper.autoSync = true;
+  const r = await A.run(db, () => {});
+  print(`  ${r === null || typeof r === 'string' ? 'ok  ' : 'FAIL'} run() never throws: ${JSON.stringify(r)}`);
+}

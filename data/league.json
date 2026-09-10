@@ -69,7 +69,9 @@
       "2029": "",
       "2030": ""
     },
-    "note": "Sleeper league_id per season, from the league URL: sleeper.com/leagues/<league_id>/team. Each season's league exposes previous_league_id, which is how the 2025 id was found."
+    "note": "Sleeper league_id per season, from the league URL: sleeper.com/leagues/<league_id>/team. autoSync pulls new weekly scores and final standings when a signed-in commissioner opens the app, at most once every autoSyncHours. Sleeper's read API is public and CORS-open, so this needs no server and no keys.",
+    "autoSync": true,
+    "autoSyncHours": 6
   },
   "empireTitlesToWin": 2,
   "empireRequiresTitle": true,
