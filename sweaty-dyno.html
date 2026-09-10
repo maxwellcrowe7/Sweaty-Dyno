@@ -831,6 +831,16 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 }
 .info-pop.show{opacity:1;transform:translateY(0)}
 
+/* ---------- connection status ---------- */
+.conn{display:flex;align-items:flex-start;gap:11px}
+.conn-dot{
+  width:9px;height:9px;border-radius:50%;flex:none;margin-top:5px;
+}
+.conn-dot.on{background:var(--mint);box-shadow:0 0 8px -1px var(--mint)}
+.conn-dot.off{background:var(--gold);box-shadow:0 0 8px -1px var(--gold)}
+.conn-main{font-size:13.5px;font-weight:600}
+.conn-sub{font-size:12px;color:var(--ink-3);line-height:1.5;margin-top:2px}
+
 </style>
 </head>
 <body>
@@ -4231,6 +4241,24 @@ function render(db) {
       ${icon('check')}<div>Everything checks out. No config gaps and nothing unexported.</div></div>
   </div></div>`}
 
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd" style="padding:13px 16px">
+      <div class="conn">
+        <span class="conn-dot ${live ? 'on' : 'off'}"></span>
+        <div>
+          <div class="conn-main">${live
+            ? 'Reading and writing the Supabase database'
+            : cloud ? 'Not reaching the database — showing the built-in copy'
+            : 'Running on the built-in copy (no database configured)'}</div>
+          <div class="conn-sub">${live
+            ? (admin ? 'Your edits save straight away and the league sees them on their next refresh.'
+                     : 'Sign in below to edit. Everyone can read without signing in.')
+            : 'Edits stay in this browser until the data reaches the database.'}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   ${cloud ? `
   <div class="section-title">Database</div>
   <div class="card">
@@ -4836,6 +4864,7 @@ function paint() {
       <code>localhost:8000</code>, or double-click <code>sweaty-dyno.html</code> instead.</p>`}</div>`;
     return;
   }
+  globalThis.__SDDB = db;   // lets tooling and the console inspect the live store
   Object.assign(state, parseHash());
   shell();
   paint();

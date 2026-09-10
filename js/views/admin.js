@@ -86,6 +86,24 @@ export function render(db) {
       ${icon('check')}<div>Everything checks out. No config gaps and nothing unexported.</div></div>
   </div></div>`}
 
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-bd" style="padding:13px 16px">
+      <div class="conn">
+        <span class="conn-dot ${live ? 'on' : 'off'}"></span>
+        <div>
+          <div class="conn-main">${live
+            ? 'Reading and writing the Supabase database'
+            : cloud ? 'Not reaching the database — showing the built-in copy'
+            : 'Running on the built-in copy (no database configured)'}</div>
+          <div class="conn-sub">${live
+            ? (admin ? 'Your edits save straight away and the league sees them on their next refresh.'
+                     : 'Sign in below to edit. Everyone can read without signing in.')
+            : 'Edits stay in this browser until the data reaches the database.'}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   ${cloud ? `
   <div class="section-title">Database</div>
   <div class="card">

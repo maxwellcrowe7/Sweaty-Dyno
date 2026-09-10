@@ -269,6 +269,7 @@ function paint() {
       <code>localhost:8000</code>, or double-click <code>sweaty-dyno.html</code> instead.</p>`}</div>`;
     return;
   }
+  globalThis.__SDDB = db;   // lets tooling and the console inspect the live store
   Object.assign(state, parseHash());
   shell();
   paint();
