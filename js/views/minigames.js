@@ -1,4 +1,4 @@
-import { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts } from '../util.js';
+import { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts, info } from '../util.js';
 
 const PLACES = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
 
@@ -145,12 +145,28 @@ export function render(db) {
 
   return `
   <div class="tiles">
-    <div class="tile accent"><div class="k">Budget</div><div class="v">${money(spend.committed)}</div><div class="m">${S} minigames</div></div>
-    <div class="tile mint"><div class="k">Awarded</div><div class="v">${money(spend.paid)}</div><div class="m">${done} settled</div></div>
-    <div class="tile"><div class="k">Still up</div><div class="v">${money(spend.remaining)}</div><div class="m">${s.games.length - done} to play</div></div>
-    <div class="tile gold"><div class="k">Guillotine</div><div class="v">${money(s.guillotine?.payout?.['1'] || 0)}</div>
-      <div class="m">week ${s.guillotine?.startWeek ?? '--'}</div></div>
+    <div class="tile accent"><div class="k">Allocated${info(
+      `What every prize on this season's slate adds up to. It is not a limit — it moves as you add or change minigames.`)}</div>
+      <div class="v">${money(spend.committed)}</div>
+      <div class="m">${spend.budget
+        ? (spend.unallocated > 0 ? `${money(spend.unallocated)} of ${money(spend.budget)} unallocated`
+          : spend.unallocated < 0 ? `${money(-spend.unallocated)} over the ${money(spend.budget)} allowance`
+          : `all of ${money(spend.budget)} allocated`)
+        : `${S} minigames`}</div></div>
+    <div class="tile mint"><div class="k">Awarded</div><div class="v">${money(spend.paid)}</div>
+      <div class="m">${done} settled</div></div>
+    <div class="tile"><div class="k">Still up</div><div class="v">${money(spend.remaining)}</div>
+      <div class="m">${s.games.length - done} to play</div></div>
+    <div class="tile gold"><div class="k">Guillotine</div>
+      <div class="v">${money(s.guillotine?.payout?.['1'] || 0)}</div>
+      <div class="m">${s.guillotine ? `from week ${s.guillotine.startWeek}` : 'not set up'}</div></div>
   </div>
+
+  ${spend.budget && spend.unallocated !== 0 ? `<div class="banner" style="margin-top:14px;${
+    spend.unallocated < 0 ? 'background:rgba(255,77,94,.07);border-color:rgba(255,77,94,.26)' : ''}">
+    ${icon('alert')}<div>${spend.unallocated > 0
+      ? `${money(spend.unallocated)} of the ${money(spend.budget)} minigame allowance is not attached to a prize yet.`
+      : `The slate is ${money(-spend.unallocated)} over the ${money(spend.budget)} allowance.`}</div></div>` : ''}
 
   ${admin ? `<div class="mg-actions">
     <button class="btn sm" data-setup>${icon('cog')} Season setup</button>

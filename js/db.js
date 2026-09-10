@@ -435,6 +435,12 @@ class Store {
     ];
   }
 
+  /** What the rules allow for minigames this season. */
+  minigameBudget(season = this.season) {
+    const b = this.league.minigameBudget || {};
+    return Number(b[String(season)] ?? b.default) || 0;
+  }
+
   minigameSpend(season = this.season) {
     const s = this.minigames(season);
     const won = (g) => Object.entries(g.results || {})
@@ -445,7 +451,15 @@ class Store {
     const committed = s.games.reduce((a, g) => a + Object.values(g.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0), 0)
       + Object.values(s.guillotine?.payout || {}).reduce((x, y) => x + (Number(y) || 0), 0)
 
-    return { paid: paid + (s.legacy?.total || 0), committed, remaining: committed - paid };
+    const budget = this.minigameBudget(season);
+    const total = paid + (s.legacy?.total || 0);
+    return {
+      paid: total,
+      committed,                       // what the slate adds up to
+      remaining: committed - total,    // still to be won from that slate
+      budget,                          // what the rules allow
+      unallocated: budget - committed, // room left to add prizes
+    };
   }
 
   /**

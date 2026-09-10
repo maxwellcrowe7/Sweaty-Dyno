@@ -81,5 +81,9 @@
       "2": 50
     }
   },
-  "_placementNote": "Amount per finishing place. Add a season key (e.g. \"2027\": {\"1\":100,\"2\":50,\"3\":25}) to override the default for that year."
+  "_placementNote": "Amount per finishing place. Add a season key (e.g. \"2027\": {\"1\":100,\"2\":50,\"3\":25}) to override the default for that year.",
+  "minigameBudget": {
+    "default": 200
+  },
+  "_minigameBudgetNote": "What the rules allow for minigames and awards in a season. Add a season key to override (e.g. \"2027\": 250). The Games tab compares this against what you have actually committed."
 }

@@ -40,3 +40,28 @@ eq('preseason winner pays out', db.payoutLines(2026).find(l=>l.category==='minig
 eq('undecided post-season pays nothing yet', db.minigameWinnings(2026)[undefined], undefined);
 eq('budget counts all three phases', db.minigameSpend(2026).committed, 13*10+10+10+10);
 print(fail?`\n${fail} FAILURE(S)`:'\nPhases passed.');
+
+print('\n— allowance vs what is allocated —');
+eq('allowance comes from the rules ($200)', db.minigameBudget(2026), 200);
+const sp=db.minigameSpend(2026);
+eq('allocated is the sum of the slate', sp.committed, 13*10+10+10+10);
+eq('unallocated = allowance - allocated', sp.unallocated, 200-sp.committed);
+eq('2025 slate matches its payouts', db.minigameSpend(2025).committed, 170);
+eq('2025 fully allocated? no — under by $30', db.minigameSpend(2025).unallocated, 30);
+
+await db.update('league',(L)=>{L.minigameBudget={default:200,'2026':150};});
+eq('a season override applies', db.minigameBudget(2026), 150);
+eq('and can go negative when over', db.minigameSpend(2026).unallocated, 150-sp.committed);
+await db.update('league',(L)=>{L.minigameBudget={default:200};});
+eq('restored', db.minigameBudget(2026), 200);
+
+print('\n— allocated moves with the slate, allowance does not —');
+const b0=db.minigameBudget(2026), c0=db.minigameSpend(2026).committed;
+await db.update('minigames',(m)=>{
+  m.seasons['2026'].games.push({id:'t-extra',phase:'week',week:99,name:null,rules:null,
+    payout:{1:25,2:0,3:0},status:'scheduled',results:{1:null,2:null,3:null}});
+});
+eq('allocated rose by the new prize', db.minigameSpend(2026).committed, c0+25);
+eq('allowance unchanged', db.minigameBudget(2026), b0);
+await db.update('minigames',(m)=>{m.seasons['2026'].games=m.seasons['2026'].games.filter(g=>g.id!=='t-extra');});
+eq('restored', db.minigameSpend(2026).committed, c0);
