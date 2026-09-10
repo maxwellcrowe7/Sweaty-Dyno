@@ -5,6 +5,10 @@ cd "$(dirname "$0")/.." || exit 1
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
 [ -x "$JSC" ] || { echo "JavaScriptCore not found (macOS only). Suites need a JS engine."; exit 2; }
 
+# Rebuild first. sweaty-dyno.html is what gets opened by double-clicking, so a
+# stale one means looking at old code and wondering why a change did nothing.
+python3 tools/build.py >/dev/null || { echo "  FAIL  build"; exit 1; }
+
 fail=0
 for f in tests/*.mjs; do
   name=$(basename "$f" .mjs)
