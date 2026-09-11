@@ -87,3 +87,44 @@ eq('allocated rose by the new prize', db.minigameSpend(2026).committed, c0+25);
 eq('allowance unchanged', db.minigameBudget(2026), b0);
 await db.update('minigames',(m)=>{m.seasons['2026'].games=m.seasons['2026'].games.filter(g=>g.id!=='t-extra');});
 eq('restored', db.minigameSpend(2026).committed, c0);
+
+print('\n— season setup normalises blank slots without touching real ones —');
+{
+  // rebuild the shape the database is actually in: everything "scheduled" at $10
+  await db.update('minigames',(m)=>{
+    const sn=m.seasons['2026'];
+    sn.games=sn.games.filter(g=>g.phase!=='week');
+    for(let wk=1; wk<=17; wk++){
+      sn.games.push({id:`2026-w${String(wk).padStart(2,'0')}`,phase:'week',week:wk,order:null,
+        name: wk===3?'Bench Bandit': wk===5?'Mass Destruction':null,
+        summary:null,rules:null,payout:{'1':10,'2':0,'3':0},status:'scheduled',
+        results:{'1': wk===3?{team:4,value:'x'}:null,'2':null,'3':null}});
+    }
+  });
+  const wkGames=()=>db.minigames(2026).games.filter(g=>g.phase==='week');
+  eq('starting point: 17 scheduled, $170', [wkGames().length,
+     wkGames().reduce((a,g)=>a+(+g.payout['1']||0),0)], [17,170]);
+
+  // what Season setup does, applied directly
+  await db.update('minigames',(m)=>{
+    const sn=m.seasons['2026'];
+    for(let i=1;i<=18;i++) if(!sn.games.some(g=>g.phase==='week'&&g.week===i))
+      sn.games.push({id:`2026-w${String(i).padStart(2,'0')}`,phase:'week',week:i,order:null,
+        name:null,summary:null,rules:null,payout:{'1':0,'2':0,'3':0},status:'none',
+        results:{'1':null,'2':null,'3':null}});
+    for(const g of sn.games){
+      if(g.phase!=='week') continue;
+      if(g.name||g.results?.['1']?.team||g.status==='canceled'||g.status==='guillotine') continue;
+      g.status='none'; g.payout={'1':0,'2':0,'3':0}; g.summary=null; g.rules=null;
+    }
+  });
+  const after=wkGames();
+  eq('18 slots', after.length, 18);
+  eq('the two real games survive', after.filter(g=>g.name).map(g=>g.name), ['Bench Bandit','Mass Destruction']);
+  eq('their prizes survive', after.filter(g=>g.name).map(g=>g.payout['1']), [10,10]);
+  eq('the winner survives', after.find(g=>g.week===3).results['1'].team, 4);
+  eq('every blank slot is empty', after.filter(g=>!g.name).every(g=>g.status==='none'), true);
+  eq('and costs nothing', after.filter(g=>!g.name).reduce((a,g)=>a+(+g.payout['1']||0),0), 0);
+  eq('allocated is only the real prizes', db.minigameSpend(2026).committed,
+     10+10  /* the two named weeks */ + 10 /* guillotine */ + 10+10 /* pre + post added earlier */);
+}

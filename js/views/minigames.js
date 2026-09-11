@@ -244,8 +244,8 @@ export function mount(root, db) {
       title: `${S} season setup`,
       confirm: cur.games.length ? 'Update' : 'Create slate',
       body: `<div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Creates one entry per week. Existing weeks keep whatever you have already entered &mdash;
-          this only adds the missing ones.</div>
+          Lays out one slot per week. Weeks you have already named or decided are left untouched;
+          any slot still blank is reset to empty and costs nothing until you fill it in.</div>
         <div class="fgrid" style="grid-template-columns:repeat(3,1fr)">
           <div class="field"><label>Preseason</label>
             <input name="pre" type="number" min="0" max="20" inputmode="numeric"
@@ -292,6 +292,18 @@ export function mount(root, db) {
               if (idx <= n) return true;
               return Boolean(g.name || g.results?.['1']?.team);
             });
+            // Reset anything still blank back to an empty slot at no cost.
+            // A slot with a name or a winner is left completely alone.
+            for (const g of sn.games) {
+              if (g.phase !== phase) continue;
+              const touched = g.name || g.results?.['1']?.team
+                || g.status === 'canceled' || g.status === 'guillotine';
+              if (touched) continue;
+              g.status = 'none';
+              g.payout = { 1: 0, 2: 0, 3: 0 };
+              g.summary = null;
+              g.rules = null;
+            }
           }
           const ord = (g) => (g.phase === 'week' ? g.week : g.order) ?? 0;
           const rank = { pre: 0, week: 1, post: 2 };
