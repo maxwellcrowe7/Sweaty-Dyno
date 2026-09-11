@@ -25,42 +25,61 @@ const b=row(2026);
 eq('its own fees', b.fees, 500);
 eq('plus what 2025 left over', b.carryIn, 30);
 eq('available', b.available, 530);
-eq('surplus rolls on', b.surplus, 530-150);
+eq('the guillotine prize is already committed', b.mini, 10);
+eq('surplus is what is NOT spoken for', b.surplus, 530-150-10);
 
 print('\n— the chain keeps running —');
 const c=row(2027);
-eq('2027 carried in 2026 surplus', c.carryIn, 380);
+eq('2027 carried in 2026 surplus', c.carryIn, 370);
 eq('2027 fees so far', c.fees, 100);
-eq('available', c.available, 480);
+eq('available', c.available, 470);
 eq('no empire accrual for a season that has not started', c.empire, 0);
-eq('surplus', c.surplus, 480);
+eq('surplus', c.surplus, 470);
 
-print('\n— it reconciles with the bank —');
-eq('last active surplus == free cash', row(2027).surplus, db.bank().free);
+print('\n— commitments vs cash: two different questions —');
 eq('free cash = collected - paid out - empire pot', db.bank().free, 1100-320-300);
+const sheet=db.balanceSheet().filter(r=>r.active);
+const unpaid=sheet.reduce((a,r)=>a+(r.mini-r.miniPaid)+(r.place-r.placePaid),0);
+eq('committed but not handed over', unpaid, 10);
+eq('free cash = uncommitted surplus + what is owed out', db.bank().free, row(2027).surplus + unpaid);
 eq('untouched seasons stay blank', db.balanceSheet().filter(r=>!r.active).map(r=>r.season), [2028,2029,2030]);
 
-print('\n— spending more moves the carry —');
+print('\n— raising a prize commits the money immediately —');
 await db.update('minigames',(m)=>{
   const g=m.seasons['2025'].games.find(x=>x.phase==='week'&&x.week===1);
   g.payout['1']=60;                      // was $10
 });
-await db.update('bank',(x)=>{x.settled.push({season:2025,category:'minigame',team:3,date:null});});
-eq('2025 minigames rose', row(2025).mini, 220);
-eq('2025 surplus fell by the same $50', row(2025).surplus, -20);
+eq('2025 minigames rose straight away', row(2025).mini, 220);
+// that week's winner is already marked paid, so the derived paid figure moves too
+eq('and the paid figure follows, since that winner is settled', row(2025).miniPaid, 220);
+eq('surplus fell by the same $50', row(2025).surplus, -20);
 eq('and 2026 carries the shortfall', row(2026).carryIn, -20);
-eq('2026 available drops', row(2026).available, 480);
 await db.update('minigames',(m)=>{
   const g=m.seasons['2025'].games.find(x=>x.phase==='week'&&x.week===1);
   g.payout['1']=10;
 });
 eq('restored', [row(2025).surplus, row(2026).available], [30,530]);
 
-print('\n— unpaid awards do not leave the bank —');
-await db.update('bank',(x)=>{x.settled=x.settled.filter(y=>!(y.season===2025&&y.category==='minigame'&&y.team===3));});
-eq('an unpaid winner is not spent yet', row(2025).mini, 160);
-eq('so surplus is higher', row(2025).surplus, 40);
-eq('but it is flagged as owed', row(2025).owedOut, 10);
-await db.update('bank',(x)=>{x.settled.push({season:2025,category:'minigame',team:3,date:null});});
+print('\n— adding an unplayed week still commits its prize —');
+await db.update('minigames',(m)=>{
+  m.seasons['2025'].games.push({id:'t-new',phase:'week',week:97,name:'Test',summary:null,rules:null,
+    payout:{'1':25,'2':0,'3':0},status:'scheduled',results:{'1':null,'2':null,'3':null}});
+});
+eq('minigames include the unplayed prize', row(2025).mini, 195);
+eq('nobody has been paid it', row(2025).miniPaid, 170);
+eq('surplus drops accordingly', row(2025).surplus, 5);
+await db.update('minigames',(m)=>{m.seasons['2025'].games=m.seasons['2025'].games.filter(g=>g.id!=='t-new');});
 eq('restored', row(2025).surplus, 30);
 print(fail?`\n${fail} FAILURE(S)`:'\nBalance sheet passed.');
+
+print('\n— the all-time row agrees with the rows above it —');
+{
+  const act=db.balanceSheet().filter(r=>r.active);
+  const t=act.reduce((a,r)=>({e:a.e+r.empire,m:a.m+r.mini,p:a.p+r.place}),{e:0,m:0,p:0});
+  eq('empire totals', t.e, 300);
+  eq('minigames total the committed columns', t.m, 170+10);
+  eq('placement totals', t.p, 150);
+  const left=db.bank().collected - t.e - t.m - t.p;
+  eq('all-time surplus == last active season surplus', left, act.at(-1).surplus);
+  eq('and equals collected minus every commitment', left, 1100-300-180-150);
+}

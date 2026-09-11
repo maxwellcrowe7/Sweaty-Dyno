@@ -326,8 +326,11 @@ class Store {
       const b = this.bank(season);
       const empire = season <= this.league.currentSeason
         ? (Number(this.league.empireContribution?.[String(season)]) || 0) : 0;
-      const mini = b.byCat.minigame || 0;
-      const place = b.byCat.placement || 0;
+      // Commitments, not disbursements. A prize that has been set aside is spoken
+      // for whether or not it has been handed over, so surplus means genuinely
+      // uncommitted money — which is the whole point of carrying it forward.
+      const mini = this.minigameSpend(season).committed;
+      const place = b.byCatCommitted.placement || 0;
       const active = b.collected > 0 || mini > 0 || place > 0 || empire > 0;
       if (!active) return { season, active: false, fees: 0, carryIn: 0, available: 0,
                             empire: 0, mini: 0, place: 0, surplus: 0, owedOut: b.owedOut };
@@ -336,7 +339,8 @@ class Store {
       const surplus = available - empire - mini - place;
       carry = surplus;
       return { season, active: true, fees: b.collected, carryIn, available,
-               empire, mini, place, surplus, owedOut: b.owedOut };
+               empire, mini, place, surplus, owedOut: b.owedOut,
+               miniPaid: b.byCat.minigame || 0, placePaid: b.byCat.placement || 0 };
     });
   }
 

@@ -86,7 +86,11 @@ export function render(db, state = {}) {
   const admin = db.isAdmin;
   // Open the most recent season that actually has payouts — defaulting to the
   // current season would leave the only populated block collapsed.
-  const paidSeasons = seasons.filter((s) => db.payoutLines(s).some((l) => l.rows.length));
+  // every season that has started gets a card, so the current one is there to
+  // act on rather than appearing only once somebody has won something
+  const started = seasons.filter((s) => s <= db.league.currentSeason);
+  const withRows = seasons.filter((s) => db.payoutLines(s).some((l) => l.rows.length));
+  const paidSeasons = [...new Set([...started, ...withRows])].sort((a, b) => a - b);
   if (UI.seasons === null)
     UI.seasons = new Set([paidSeasons.at(-1) ?? db.league.currentSeason]);
   const openSeasons = UI.seasons;
@@ -156,7 +160,7 @@ export function render(db, state = {}) {
   <div class="section-title">Balance sheet</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
     <thead><tr><th class="sticky">Season</th><th class="n">Available${info(`That season's buy-ins plus anything the season before did not spend. Surplus belongs to the league, so it rolls forward instead of disappearing.`)}</th><th class="n">Empire</th>
-      <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus${info(`What is left after the empire set-aside and the payouts that have actually been handed over. It becomes the next season's carry.`)}</th></tr></thead>
+      <th class="n">Minigames${info(`Every prize set aside for the season's minigames, whether or not it has been handed over yet.`)}</th><th class="n">Placement${info('What the season\'s finishing places pay out, whether or not it has been handed over yet.')}</th><th class="n">Surplus${info(`What is left once the empire set-aside and every prize are accounted for — money not yet spoken for. It becomes the next season's carry.`)}</th></tr></thead>
     <tbody>${sheet.map((r) => !r.active
       ? `<tr><td class="sticky dim">${r.season}</td>
           ${[0, 1, 2, 3, 4].map(() => '<td class="n dimmer">&mdash;</td>').join('')}</tr>`
@@ -168,16 +172,25 @@ export function render(db, state = {}) {
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${money(r.surplus)}${
           r.owedOut ? `<span class="owed-flag" title="${money(r.owedOut)} awarded but not yet paid">*</span>` : ''}</td></tr>`).join('')}
-      <tr class="total"><td class="sticky">All time</td>
-        <td class="n">${money(all.collected)}</td>
-        <td class="n">${money(db.empirePotBalance() + (db.empireClaim()?.amount || 0))}</td>
-        <td class="n">${money(all.byCat.minigame || 0)}</td>
-        <td class="n">${money(all.byCat.placement || 0)}</td>
-        <td class="n ${all.free >= 0 ? 'pos' : 'neg'}">${money(all.free)}</td></tr>
+      ${(() => {
+        // sum the columns above rather than a separately-derived figure, or the
+        // total silently disagrees with the rows it is totalling
+        const t = sheet.filter((r) => r.active).reduce((a, r) => ({
+          empire: a.empire + r.empire, mini: a.mini + r.mini, place: a.place + r.place,
+        }), { empire: 0, mini: 0, place: 0 });
+        const left = all.collected - t.empire - t.mini - t.place;
+        return `<tr class="total"><td class="sticky">All time</td>
+          <td class="n">${money(all.collected)}</td>
+          <td class="n">${money(t.empire)}</td>
+          <td class="n">${money(t.mini)}</td>
+          <td class="n">${money(t.place)}</td>
+          <td class="n ${left >= 0 ? 'pos' : 'neg'}">${money(left)}</td></tr>`;
+      })()}
     </tbody></table></div></div>
     ${all.owedOut ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
       <div class="s dim" style="font-size:12px;line-height:1.6"><span class="owed-flag">*</span>
-        ${money(all.owedOut)} has been awarded but not handed over yet, so it is still sitting in the bank.</div>
+        ${money(all.owedOut)} has been won but not handed over yet. This table already counts it as spent;
+        the bank total above still has it, because the cash has not left.</div>
     </div>` : ''}
   </div>
 
