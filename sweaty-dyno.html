@@ -185,6 +185,9 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   position:relative;
   background:linear-gradient(180deg,var(--surface),var(--bg-2));
   border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow);
+  /* clip to the radius: a table header's square corners used to sit proud of it.
+     Safe because popovers, toasts and modals all mount on <body>, not in here. */
+  overflow:hidden;
 }
 .card::before{
   content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
@@ -244,6 +247,10 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .chip.gold{color:var(--gold);border-color:rgba(245,196,81,.32);background:rgba(245,196,81,.10)}
 .chip.violet{color:var(--violet);border-color:rgba(156,140,250,.32);background:rgba(156,140,250,.10)}
 .chip.red{color:var(--red);border-color:rgba(255,77,94,.32);background:rgba(255,77,94,.10)}
+/* podium places -- silver cool enough to read against gold, bronze warm but
+   clear of --heat so it never looks like the minigame accent */
+.chip.silver{color:#CBD5E1;border-color:rgba(203,213,225,.3);background:rgba(203,213,225,.09)}
+.chip.bronze{color:#C98C4E;border-color:rgba(201,140,78,.34);background:rgba(201,140,78,.11)}
 .chip.ghost{background:transparent}
 .chip.plain{text-transform:none;letter-spacing:.01em;font-weight:600;font-size:11.5px}
 
@@ -340,7 +347,7 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   background:radial-gradient(circle,rgba(156,140,250,.17),transparent 62%);
 }
 .empire-top .pot-side > *{position:relative}
-.empire-top .race{padding:10px 0 12px}
+.empire-top .race{padding:12px 0}
 
 /* The pot's growth chart takes whatever height the race leaves, so the two
    halves finish together instead of the left one trailing off into a gap. */
@@ -370,19 +377,6 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 
 /* One line per manager, no rules between them -- ten of them read as a block. */
 .race{display:flex;flex-direction:column}
-/* The bars run 0 to the threshold, so their right edge is the number to beat.
-   One tick above the rows says so, instead of repeating it on all ten. */
-.race-scale{padding-top:0;padding-bottom:1px}
-.race-scale .scale-track{flex:1;position:relative;height:13px;min-width:0}
-.race-scale .scale-track::after{
-  content:"";position:absolute;right:0;bottom:0;width:1px;height:7px;background:var(--ink-3);
-  opacity:.55;
-}
-.race-scale b{
-  position:absolute;right:-2px;bottom:7px;
-  font-family:var(--f-display);font-size:11px;font-weight:700;letter-spacing:.08em;
-  color:var(--ink-2);
-}
 .race-row{display:flex;align-items:center;gap:12px;padding:4px 16px}
 .race-row .who{
   flex:none;width:76px;font-size:13.5px;font-weight:600;color:var(--ink);
@@ -421,13 +415,25 @@ table.dt th{
 }
 table.dt td{padding:10px 12px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
 table.dt tbody tr:last-child td{border-bottom:none}
-table.dt tbody tr.total td{border-top:1px solid var(--line);font-weight:700;background:rgba(255,255,255,.022)}
+/* Every body cell is opaque so the frozen first column can simply match its own
+   row. Tints are a layer ON the base rather than a translucent replacement --
+   a see-through sticky cell would let the scrolled columns show through it. */
+table.dt tbody td{background:var(--surface)}
+table.dt tbody tr.total td{
+  border-top:1px solid var(--line);font-weight:700;
+  background:linear-gradient(rgba(255,255,255,.022),rgba(255,255,255,.022)),var(--surface);
+}
 table.dt td.n,table.dt th.n{text-align:right;font-variant-numeric:tabular-nums}
 table.dt td.sticky,table.dt th.sticky{
-  position:sticky;left:0;background:var(--bg-2);z-index:2;
-  box-shadow:1px 0 0 var(--line-soft);
+  position:sticky;left:0;z-index:2;box-shadow:1px 0 0 var(--line-soft);
 }
-table.dt th.sticky{z-index:3}
+table.dt th.sticky{background:var(--bg-2);z-index:3}
+/* One width for every season column, so the surplus is shared evenly instead of
+   going to whichever column happens to hold the widest figure. The label column
+   takes width:1% -- with nowrap that collapses it to its longest name and hands
+   the rest of the table to the columns that carry the data. */
+table.dt th.n{width:76px}
+table.dt th.sticky{width:1%}
 
 /* empty state */
 .empty{padding:34px 20px;text-align:center;color:var(--ink-3)}
@@ -763,12 +769,11 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 /* buy-in rate row — sits directly under the year headers so every figure in
    this table is visible at once, no expanding required. */
 table.dt tbody tr.rate-row td{
-  background:rgba(255,255,255,.028);
+  background:linear-gradient(rgba(255,255,255,.028),rgba(255,255,255,.028)),var(--surface);
   border-bottom:1px solid var(--line);
   padding-top:9px;padding-bottom:9px;
 }
 table.dt tbody tr.rate-row td.sticky{
-  background:var(--bg-2);
   font-family:var(--f-display);font-size:11px;font-weight:700;
   letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
 }
@@ -792,7 +797,7 @@ table.dt tbody tr.rate-row td.sticky{
   box-shadow:0 0 0 3px rgba(255,107,44,.14);color:var(--ink)}
 td.cell-full .cell-in{color:var(--mint);font-weight:600}
 td.cell-part .cell-in{color:var(--gold);font-weight:600}
-table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
+table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-top:none}
 
 /* ---------- payout paid state ---------- */
 .pay-rows li{display:flex;align-items:center;gap:12px}
@@ -4404,6 +4409,8 @@ return { render, mount };
 /* ===== js/views/empire.js ===== */
 __M["js/views/empire.js"] = (function () {
 const { money, esc, icon, teamTag, ordinal } = __M["js/util.js"];
+/* The podium reads as a podium: gold, silver, bronze, then nothing. */
+const MEDAL = { 1: 'gold', 2: 'silver', 3: 'bronze' };
 function render(db) {
   const e = db.empire();
   const L = db.league;
@@ -4453,14 +4460,6 @@ function render(db) {
        The slot is always as wide as the pot demands, so an earned crown lands
        in the same column on every row and the empty space says what is left. */''}
   <div class="race">
-    ${/* The meter runs 0 to the threshold, so its right edge IS the line to hit.
-         Mark it once above the rows rather than on every bar. */''}
-    ${e.threshold ? `<div class="race-row race-scale">
-      <span class="who"></span>
-      <span class="scale-track"><b>${e.threshold}</b></span>
-      <span class="pts"></span>
-      <span class="ttl" style="--slots:${slots}"></span>
-    </div>` : ''}
     ${e.board.map((t) => `
       <div class="race-row${t.total ? '' : ' out'}">
         <span class="who">${esc(t.manager)}</span>
@@ -4472,18 +4471,15 @@ function render(db) {
   </div>
   </div>
 
-  <div class="section-title">How points are earned</div>
+  <div class="section-title">Point criteria</div>
   <div class="card"><div class="card-bd flush"><div class="rows">
     ${L.empirePointsScale.map((s) => `
       <div class="row">
-        <span class="chip ${s.place === 1 ? 'gold' : 'ghost'}">${ordinal(s.place)}</span>
+        <span class="chip ${MEDAL[s.place] || 'ghost'}">${ordinal(s.place)}</span>
         <div class="grow"><div class="t">${esc(s.label)}</div></div>
         <div class="val" style="color:var(--violet)">+${s.points}</div>
       </div>`).join('')}
-  </div></div>
-  <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-    <div class="s dim" style="font-size:12px;line-height:1.6">${esc(L.empireRule)}</div></div>
-  </div>
+  </div></div></div>
 
   <div class="section-title">By season</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">

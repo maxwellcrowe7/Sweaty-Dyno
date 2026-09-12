@@ -1,5 +1,8 @@
 import { money, esc, icon, teamTag, ordinal } from '../util.js';
 
+/* The podium reads as a podium: gold, silver, bronze, then nothing. */
+const MEDAL = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+
 export function render(db) {
   const e = db.empire();
   const L = db.league;
@@ -49,14 +52,6 @@ export function render(db) {
        The slot is always as wide as the pot demands, so an earned crown lands
        in the same column on every row and the empty space says what is left. */''}
   <div class="race">
-    ${/* The meter runs 0 to the threshold, so its right edge IS the line to hit.
-         Mark it once above the rows rather than on every bar. */''}
-    ${e.threshold ? `<div class="race-row race-scale">
-      <span class="who"></span>
-      <span class="scale-track"><b>${e.threshold}</b></span>
-      <span class="pts"></span>
-      <span class="ttl" style="--slots:${slots}"></span>
-    </div>` : ''}
     ${e.board.map((t) => `
       <div class="race-row${t.total ? '' : ' out'}">
         <span class="who">${esc(t.manager)}</span>
@@ -68,18 +63,15 @@ export function render(db) {
   </div>
   </div>
 
-  <div class="section-title">How points are earned</div>
+  <div class="section-title">Point criteria</div>
   <div class="card"><div class="card-bd flush"><div class="rows">
     ${L.empirePointsScale.map((s) => `
       <div class="row">
-        <span class="chip ${s.place === 1 ? 'gold' : 'ghost'}">${ordinal(s.place)}</span>
+        <span class="chip ${MEDAL[s.place] || 'ghost'}">${ordinal(s.place)}</span>
         <div class="grow"><div class="t">${esc(s.label)}</div></div>
         <div class="val" style="color:var(--violet)">+${s.points}</div>
       </div>`).join('')}
-  </div></div>
-  <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-    <div class="s dim" style="font-size:12px;line-height:1.6">${esc(L.empireRule)}</div></div>
-  </div>
+  </div></div></div>
 
   <div class="section-title">By season</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
