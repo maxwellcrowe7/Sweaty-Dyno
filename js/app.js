@@ -54,7 +54,7 @@ const go = (view, params = null) => {
 /* ---------- chrome ---------- */
 const brand = () => `
   <div class="brand">
-    <div class="mark">SD</div>
+    <div class="mark" role="img" aria-label="Sweaty Dyno"></div>
     <div class="txt"><h1>${esc(db.league.name)}</h1><small>${esc(db.league.tagline)}</small></div>
   </div>`;
 

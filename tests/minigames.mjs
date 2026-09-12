@@ -48,4 +48,32 @@ eq('14 sections', db.rulebook(2025).sections.length, 14);
 eq('no diff for the first book', db.rulesDiff(2025), null);
 eq('empire section states both routes',
   db.rulebook(2025).sections.find(x=>x.id==='empire').items.some(i=>i.text.includes('2 titles OR 1 title and 50+')), true);
+print('\n— the money bar reconciles with the slate —');
+for(const S of [2025,2026]){
+  const b=db.minigameBreakdown(S), sp=db.minigameSpend(S);
+  eq(`${S} parts sum to allocated`, b.parts.reduce((a,p)=>a+p.allocated,0), b.allocated);
+  eq(`${S} allocated matches minigameSpend`, b.allocated, sp.committed);
+  eq(`${S} awarded matches minigameSpend`, b.awarded, sp.paid);
+  eq(`${S} unallocated = allowance - allocated`, b.unallocated, b.budget-b.allocated);
+  eq(`${S} awarded never exceeds allocated`, b.awarded<=b.allocated, true);
+  // the bar splits each section bright/dull at awarded, so a part that paid out
+  // more than it set aside would render past its own block
+  eq(`${S} no part awards more than it allocated`,
+     b.parts.every(p=>p.awarded<=p.allocated), true);
+  eq(`${S} part awards sum to the total`, b.parts.reduce((a,p)=>a+p.awarded,0), b.awarded);
+  eq(`${S} four parts, always the same four`, b.parts.map(p=>p.key), ['pre','week','post','guil']);
+  // the count is real games, not the 18 always-there week slots
+  eq(`${S} counts named games only`, b.games,
+     db.minigames(S).games.filter(g=>g.name).length + (db.minigames(S).guillotine?1:0));
+}
+const b25=db.minigameBreakdown(2025);
+eq('2025 splits 130/30/10 across weekly/post/guillotine',
+   b25.parts.map(p=>p.allocated), [0,130,30,10]);
+eq('2025 is fully awarded', [b25.allocated,b25.awarded], [170,170]);
+eq('2025 leaves $30 of the allowance free', b25.unallocated, 30);
+const b26=db.minigameBreakdown(2026);
+eq('2026 has only the guillotine allocated', b26.parts.map(p=>p.allocated), [0,0,0,10]);
+eq('2026 nothing awarded yet', b26.awarded, 0);
+eq('nobody is over the allowance', [b25.over,b26.over], [0,0]);
+
 print(fail?`\n${fail} FAILURE(S)`:'\nAll checks passed.');

@@ -10,7 +10,6 @@
   --surface:#1B232E;
   --surface-2:#242E3B;
   --surface-3:#303B4A;
-  --line:#38445600;
   --line:#374355;
   --line-soft:#28323F;
 
@@ -27,6 +26,15 @@
   --violet:#9C8CFA;      /* empire pot */
   --red:#FF4D5E;         /* owed / out */
   --blue:#5AC8FA;
+
+  /* minigame series — the brand accents re-stepped to OKLCH L 0.65 so they work
+     as FILLS on the dark surface; validated for CVD separation and contrast.
+     Each has a muted twin (chroma x.50, L-.06) for money allocated but not yet
+     won: still clearly the section's own colour, ~dE 8.5 from its bright form so
+     the split reads, and dE 24+ from the grey track so "not won yet" never looks
+     like "not allocated". Pushing the chroma higher drops the split under dE 8. */
+  --mg-pre:#8D7CE8; --mg-week:#EC5910; --mg-post:#229CCC; --mg-guil:#B38802;
+  --mg-pre-dim:#7B76AA; --mg-week-dim:#AE694F; --mg-post-dim:#57859C; --mg-guil-dim:#8F7B4E;
 
   /* position chips */
   --qb:#F5695F; --rb:#3DDC97; --wr:#5AC8FA; --te:#F5A94C; --pk:#9C8CFA;
@@ -85,12 +93,12 @@ table{border-collapse:collapse; width:100%}
   border-bottom:1px solid var(--line-soft);
 }
 .brand{display:flex; align-items:center; gap:10px; min-width:0}
+/* app icon -- generated */
 .brand .mark{
   width:34px;height:34px;border-radius:10px;flex:none;
-  background:linear-gradient(145deg,var(--heat),#C43D0E);
-  display:grid;place-items:center; font-family:var(--f-display); font-weight:700;
-  font-size:19px; color:#12070208; color:#160800; letter-spacing:-.02em;
-  box-shadow:0 0 0 1px rgba(255,255,255,.10) inset, 0 6px 18px -6px rgba(255,107,44,.7);
+  background-image:url(data:image/png;base64,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);
+  background-size:cover;background-position:center;background-repeat:no-repeat;
+  box-shadow:0 0 0 1px rgba(255,255,255,.14) inset, 0 6px 18px -6px rgba(0,0,0,.6);
 }
 .brand .txt{min-width:0}
 .brand h1{font-size:21px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap}
@@ -243,6 +251,10 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .btn.sm{padding:6px 10px;font-size:12px}
 .btn.ghost{background:transparent}
 .btn[disabled]{opacity:.4;pointer-events:none}
+/* reads as an aside until you go for it */
+.btn.danger{color:var(--red);border-color:rgba(255,77,94,.22)}
+.btn.danger:hover{background:rgba(255,77,94,.12);border-color:rgba(255,77,94,.45)}
+.btn.danger:active{background:rgba(255,77,94,.2)}
 
 /* team identity dot — hue derived from team number */
 .tname{display:inline-flex;align-items:center;gap:8px;min-width:0}
@@ -407,6 +419,13 @@ table.dt th.sticky{z-index:3}
 /* ---------- forms / editor ---------- */
 .field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
 .field label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+/* a label that carries a live count: hint in the middle, count pinned right */
+.field label.has-count{display:flex;align-items:baseline;gap:6px}
+.lbl-count{
+  margin-left:auto;flex:none;font-family:var(--f-display);font-size:11px;
+  letter-spacing:.06em;font-variant-numeric:tabular-nums;
+}
+.lbl-count.full{color:var(--heat)}
 .field input,.field select,.field textarea{
   background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:10px 12px;font-size:15px; width:100%;
@@ -700,34 +719,92 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 }
 .owed-flag{color:var(--gold);font-weight:700;margin-left:3px}
 
-.mg-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 2px}
-.mg-actions .btn{flex:1;min-width:104px}
+/* ---------- the season's minigame money ---------- */
+.money .card-hd{gap:10px}
+.money .card-hd .grow{flex:1;min-width:0}
+.money .card-hd h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* The numbers and the bar share one line; the bar drops below them only when
+   there is genuinely no room for it. Everything aligns to the TOP so the slash
+   and the bar sit on the numbers' line, not on the middle of the taller
+   number+label block. */
+.mb-top{display:flex;align-items:flex-start;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.mb-stat{display:flex;flex-direction:column;align-items:center;gap:3px}
+.mb-fig{font-family:var(--f-display);font-size:29px;font-weight:700;line-height:1}
+/* money already in someone's hands reads as money in */
+.mb-fig.won{color:var(--mint)}
+.mb-div{font-family:var(--f-display);font-size:29px;font-weight:400;line-height:1;color:var(--ink-3)}
+.mb-lbl{
+  font-family:var(--f-display);font-size:10.5px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+/* part-to-whole against a cap: the empty track is the money still free */
+.mb-track{
+  display:flex;gap:2px;height:18px;border-radius:99px;overflow:hidden;
+  background:var(--surface-3);flex:1 1 128px;margin-left:12px;
+  margin-top:5.5px;   /* centred on the 29px number line: (29 - 18) / 2 */
+}
+/* one block per section; inside it, no gap — the shade change is the boundary */
+.mb-part{display:flex;height:100%;min-width:4px}
+.mb-part > i{display:block;height:100%}
+.mb-pre{background:var(--mg-pre)} .mb-pre.dim{background:var(--mg-pre-dim)}
+.mb-week{background:var(--mg-week)} .mb-week.dim{background:var(--mg-week-dim)}
+.mb-post{background:var(--mg-post)} .mb-post.dim{background:var(--mg-post-dim)}
+.mb-guil{background:var(--mg-guil)} .mb-guil.dim{background:var(--mg-guil-dim)}
+
+/* Four sections, so 2x2 or 4-across and never an orphaned third column. Each
+   pair is centred in its own share of the line rather than ragged-left.
+   Keyed off the CARD's width, not the viewport: the sidenav appears at 900px and
+   takes width a viewport query cannot see, which would crush the labels. */
+.money .card-bd{container-type:inline-size}
+.mb-legend{
+  list-style:none;margin:15px 0 0;padding:0;
+  display:grid;grid-template-columns:repeat(2,1fr);gap:4px 26px;
+}
+@container (min-width:660px){ .mb-legend{grid-template-columns:repeat(4,1fr)} }
+.mb-legend li{
+  display:flex;align-items:center;justify-content:center;gap:9px;font-size:13.5px;min-width:0;
+  padding:5px 0;border-top:1px solid var(--line-soft);
+}
+.mb-legend li.nil{opacity:.45}
+/* the swatch carries the series colour, so it must out-specify the shared size rule */
+.mb-legend i{width:11px;height:11px;border-radius:3px;flex:none}
+.mb-legend span{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* the amount sits against its own label, not floated to the far edge where it
+   reads as belonging to the next column along */
+.mb-legend b{font-family:var(--f-display);font-size:16px;font-weight:700}
+
+
+/* adding a game is its own action, sitting under that section's card */
+.mg-add{margin-top:10px}
 
 /* ---------- minigame rows ---------- */
 .mg-list{display:flex;flex-direction:column}
-.mg{border-bottom:1px solid var(--line-soft)}
+.mg{border-bottom:2px solid var(--line)}
 .mg:last-child{border-bottom:none}
-.mg.quiet{opacity:.42}
-/* A grid so the summary can span the full width on a second line instead of
-   fighting the winner and prize for room. */
+/* fade the row's content, never the pencil — a blank week is exactly the one
+   you most need to be able to click into */
+.mg.quiet .mg-hd,.mg.quiet .mg-bd{opacity:.42}
+/* One row per game. max-content on the right-hand tracks so the name and its
+   summary absorb any squeeze rather than the winner being shaved to an initial. */
 .mg-hd{
-  display:grid;width:100%;text-align:left;padding:10px 14px;min-height:46px;
-  /* max-content on the right-hand tracks so the TITLE absorbs any squeeze
-     rather than the winner's name being shaved to an initial. */
-  grid-template-columns:auto minmax(0,1fr) max-content max-content max-content;
-  grid-template-areas:"wk title win prize chev" "sum sum sum sum sum";
-  align-items:center;column-gap:10px;row-gap:2px;
+  display:grid;width:100%;text-align:left;padding:9px 14px;min-height:42px;
+  /* main shrink-wraps so the pencil hugs the end of the summary; the bare 1fr
+     column after it is the empty gap that pushes winner and prize to the right */
+  grid-template-columns:auto minmax(0,auto) max-content 1fr max-content max-content max-content;
+  grid-template-areas:"wk main pen . win prize chev";
+  align-items:center;column-gap:10px;
 }
+.mg-hd[role]{cursor:pointer}
 .mg-wk{grid-area:wk}
-.mg-title{grid-area:title}
+.mg-main{grid-area:main;display:flex;align-items:baseline;gap:8px;min-width:0}
+.mg-pencil{grid-area:pen}
 .mg-win{grid-area:win}
 .mg-prize{grid-area:prize}
 .mg-hd > .acc-caret,.mg-nochev{grid-area:chev}
 .mg-nochev{width:18px}
-.mg-sum{grid-area:sum;padding-left:48px}
 .mg-hd .chip{grid-area:win;justify-self:end}
-.mg-hd:disabled{cursor:default}
-.mg-hd:not(:disabled):active{background:var(--surface-2)}
+.mg-hd[role]:active{background:var(--surface-2)}
+.mg-hd[role]:focus-visible{outline:2px solid var(--heat);outline-offset:-2px}
 .mg .acc-caret{transition:transform .18s;color:var(--ink-3)}
 .mg.open .acc-caret{transform:rotate(90deg)}
 
@@ -738,13 +815,16 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 }
 .mg-title{
   font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:.005em;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .mg-title.unset{font-size:13px;color:var(--ink-3);font-weight:500}
+/* shrinks twice as fast as the name, so a long summary truncates first */
 .mg-sum{
+  flex:0 2 auto;min-width:0;
   font-size:11.5px;font-weight:400;color:var(--ink-3);line-height:1.35;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+.mg-sum::before{content:'\2022';margin-right:8px;color:var(--line)}
 .mg-win{
   max-width:104px;font-size:13px;color:var(--ink-2);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -754,14 +834,16 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
   min-width:44px;text-align:right;
   font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink-3);
 }
-.mg-prize.won{color:var(--heat)}
+/* decided: the money has a name on it, so it reads as money out like the card above */
+.mg-prize.won{color:var(--mint)}
 
 .mg-bd{display:none;padding:0 14px 13px 62px}
 .mg.open .mg-bd{display:block}
 .mg-rules{margin:0 0 10px;font-size:12.5px;line-height:1.55;color:var(--ink-2)}
 .mg-places{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+/* one line: WINNER  manager  what won it */
 .mg-places li{
-  display:flex;align-items:flex-start;gap:10px;padding:7px 0;font-size:13px;
+  display:flex;align-items:baseline;gap:10px;padding:7px 0;font-size:13px;
   border-top:1px solid var(--line-soft);
 }
 .mg-places li:first-child{border-top:none}
@@ -769,19 +851,75 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
   font-family:var(--f-display);font-size:9.5px;font-weight:700;letter-spacing:.11em;
   text-transform:uppercase;color:var(--ink-3);flex:none;min-width:58px;
 }
-.mg-places .who{flex:1;min-width:0}
-.mg-places .val{display:block;margin-top:2px;font-size:12px;color:var(--ink-3);line-height:1.4}
-.mg-places b{font-family:var(--f-display);font-size:14px;font-weight:700;flex:none;padding-top:1px}
+.mg-places .who{flex:none;max-width:44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* the note gives up room first — the manager and the money always stay whole */
+.mg-places .val{
+  flex:1 1 0;min-width:0;font-size:12px;color:var(--ink-3);line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 .mg-edit{margin-top:11px}
+
+/* Editing lives on the row itself: a pencil that surfaces on hover, so the
+   affordance is where the thing is rather than a button buried in the detail.
+   Touch devices have no hover, so there it simply stays visible. */
+.mg-pencil{
+  flex:none;display:grid;place-items:center;width:22px;height:22px;
+  border-radius:var(--r-sm);color:var(--ink-3);
+}
+.mg-pencil svg{width:15px;height:15px}
+.mg-pencil:hover,.mg-pencil:focus-visible{color:var(--heat)}
+@media (hover:hover){
+  .mg-pencil{opacity:0;transition:opacity .14s}
+  .mg-hd:hover .mg-pencil,.guil-toggle:hover .mg-pencil,
+  .mg-pencil:focus-visible{opacity:1}
+}
+
 
 @media (max-width:420px){
   .mg-bd{padding-left:14px}
   .mg-win{max-width:88px}
-  .mg-sum{padding-left:48px}
+  /* no room for it alongside a winner and a prize — it is in the detail anyway */
+  .mg-sum{display:none}
   .mg-places .pl{min-width:52px}
 }
 
-/* ---------- guillotine weeks ---------- */
+/* ---------- guillotine ---------- */
+/* Collapsed it is a single line, like a minigame row; the weeks inside then
+   open one at a time. */
+.guil .card-hd{padding:0;gap:0}
+.guil-toggle{
+  display:flex;align-items:center;gap:10px;width:100%;min-width:0;
+  text-align:left;padding:14px 16px;cursor:pointer;
+}
+.guil-toggle .gap{flex:1;min-width:0}
+.guil-toggle:focus-visible{outline:2px solid var(--heat);outline-offset:-2px}
+/* name and its one-line summary share a line, exactly like a minigame row */
+.guil-main{display:flex;align-items:baseline;gap:8px;min-width:0}
+.guil-main h3{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.guil-toggle .chip{flex:none}
+.guil .acc-caret{transition:transform .18s;color:var(--ink-3);flex:none}
+.guil.open > .card-hd .acc-caret{transform:rotate(90deg)}
+.guil-bd{display:none}
+.guil.open .guil-bd{display:block}
+/* nothing below it to divide from, so the header is the whole card */
+.guil:not(.open) .card-hd{border-bottom:none;border-radius:var(--r-lg)}
+
+/* the pool: who is still in, who has gone */
+.guil-pool{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}
+.gp{
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  font-size:12px;font-weight:600;padding:4px 9px;border-radius:99px;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink);
+}
+.gp .wk{font-family:var(--f-display);font-size:9.5px;letter-spacing:.08em;color:var(--ink-3)}
+.gp svg{width:13px;height:13px}
+/* chopped: greyed back, with a red line through the name */
+.gp.out{
+  background:transparent;border-color:rgba(255,77,94,.2);color:var(--ink-3);font-weight:500;
+  text-decoration:line-through;text-decoration-color:rgba(255,77,94,.7);
+}
+.gp.win{color:var(--gold);border-color:rgba(245,196,81,.4);background:rgba(245,196,81,.1)}
+
 .guil-weeks{display:flex;flex-direction:column}
 .gw{border-bottom:1px solid var(--line-soft)}
 .gw:last-child{border-bottom:none}

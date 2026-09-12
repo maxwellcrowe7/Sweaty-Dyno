@@ -1,16 +1,55 @@
 import { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts, info } from '../util.js';
 
-const PLACES = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
+const SUMMARY_MAX = 60;
+/* Every week of the regular season is a line on the slate, game or no game. */
+const WEEKS = 18;
 
-const PLACE_LABEL = { 1: 'Winner', 2: 'Runner-up', 3: 'Third' };
-const SUMMARY_MAX = 48;
+/** The capped one-line summary, with room for a live count beside its label. */
+const summaryField = (val, placeholder) => `<div class="field">
+  <label class="has-count">Summary<span class="lbl-count" data-count></span></label>
+  <input name="summary" value="${esc(val || '')}" maxlength="${SUMMARY_MAX}"
+    placeholder="${esc(placeholder)}"></div>`;
+
+/** Keep that count honest as you type. */
+function liveCount(m) {
+  const input = m.root.querySelector('input[name="summary"]');
+  const out = m.root.querySelector('[data-count]');
+  if (!input || !out) return;
+  const show = () => {
+    out.textContent = `${input.value.length}/${SUMMARY_MAX}`;
+    out.classList.toggle('full', input.value.length >= SUMMARY_MAX);
+  };
+  input.addEventListener('input', show);
+  show();
+}
 
 /* Which minigames are expanded — module scope so an edit does not close them. */
 const MG_OPEN = new Set();
 
 const phaseLabel = (g) => g.phase === 'week' ? `WK ${g.week}` : g.phase === 'pre' ? 'PRE' : 'POST';
 
-/** Name and a short summary stacked, then who won and what it paid. */
+const slotLabel = (g) => g.phase === 'week' ? `Week ${g.week}`
+  : g.phase === 'pre' ? 'Preseason' : 'Post-season';
+
+/** Is there anything in this slot at all? */
+export const filled = (g) => Boolean(g.name || g.summary || g.rules
+  || g.status === 'canceled' || g.results?.['1']?.team);
+
+/** Status is never typed in — it follows from what has been filled in.
+    Nothing entered -> no game that week; entered but no winner -> undecided;
+    a winner -> decided. A slot cancelled in an earlier season stays cancelled. */
+export function setStatus(g, was) {
+  const entered = Boolean(g.name || g.summary || g.rules);
+  const decided = Boolean(g.results?.['1']?.team);
+  if (!entered && !decided) {
+    g.status = 'none';
+    g.payout = { 1: 0, 2: 0, 3: 0 };   // an empty slot costs the season nothing
+    return;
+  }
+  g.status = was === 'canceled' ? 'canceled' : decided ? 'final' : 'scheduled';
+}
+
+/** Name and its short summary on one line, then who won and what it paid. */
 function gameRow(db, g, S, admin) {
   const empty = g.status === 'none';
   const pointer = g.status === 'guillotine';
@@ -19,9 +58,9 @@ function gameRow(db, g, S, admin) {
   const winner = win?.team ? db.team(win.team)?.manager : null;
   const prize = Number(g.payout?.['1']) || 0;
   const open = MG_OPEN.has(g.id);
-  // an empty slot is still worth opening if you are the one who can fill it in
-  const detail = !pointer && (admin || g.rules || win?.value
-    || g.results?.['2']?.team || g.results?.['3']?.team);
+  // Expand only when there is something to read — the pencil on the row is how an
+  // admin gets in, so an empty slot no longer has to open to offer a way to fill it.
+  const detail = !pointer && !empty && (g.rules || win?.team || prize);
 
   const title = pointer ? 'Guillotine'
     : g.name ? esc(g.name)
@@ -29,9 +68,16 @@ function gameRow(db, g, S, admin) {
     : 'Not set yet';
 
   return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}">
-    <button class="mg-hd" ${detail ? `data-mg="${esc(g.id)}"` : 'disabled'}>
+    <div class="mg-hd"${detail
+      ? ` role="button" tabindex="0" aria-expanded="${open}" data-mg="${esc(g.id)}"` : ''}>
       <span class="mg-wk">${phaseLabel(g)}</span>
-      <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
+      <span class="mg-main">
+        <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
+        ${g.summary && !empty ? `<span class="mg-sum">${esc(g.summary)}</span>` : ''}
+      </span>
+      ${admin && !pointer ? `<button class="mg-pencil" data-edit="${esc(g.id)}"
+        aria-label="${g.name ? 'Edit' : 'Add'} ${esc(slotLabel(g))} minigame"
+        title="${g.name ? 'Edit' : 'Add a minigame'}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
       ${canceled ? '<span class="chip red">Cancelled</span>'
         : pointer ? '<span class="chip heat">below</span>'
         : winner ? `<span class="mg-win">${esc(winner)}</span>`
@@ -39,34 +85,24 @@ function gameRow(db, g, S, admin) {
         : '<span class="mg-win none">&mdash;</span>'}
       <span class="mg-prize${prize && winner ? ' won' : ''}">${prize ? money(prize) : ''}</span>
       ${detail ? icon('chev', 'acc-caret') : '<span class="mg-nochev"></span>'}
-      ${g.summary && !empty ? `<span class="mg-sum">${esc(g.summary)}</span>` : ''}
-    </button>
+    </div>
     ${detail ? `<div class="mg-bd">
       ${g.rules ? `<p class="mg-rules">${esc(g.rules)}</p>` : ''}
       ${empty && admin && !g.rules ? '<p class="mg-rules dimmer">Nothing set for this week yet.</p>' : ''}
-      ${!empty ? `<ul class="mg-places">
-        ${['1', '2', '3'].map((pl) => {
-          const r = g.results?.[pl];
-          const pay = Number(g.payout?.[pl]) || 0;
-          if (!r?.team && !pay) return '';
-          return `<li>
-            <span class="pl">${PLACE_LABEL[pl]}</span>
-            <span class="who">
-              ${r?.team ? teamTag(db.team(r.team)) : '<span class="dimmer">not decided</span>'}
-              ${r?.value ? `<span class="val">${esc(r.value)}</span>` : ''}
-            </span>
-            <b>${pay ? money(pay) : '&mdash;'}</b>
-          </li>`;
-        }).join('')}
-      </ul>` : ''}
-      ${admin ? `<div class="mg-edit"><button class="btn sm" data-edit="${esc(g.id)}">${
-        icon(g.name ? 'pencil' : 'plus')} ${g.name ? 'Edit' : 'Add a minigame'}</button></div>` : ''}
+      ${!empty && (win?.team || prize) ? `<ul class="mg-places"><li>
+        <span class="pl">Winner</span>
+        <span class="who">${win?.team ? teamTag(db.team(win.team), { num: false })
+          : '<span class="dimmer">not decided</span>'}</span>
+        <span class="val">${win?.value ? esc(win.value) : ''}</span>
+      </li></ul>` : ''}
     </div>` : ''}
   </div>`;
 }
 
 /* Which guillotine weeks are expanded — module scope so an edit does not close them. */
 const GUIL_OPEN = new Set();
+/* And whether the card itself is open. Collapsed by default, like a minigame row. */
+const GUIL_CARD = new Set();
 
 function guillotineCard(db, G, S, admin) {
   if (!G) return admin ? `<div class="card"><div class="card-bd" style="text-align:center">
@@ -75,23 +111,46 @@ function guillotineCard(db, G, S, admin) {
 
   const run = db.guillotineRun(S);
   const alive = run.survivors.length;
-  const pct = run.entrants.length > 1 ? run.chopped / (run.entrants.length - 1) : 0;
+  const cardOpen = GUIL_CARD.has(S);
+
+  /* Who is left, at a glance: still-in pills sit left, chopped ones fall to the
+     right — most recent chop first, so the pool drains rightward as the run goes. */
+  const chopWeek = new Map(run.weeks.filter((w) => w.settled).map((w) => [w.chopped, w.week]));
+  const pool = [...run.entrants].sort((a, b) => {
+    const ca = chopWeek.get(a), cb = chopWeek.get(b);
+    if (ca == null && cb == null) return a - b;
+    if (ca == null) return -1;
+    if (cb == null) return 1;
+    return cb - ca;
+  });
 
   return `
-  <div class="card">
+  <div class="card guil${cardOpen ? ' open' : ''}">
     <div class="card-hd">
-      ${icon('blade')}
-      <div><h3>Guillotine</h3><div class="sub">wk ${run.startWeek}&ndash;${run.lastWeek} &middot; ${run.entrants.length} in</div></div>
-      <div class="spacer"></div>
-      <span class="chip ${run.winner ? 'gold' : 'heat'}">${money(G.payout?.['1'] || 0)}</span>
-      ${admin ? `<button class="btn sm ghost" data-editguil>${icon('pencil')}</button>` : ''}
-    </div>
-    <div class="card-bd" style="padding-bottom:12px">
-      <div class="s dim" style="font-size:12.5px;line-height:1.55">${esc(G.rules || '')}</div>
-      <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
-        <div class="meter" style="flex:1"><i style="width:${(pct * 100).toFixed(1)}%"></i></div>
+      <div class="guil-toggle" role="button" tabindex="0"
+        aria-expanded="${cardOpen}" data-guiltoggle>
+        ${icon('blade')}
+        <div class="guil-main"><h3>Guillotine</h3>
+          ${G.summary ? `<span class="mg-sum">${esc(G.summary)}</span>` : ''}</div>
+        ${admin ? `<button class="mg-pencil" data-editguil aria-label="Edit the guillotine"
+          title="Edit">${icon('pencil')}</button>` : ''}
+        <span class="gap"></span>
         <span class="chip ${run.winner || alive === 1 ? 'gold' : 'mint'}">${
           run.winner ? 'Decided' : `${alive} alive`}</span>
+        <span class="mg-prize${run.winner ? ' won' : ''}">${money(G.payout?.['1'] || 0)}</span>
+        ${icon('chev', 'acc-caret')}
+      </div>
+    </div>
+    <div class="guil-bd">
+    <div class="card-bd" style="padding-bottom:12px">
+      <div class="s dim" style="font-size:12.5px;line-height:1.55">${esc(G.rules || '')}</div>
+      <div class="guil-pool">
+        ${pool.map((t) => {
+          const wk = chopWeek.get(t);
+          const cls = wk != null ? 'out' : t === run.winner ? 'win' : 'alive';
+          return `<span class="gp ${cls}">${cls === 'win' ? icon('crown') : ''}${
+            esc(db.team(t)?.manager ?? `T${t}`)}${wk != null ? `<span class="wk">W${wk}</span>` : ''}</span>`;
+        }).join('')}
       </div>
     </div>
 
@@ -138,54 +197,62 @@ function guillotineCard(db, G, S, admin) {
       <div class="banner" style="background:rgba(245,196,81,.08);border-color:rgba(245,196,81,.3)">
         ${icon('crown')}<div>Last one standing: <b style="color:var(--gold)">${esc(db.team(run.winner)?.manager ?? '')}</b>
         takes ${money(G.payout?.['1'] || 0)}.</div></div>
-    </div>` : `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px">Chops are worked out from the weekly scores, so this fills in
-      on its own as ${S} is synced.</div></div>`}
+    </div>` : ''}
+    </div>
   </div>`;
 }
 
 export function render(db) {
   const S = db.season;
   const s = db.minigames(S);
-  const spend = db.minigameSpend(S);
   const admin = db.isAdmin;
-  const done = s.games.filter((g) => g.status === 'final').length;
+  const mb = db.minigameBreakdown(S);
+  // the bar measures the season against its own slate, not against an allowance
+  const pct = (v) => `${(v / (mb.allocated || 1) * 100).toFixed(2)}%`;
 
   return `
-  <div class="tiles">
-    <div class="tile accent"><div class="k">Allocated${info(
-      `What every prize on this season's slate adds up to. It is not a limit — it moves as you add or change minigames.`)}</div>
-      <div class="v">${money(spend.committed)}</div>
-      <div class="m">${spend.budget
-        ? (spend.unallocated > 0 ? `${money(spend.unallocated)} of ${money(spend.budget)} unallocated`
-          : spend.unallocated < 0 ? `${money(-spend.unallocated)} over the ${money(spend.budget)} allowance`
-          : `all of ${money(spend.budget)} allocated`)
-        : `${S} minigames`}</div></div>
-    <div class="tile mint"><div class="k">Awarded</div><div class="v">${money(spend.paid)}</div>
-      <div class="m">${done} settled</div></div>
-    <div class="tile"><div class="k">Still up</div><div class="v">${money(spend.remaining)}</div>
-      <div class="m">${s.games.length - done} to play</div></div>
-    <div class="tile gold"><div class="k">Guillotine</div>
-      <div class="v">${money(s.guillotine?.payout?.['1'] || 0)}</div>
-      <div class="m">${s.guillotine ? `from week ${s.guillotine.startWeek}` : 'not set up'}</div></div>
+  <div class="card money">
+    <div class="card-hd">
+      <div class="grow"><h3>${S} minigames</h3></div>
+      ${admin ? `<button class="btn sm ghost" data-setup aria-label="${S} season setup"
+        title="Season setup">${icon('cog')}</button>` : ''}
+    </div>
+    <div class="card-bd">
+      <div class="mb-top">
+        <span class="mb-stat"><b class="mb-fig won">${money(mb.awarded)}</b><span class="mb-lbl">won</span></span>
+        <span class="mb-div">/</span>
+        <span class="mb-stat"><b class="mb-fig">${money(mb.allocated)}</b><span class="mb-lbl">total</span></span>
+      ${/* Part-to-whole across the season's own slate. Each section is one block,
+           split bright/dull at what it has paid out, so a half-run weekly slate
+           reads as half-lit without needing a second chart. */''}
+      <div class="mb-track" role="img" aria-label="${money(mb.awarded)} won of ${money(mb.allocated)}: ${
+        mb.parts.filter((p) => p.allocated)
+          .map((p) => `${p.title} ${money(p.awarded)} of ${money(p.allocated)}`).join(', ') || 'nothing yet'}">
+        ${mb.parts.filter((p) => p.allocated > 0).map((p) => {
+          const lit = p.awarded / p.allocated * 100;
+          return `<span class="mb-part" style="width:${pct(p.allocated)}"
+            title="${p.title} &mdash; ${money(p.awarded)} of ${money(p.allocated)} awarded">
+            ${p.awarded > 0 ? `<i class="mb-${p.key}" style="width:${lit.toFixed(2)}%"></i>` : ''}
+            ${p.awarded < p.allocated ? `<i class="mb-${p.key} dim" style="flex:1"></i>` : ''}
+          </span>`;
+        }).join('')}
+        </div>
+      </div>
+      <ul class="mb-legend">
+        ${mb.parts.map((p) => `<li${p.allocated ? '' : ' class="nil"'}>
+          <i class="mb-${p.key}"></i><span>${p.title}</span><b>${money(p.allocated)}</b></li>`).join('')}
+      </ul>
+    </div>
   </div>
 
-  ${spend.budget && spend.unallocated !== 0 ? `<div class="banner" style="margin-top:14px;${
-    spend.unallocated < 0 ? 'background:rgba(255,77,94,.07);border-color:rgba(255,77,94,.26)' : ''}">
-    ${icon('alert')}<div>${spend.unallocated > 0
-      ? `${money(spend.unallocated)} of the ${money(spend.budget)} minigame allowance is not attached to a prize yet.`
-      : `The slate is ${money(-spend.unallocated)} over the ${money(spend.budget)} allowance.`}</div></div>` : ''}
-
-  ${admin ? `<div class="mg-actions">
-    <button class="btn sm" data-setup>${icon('cog')} Season setup</button>
-    <button class="btn sm" data-addgame="pre">${icon('plus')} Preseason</button>
-    <button class="btn sm" data-addgame="week">${icon('plus')} Week</button>
-    <button class="btn sm" data-addgame="post">${icon('plus')} Post-season</button>
-  </div>` : ''}
-
+  ${/* Every phase gets a section whether or not it has games — the slate's shape
+       should not change under you, and an empty one is a place to add to. */''}
   ${db.minigamePhases(S).map((ph) => {
-    if (!ph.games.length) {
-      if (ph.phase !== 'week') return '';
+    // the weekly slate is built by Season setup, not one game at a time
+    const add = ph.phase === 'week' || !admin ? '' : `<div class="mg-add">
+      <button class="btn sm" data-addgame="${ph.phase}">${icon('plus')} Add minigame</button></div>`;
+
+    if (!ph.games.length && ph.phase === 'week') {
       return `<div class="section-title">${ph.title}</div>
         ${empty('No slate yet', admin
           ? 'Set up the season below and every week appears here, ready to fill in.'
@@ -193,14 +260,20 @@ export function render(db) {
         ${admin ? `<div style="text-align:center;margin-top:-14px">
           <button class="btn primary" data-setup>${icon('plus')} Set up ${S} season</button></div>` : ''}`;
     }
-    return `<div class="section-title">${ph.title}</div>
-      <div class="card"><div class="card-bd flush"><div class="mg-list">
-        ${ph.games.map((g) => gameRow(db, g, S, admin)).join('')}
-      </div></div></div>`;
+    // an admin with nothing scheduled gets the button alone — an empty card says less
+    const card = ph.games.length
+      ? `<div class="card"><div class="card-bd flush"><div class="mg-list">
+          ${ph.games.map((g) => gameRow(db, g, S, admin)).join('')}
+        </div></div></div>`
+      : admin ? '' : `<div class="card"><div class="card-bd">
+          <div class="s dim" style="font-size:12.5px">No ${ph.title.toLowerCase()} minigames this season.</div>
+        </div></div>`;
+    return `<div class="section-title">${ph.title}</div>${card}${add}`;
   }).join('')}
 
-  <div class="section-title">Elimination</div>
-  ${guillotineCard(db, s.guillotine, S, admin)}
+  <div class="section-title">Guillotine</div>
+  ${guillotineCard(db, s.guillotine, S, admin) || `<div class="card"><div class="card-bd">
+    <div class="s dim" style="font-size:12.5px">No guillotine this season.</div></div></div>`}
   `;
 }
 
@@ -208,12 +281,37 @@ export function mount(root, db) {
   const S = db.season;
   const teams = db.teams(S);
 
+  /* These headers are divs, not buttons — the edit pencil sits inside them and a
+     button cannot nest in a button. So wire up click, keyboard and aria by hand,
+     and let a click on the pencil through rather than also toggling the row. */
+  const expander = (el, toggle) => {
+    const fire = () => {
+      const open = toggle();
+      el.setAttribute('aria-expanded', String(open));
+    };
+    el.addEventListener('click', (e) => { if (!e.target.closest('.mg-pencil')) fire(); });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); }
+    });
+  };
+
   /* minigame rows expand in place */
-  root.querySelectorAll('[data-mg]').forEach((b) => b.addEventListener('click', () => {
+  root.querySelectorAll('[data-mg]').forEach((b) => expander(b, () => {
     const id = b.dataset.mg;
     MG_OPEN.has(id) ? MG_OPEN.delete(id) : MG_OPEN.add(id);
-    b.closest('.mg').classList.toggle('open', MG_OPEN.has(id));
+    const open = MG_OPEN.has(id);
+    b.closest('.mg').classList.toggle('open', open);
+    return open;
   }));
+
+  /* the guillotine card opens the same way a minigame row does */
+  const guilHd = root.querySelector('[data-guiltoggle]');
+  if (guilHd) expander(guilHd, () => {
+    GUIL_CARD.has(S) ? GUIL_CARD.delete(S) : GUIL_CARD.add(S);
+    const open = GUIL_CARD.has(S);
+    guilHd.closest('.guil').classList.toggle('open', open);
+    return open;
+  });
 
   /* guillotine week rows expand in place */
   root.querySelectorAll('[data-gweek]').forEach((b) => b.addEventListener('click', () => {
@@ -243,16 +341,10 @@ export function mount(root, db) {
     openModal({
       title: `${S} season setup`,
       confirm: cur.games.length ? 'Update' : 'Create slate',
-      body: `<div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Lays out one slot per week. Weeks you have already named or decided are left untouched;
-          any slot still blank is reset to empty and costs nothing until you fill it in.</div>
-        <div class="fgrid" style="grid-template-columns:repeat(3,1fr)">
+      body: `<div class="fgrid" style="grid-template-columns:repeat(2,1fr)">
           <div class="field"><label>Preseason</label>
             <input name="pre" type="number" min="0" max="20" inputmode="numeric"
               value="${cur.games.filter((g) => g.phase === 'pre').length || d0.preseason || 0}"></div>
-          <div class="field"><label>Weekly</label>
-            <input name="weeks" type="number" min="0" max="18" inputmode="numeric"
-              value="${cur.games.filter((g) => (g.phase || 'week') === 'week').length || d0.weeks || 14}"></div>
           <div class="field"><label>Post-season</label>
             <input name="post" type="number" min="0" max="20" inputmode="numeric"
               value="${cur.games.filter((g) => g.phase === 'post').length || d0.postseason || 0}"></div>
@@ -264,7 +356,7 @@ export function mount(root, db) {
           <input name="guil" type="number" min="1" max="18" inputmode="numeric"
             value="${cur.guillotine?.startWeek ?? ''}"></div>`,
       onConfirm: async (f) => {
-        const want = { pre: Math.max(0, +f.pre || 0), week: Math.max(0, Math.min(18, +f.weeks || 0)),
+        const want = { pre: Math.max(0, +f.pre || 0), week: WEEKS,
                        post: Math.max(0, +f.post || 0) };
         const pay = Math.max(0, +f.pay || 0);
         const guil = f.guil ? Math.max(1, +f.guil) : null;
@@ -343,30 +435,29 @@ export function mount(root, db) {
 
   root.querySelector('[data-editguil]')?.addEventListener('click', () => {
     const G = db.minigames(S).guillotine;
-    openModal({
+    const m = openModal({
       title: 'Guillotine',
       confirm: 'Save',
-      body: `<div class="field"><label>Rules</label><textarea name="rules">${esc(G?.rules
+      body: `${summaryField(G?.summary, 'e.g. Lowest score each week is out')}
+        <div class="field"><label>Rules / notes</label><textarea name="rules">${esc(G?.rules
           || 'Lowest scoring manager is chopped every week until one remains.')}</textarea></div>
-        <div class="fgrid">
+        <div class="fgrid" style="grid-template-columns:repeat(3,1fr)">
           <div class="field"><label>Starts week</label>
             <input name="start" type="number" min="1" inputmode="numeric" value="${G?.startWeek ?? 1}"></div>
           <div class="field"><label>Last chop</label>
             <input value="week ${(G?.startWeek ?? 1) + db.teams(S).length - 2}" disabled style="opacity:.55"></div>
-        </div>
-        <div class="s dim" style="font-size:12px;margin:-4px 0 12px;line-height:1.5">
-          One chop a week until a single manager is left, so ${db.teams(S).length} managers means
-          ${db.teams(S).length - 1} chops &mdash; the last week follows from the start week.</div>
-        <div class="field"><label>Payout</label>
-          <input name="pay" type="number" min="0" inputmode="numeric" value="${G?.payout?.['1'] ?? 10}"></div>
-        ${G ? '<label class="toggle" style="margin-top:4px"><input type="checkbox" name="remove"><span class="tr"></span><span style="font-size:12.5px">Remove the guillotine</span></label>' : ''}`,
+          <div class="field"><label>Payout</label>
+            <input name="pay" type="number" min="0" inputmode="numeric" value="${G?.payout?.['1'] ?? 10}"></div>
+        </div>`,
+      closeButtons: false,   // outside-click, Escape and Save all close it
+      extra: G ? `<button type="button" class="btn danger" data-clear>Remove</button>` : '',
       onConfirm: async (f) => {
         await db.update('minigames', (m) => {
           const sn = (m.seasons[String(S)] ||= { games: [], guillotine: null, legacy: null });
-          if (f.remove) { sn.guillotine = null; return; }
           sn.guillotine = {
             ...(sn.guillotine || { id: `${S}-guillotine`, name: 'Guillotine', status: 'scheduled',
                                    entrants: db.teams(S).map((t) => t.number), eliminations: [], winner: null }),
+            summary: f.summary.trim().slice(0, SUMMARY_MAX) || null,
             rules: f.rules.trim() || null,
             startWeek: Math.max(1, +f.start || 1),
             payout: { 1: Math.max(0, +f.pay || 0) },
@@ -375,76 +466,81 @@ export function mount(root, db) {
         toast('Guillotine saved');
       },
     });
+
+    m.root.querySelector('[data-clear]')?.addEventListener('click', async () => {
+      await db.update('minigames', (mg) => {
+        mg.seasons[String(S)].guillotine = null;
+      });
+      m.close();
+      toast('Guillotine removed');
+    });
+
+    liveCount(m);
   });
 
 
 
   root.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
     const g = db.minigames(S).games.find((x) => x.id === b.dataset.edit);
-    const r = (p) => g.results?.[p] || {};
-    openModal({
-      title: g.phase === 'week' ? `Week ${g.week} minigame`
-        : g.phase === 'pre' ? 'Preseason minigame' : 'Post-season minigame',
+    const r = g.results?.['1'] || {};
+    const m = openModal({
+      title: `${slotLabel(g)} minigame`,
       confirm: 'Save',
       body: `
         <div class="field"><label>Minigame</label>
           <input name="name" value="${esc(g.name || '')}" placeholder="e.g. Closest to the Number"></div>
-        <div class="field"><label>Summary <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--ink-3)">&mdash; one line, shown collapsed</span></label>
-          <input name="summary" value="${esc(g.summary || '')}" maxlength="${SUMMARY_MAX}"
-            placeholder="e.g. Highest scoring manager off the bat"></div>
+        ${summaryField(g.summary, 'e.g. Highest scoring manager off the bat')}
         <div class="field"><label>Rules / notes</label>
           <textarea name="rules" placeholder="How it's won${
             g.phase !== 'week' ? ' — league vote is fine' : ''}">${esc(g.rules || '')}</textarea></div>
-        <div class="section-title" style="margin-top:6px">Payout</div>
-        <div class="fgrid" style="grid-template-columns:repeat(3,1fr)">
-          ${['1', '2', '3'].map((p) => `<div class="field"><label>${PLACES[p]} $</label>
-            <input name="pay${p}" type="number" min="0" step="1" inputmode="numeric" value="${Number(g.payout?.[p]) || 0}"></div>`).join('')}
+        <div class="fgrid" style="grid-template-columns:2fr 3fr">
+          <div class="field"><label>Payout $</label>
+            <input name="pay1" type="number" min="0" step="1" inputmode="numeric" value="${Number(g.payout?.['1']) || 0}"></div>
+          <div class="field"><label>Winner</label>
+            <select name="team1">${teamOptions(teams, r.team ?? '')}</select></div>
         </div>
-        <div class="field" style="margin-top:2px">
-          <label>Status</label>
-          <select name="status">
-            ${['scheduled', 'final', 'none', 'canceled'].map((k) => `<option value="${k}" ${g.status === k ? 'selected' : ''}>${
-              { scheduled: 'Scheduled', final: 'Decided',
-                none: g.phase === 'week' ? 'No minigame this week' : 'Not running',
-                canceled: 'Cancelled' }[k]}</option>`).join('')}
-          </select>
-        </div>
-        <div class="section-title" style="margin-top:2px">Result</div>
-        ${['1', '2', '3'].map((p) => `
-          <div class="fgrid" style="grid-template-columns:1fr 1fr">
-            <div class="field"><label>${PLACES[p]}</label>
-              <select name="team${p}">${teamOptions(teams, r(p).team ?? '')}</select></div>
-            <div class="field"><label>What won it</label>
-              <input name="val${p}" value="${esc(r(p).value || '')}" placeholder="player / score / note"></div>
-          </div>`).join('')}
-        <label class="toggle" style="margin-top:2px"><input type="checkbox" name="remove">
-          <span class="tr"></span><span style="font-size:12.5px;color:var(--red)">Delete this minigame</span></label>`,
+        <div class="field"><label>What won it</label>
+          <input name="val1" value="${esc(r.value || '')}" placeholder="player / score / note"></div>`,
+      closeButtons: false,   // outside-click, Escape and Save all close it
+      extra: filled(g)
+        ? `<button type="button" class="btn danger" data-clear>${
+            g.phase === 'week' ? 'Clear' : 'Remove'}</button>`
+        : '',
       onConfirm: async (d) => {
-        if (d.remove) {
-          await db.update('minigames', (m) => {
-            const sn = m.seasons[String(S)];
-            sn.games = sn.games.filter((x) => x.id !== g.id);
-          });
-          toast('Minigame removed');
-          return;
-        }
         await db.update('minigames', (m) => {
           const gg = m.seasons[String(S)].games.find((x) => x.id === g.id);
           gg.name = d.name.trim() || null;
           gg.summary = d.summary.trim().slice(0, SUMMARY_MAX) || null;
           gg.rules = d.rules.trim() || null;
-          gg.payout = { 1: +d.pay1 || 0, 2: +d.pay2 || 0, 3: +d.pay3 || 0 };
-          gg.results = {};
-          for (const p of ['1', '2', '3'])
-            gg.results[p] = d[`team${p}`] ? { team: +d[`team${p}`], value: d[`val${p}`].trim() || null } : null;
-          // naming a slot takes it out of the empty state without being asked
-          gg.status = d.status && d.status !== 'none' ? d.status
-            : gg.name ? (gg.results['1']?.team ? 'final' : 'scheduled')
-            : 'none';
+          // 2nd and 3rd are kept in the shape but never used — every game is
+          // winner-take-all, and already-published data reads back unchanged
+          gg.payout = { 1: +d.pay1 || 0, 2: 0, 3: 0 };
+          gg.results = { 1: d.team1 ? { team: +d.team1, value: d.val1.trim() || null } : null,
+                         2: null, 3: null };
+          setStatus(gg, g.status);
         });
-        toast(`Week ${g.week} saved`);
+        toast(`${slotLabel(g)} saved`);
       },
     });
+
+    m.root.querySelector('[data-clear]')?.addEventListener('click', async () => {
+      const weekly = g.phase === 'week';
+      await db.update('minigames', (mg) => {
+        const sn = mg.seasons[String(S)];
+        // Weeks 1-18 always keep a line — clearing empties the slot, it does not
+        // take the week off the slate. Extra pre/post slots are removed outright.
+        if (!weekly) { sn.games = sn.games.filter((x) => x.id !== g.id); return; }
+        const gg = sn.games.find((x) => x.id === g.id);
+        gg.name = null; gg.summary = null; gg.rules = null;
+        gg.payout = { 1: 0, 2: 0, 3: 0 };
+        gg.results = { 1: null, 2: null, 3: null };
+        gg.status = 'none';
+      });
+      m.close();
+      toast(weekly ? `Week ${g.week} cleared` : 'Minigame removed');
+    });
+
+    liveCount(m);
   }));
 
 

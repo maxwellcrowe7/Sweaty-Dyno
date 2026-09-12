@@ -77,8 +77,10 @@ const I = {
   pencil:'m18 2 4 4-13 13H5v-4L18 2Z',
   down:'M12 3v13M6 11l6 6 6-6M4 21h16',
   sync:'M3 12a9 9 0 0 1 15-6.7L21 8M21 4v4h-4M21 12a9 9 0 0 1-15 6.7L3 16M3 20v-4h4',
-  blade:'m4 3 10 10M20 3 10 13M8 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
-  dice:'M4 4h16v16H4zM8.5 8.5h.01M15.5 15.5h.01M12 12h.01',
+  blade:'M6 2v20M18 2v20M4 2h16M4 17h16M8 5h8v2.5l-8 4z',
+  // a controller: the one silhouette in the nav that is unmistakably "games" at
+  // 16px, and unlike a die it does not share the board icon's square outline
+  dice:'M6 11.5h4M8 9.5v4M16.2 10.3h.01M18.6 13.6h.01M7 4.5h10a5.5 5.5 0 0 1 5.5 5.5v3.2a5.3 5.3 0 0 1-5.3 5.3c-2.1 0-2.7-1.8-4-1.8h-3.4c-1.3 0-1.9 1.8-4 1.8A5.3 5.3 0 0 1 1.5 13.2V10A5.5 5.5 0 0 1 7 4.5Z',
   x:'M18 6 6 18M6 6l12 12',
   lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   clock:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2',
@@ -113,19 +115,23 @@ export const sum = (arr, f = (x) => x) => arr.reduce((a, b) => a + (Number(f(b))
 export const by = (arr, f) => arr.reduce((m, x) => ((m[f(x)] ||= []).push(x), m), {});
 
 /* ---------- modal ----------
-   openModal({title, body, confirm, onConfirm}) -> resolves when closed.
+   openModal({title, body, confirm, extra, closeButtons, onConfirm}) -> resolves when closed.
+   `extra` is an optional button sharing the footer row with Cancel and Save.
+   `closeButtons:false` drops the X and Cancel — clicking outside and Escape still close.
    `body` is an HTML string; the <form> inside is serialised and handed to onConfirm. */
-export function openModal({ title, body, confirm = 'Save', danger = false, onConfirm = null }) {
+export function openModal({ title, body, confirm = 'Save', danger = false, extra = '',
+                            closeButtons = true, onConfirm = null }) {
   const bd = el('div', { class: 'modal-bd' });
   bd.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
       <div class="modal-hd">
         <h3>${esc(title)}</h3><div class="spacer" style="margin-left:auto"></div>
-        <button class="btn sm ghost" data-close aria-label="Close">${icon('x')}</button>
+        ${closeButtons ? `<button class="btn sm ghost" data-close aria-label="Close">${icon('x')}</button>` : ''}
       </div>
       <form class="modal-bd2">${body}</form>
       ${onConfirm ? `<div class="modal-ft">
-        <button class="btn" data-close type="button">Cancel</button>
+        ${extra}
+        ${closeButtons ? '<button class="btn" data-close type="button">Cancel</button>' : ''}
         <button class="btn primary" data-ok type="button">${esc(confirm)}</button></div>` : ''}
     </div>`;
   document.body.appendChild(bd);

@@ -439,6 +439,35 @@ class Store {
     ];
   }
 
+  /** Allocated and awarded money per phase — what the season's money bar draws. */
+  minigameBreakdown(season = this.season) {
+    const s = this.minigames(season);
+    const pay = (g) => Object.values(g.payout || {}).reduce((a, v) => a + (Number(v) || 0), 0);
+    const won = (g) => Object.entries(g.results || {})
+      .filter(([, r]) => r?.team).reduce((a, [pl]) => a + (Number(g.payout?.[pl]) || 0), 0);
+    const part = (phase, title) => {
+      const games = s.games.filter((g) => (g.phase || 'week') === phase);
+      return { key: phase, title,
+               allocated: games.reduce((a, g) => a + pay(g), 0),
+               awarded: games.reduce((a, g) => a + won(g), 0),
+               games: games.filter((g) => g.name).length };
+    };
+    const gp = Number(s.guillotine?.payout?.['1']) || 0;
+    const parts = [
+      part('pre', 'Preseason'), part('week', 'Weekly'), part('post', 'Post-season'),
+      { key: 'guil', title: 'Guillotine', allocated: s.guillotine ? gp : 0,
+        awarded: s.guillotine?.winner ? gp : 0, games: s.guillotine ? 1 : 0 },
+    ];
+    const allocated = parts.reduce((a, p) => a + p.allocated, 0);
+    const budget = this.minigameBudget(season);
+    return {
+      parts, allocated,
+      awarded: parts.reduce((a, p) => a + p.awarded, 0),
+      games: parts.reduce((a, p) => a + p.games, 0),
+      budget, unallocated: budget - allocated, over: Math.max(0, allocated - budget),
+    };
+  }
+
   /** What the rules allow for minigames this season. */
   minigameBudget(season = this.season) {
     const b = this.league.minigameBudget || {};

@@ -128,3 +128,36 @@ print('\n— season setup normalises blank slots without touching real ones —'
   eq('allocated is only the real prizes', db.minigameSpend(2026).committed,
      10+10  /* the two named weeks */ + 10 /* guillotine */ + 10+10 /* pre + post added earlier */);
 }
+
+print('\n— status follows the data, it is never typed in —');
+{
+  const { setStatus, filled } = await import('../js/views/minigames.js');
+  const slot = (o={}) => ({ name:null, summary:null, rules:null,
+    payout:{'1':10,'2':0,'3':0}, results:{'1':null,'2':null,'3':null}, ...o });
+
+  const blank = slot(); setStatus(blank, 'scheduled');
+  eq('nothing entered: no game that week', blank.status, 'none');
+  eq('and it costs the season nothing', blank.payout, {'1':0,'2':0,'3':0});
+
+  const named = slot({name:'Bench Bandit'}); setStatus(named, 'none');
+  eq('entered, no winner: undecided', named.status, 'scheduled');
+  eq('its prize stands', named.payout['1'], 10);
+
+  const won = slot({name:'Bench Bandit', results:{'1':{team:4,value:'x'},'2':null,'3':null}});
+  setStatus(won, 'scheduled');
+  eq('entered with a winner: decided', won.status, 'final');
+
+  const cancelled = slot({name:'Too little, too late'}); setStatus(cancelled, 'canceled');
+  eq('a cancelled slot stays cancelled', cancelled.status, 'canceled');
+
+  const cleared = slot({name:'Too little, too late'});
+  cleared.name=null; cleared.results={'1':null,'2':null,'3':null};
+  setStatus(cleared, 'canceled');
+  eq('but clearing it empties it', cleared.status, 'none');
+
+  eq('an empty slot offers nothing to clear', filled(slot()), false);
+  eq('a named one does', filled(slot({name:'x'})), true);
+  eq('so does one with only a result', filled(slot({results:{'1':{team:4},'2':null,'3':null}})), true);
+}
+
+print(fail?`\n${fail} FAILURE(S)`:'\nPhases passed.');
