@@ -582,6 +582,7 @@ table.dt th.sticky{z-index:3}
   font-size:19px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;
   display:flex;align-items:center;
 }
+.rule-sec h2 .edit-pencil{margin-left:7px}
 .rule-sec > ul{list-style:none;margin:0;padding:0}
 .rule-item{
   position:relative;padding:5px 0 5px 18px;scroll-margin-top:86px;
@@ -646,7 +647,7 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .acc-hd h3{font-family:var(--f-display);font-size:17px;text-transform:uppercase;letter-spacing:.06em}
 .acc-hd.sub.first{border-top:0;border-radius:var(--r-lg) var(--r-lg) 0 0}
 .acc-hd.sub{
-  border-top:1px solid var(--line-soft);border-radius:0;
+  border-top:2px solid var(--line);border-radius:0;
   padding:11px 16px;font-size:13px;font-weight:600;color:var(--ink-2);background:none;
 }
 .acc-caret{transition:transform .18s;color:var(--ink-3);flex:none}
@@ -657,7 +658,7 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .card.acc > .acc-bd{border-top:1px solid var(--line-soft)}
 
 /* payout category lines */
-.pay-line{border-bottom:1px solid var(--line-soft)}
+.pay-line{border-bottom:2px solid var(--line)}
 .pay-line:last-child{border-bottom:none}
 .pay-hd{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 16px;
@@ -667,6 +668,8 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .pay-hd .s{font-size:11.5px;color:var(--ink-3)}
 .pay-val{font-family:var(--f-display);font-size:19px;font-weight:700;flex:none}
 .pay-val.zero{color:var(--ink-3)}
+/* fully paid out: same green the slate uses for a decided prize */
+.pay-val.won{color:var(--mint)}
 .pay-line .acc-caret{transition:transform .18s}
 .pay-line.open .acc-caret{transform:rotate(90deg)}
 .pay-rows{display:none;list-style:none;margin:0;padding:0 16px 12px 44px}
@@ -815,7 +818,7 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 .mg-hd[role]{cursor:pointer}
 .mg-wk{grid-area:wk}
 .mg-main{grid-area:main;display:flex;align-items:baseline;gap:8px;min-width:0}
-.mg-pencil{grid-area:pen}
+.edit-pencil{grid-area:pen}
 .mg-win{grid-area:win}
 .mg-prize{grid-area:prize}
 .mg-hd > .acc-caret,.mg-nochev{grid-area:chev}
@@ -877,19 +880,19 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 }
 .mg-edit{margin-top:11px}
 
-/* Editing lives on the row itself: a pencil that surfaces on hover, so the
-   affordance is where the thing is rather than a button buried in the detail.
-   Touch devices have no hover, so there it simply stays visible. */
-.mg-pencil{
+/* Editing lives on the thing itself: a pencil that surfaces when you hover its
+   parent, so the affordance is where the thing is rather than a button buried
+   somewhere below it. Touch devices have no hover, so there it stays visible. */
+.edit-pencil{
   flex:none;display:grid;place-items:center;width:22px;height:22px;
   border-radius:var(--r-sm);color:var(--ink-3);
 }
-.mg-pencil svg{width:15px;height:15px}
-.mg-pencil:hover,.mg-pencil:focus-visible{color:var(--heat)}
+.edit-pencil svg{width:15px;height:15px}
+.edit-pencil:hover,.edit-pencil:focus-visible{color:var(--heat)}
 @media (hover:hover){
-  .mg-pencil{opacity:0;transition:opacity .14s}
-  .mg-hd:hover .mg-pencil,.guil-toggle:hover .mg-pencil,
-  .mg-pencil:focus-visible{opacity:1}
+  .edit-pencil{opacity:0;transition:opacity .14s}
+  /* whatever holds it reveals it -- no per-container selector to remember */
+  *:hover > .edit-pencil,.edit-pencil:focus-visible{opacity:1}
 }
 
 
@@ -939,7 +942,7 @@ table.dt tbody tr.total.sub td{background:none;font-weight:500;border-top:none}
 .gp.win{color:var(--gold);border-color:rgba(245,196,81,.4);background:rgba(245,196,81,.1)}
 
 .guil-weeks{display:flex;flex-direction:column}
-.gw{border-bottom:1px solid var(--line-soft)}
+.gw{border-bottom:2px solid var(--line)}
 .gw:last-child{border-bottom:none}
 .gw-hd{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:11px 16px}
 .gw-hd .wk{font-family:var(--f-display);font-size:10.5px;font-weight:700;letter-spacing:.09em;
@@ -2733,7 +2736,7 @@ function seasonPayouts(db, season, open, admin) {
             <span class="chip ${c.chip}">${c.label}</span>
             <div class="grow"><div class="s">${sub}</div></div>
             ${can && l.paidCount < l.rows.length ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
-            <div class="pay-val${l.total ? '' : ' zero'}">${money(l.total)}</div>
+            <div class="pay-val${!l.total ? ' zero' : l.paidTotal === l.total ? ' won' : ''}">${money(l.total)}</div>
           </button>
           ${can ? `<ul class="pay-rows">
             ${l.rows.map((r) => `<li>
@@ -3056,7 +3059,7 @@ function gameRow(db, g, S, admin) {
         <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
         ${g.summary && !empty ? `<span class="mg-sum">${esc(g.summary)}</span>` : ''}
       </span>
-      ${admin && !pointer ? `<button class="mg-pencil" data-edit="${esc(g.id)}"
+      ${admin && !pointer ? `<button class="edit-pencil" data-edit="${esc(g.id)}"
         aria-label="${g.name ? 'Edit' : 'Add'} ${esc(slotLabel(g))} minigame"
         title="${g.name ? 'Edit' : 'Add a minigame'}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
       ${canceled ? '<span class="chip red">Cancelled</span>'
@@ -3113,7 +3116,7 @@ function guillotineCard(db, G, S, admin) {
         ${icon('blade')}
         <div class="guil-main"><h3>Guillotine</h3>
           ${G.summary ? `<span class="mg-sum">${esc(G.summary)}</span>` : ''}</div>
-        ${admin ? `<button class="mg-pencil" data-editguil aria-label="Edit the guillotine"
+        ${admin ? `<button class="edit-pencil" data-editguil aria-label="Edit the guillotine"
           title="Edit">${icon('pencil')}</button>` : ''}
         <span class="gap"></span>
         <span class="chip ${run.winner || alive === 1 ? 'gold' : 'mint'}">${
@@ -3268,7 +3271,7 @@ function mount(root, db) {
       const open = toggle();
       el.setAttribute('aria-expanded', String(open));
     };
-    el.addEventListener('click', (e) => { if (!e.target.closest('.mg-pencil')) fire(); });
+    el.addEventListener('click', (e) => { if (!e.target.closest('.edit-pencil')) fire(); });
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); }
     });
@@ -3723,6 +3726,7 @@ function mount(root, db, go, setState) {
     if (kind === 'waivers') {
       return openModal({
         title: 'Waiver claim', confirm: 'Add claim',
+        closeButtons: false,   // outside-click, Escape and Save all close it
         body: `<div class="field"><label>Player</label><input name="player" required placeholder="Player name"></div>
           <div class="fgrid">
             <div class="field"><label>Team</label><select name="team">${teamOptions(teams)}</select></div>
@@ -3745,6 +3749,7 @@ function mount(root, db, go, setState) {
     openModal({
       title: isCond ? 'Conditional trade' : 'New trade',
       confirm: 'Log it',
+      closeButtons: false,
       body: `
         <div class="field"><label>Date</label><input name="date" type="date" value="${today}"></div>
         <div class="section-title" style="margin-top:6px">Side A</div>
@@ -4132,10 +4137,11 @@ function render(db, state = {}) {
       ${bk.sections.map((s) => {
         const d = diff?.perSection[s.id];
         return `<section class="rule-sec" id="s-${esc(s.id)}">
-          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}</h2>
+          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}${
+            admin ? `<button class="edit-pencil" data-edit-sec="${esc(s.id)}"
+              aria-label="Edit ${esc(s.title)}" title="Edit section">${icon('pencil')}</button>` : ''}</h2>
           <ul>${s.items.map((it) =>
             itemHtml(it, diff?.byId.get(it.id), diff?.wasById.get(it.id), showDiff)).join('')}</ul>
-          ${admin ? `<button class="btn sm ghost" data-edit-sec="${esc(s.id)}">${icon('pencil')} Edit section</button>` : ''}
         </section>`;
       }).join('')}
     </article>`;
@@ -4238,10 +4244,12 @@ function mount(root, db, go, setState, params = {}) {
     openModal({
       title: `Edit — ${sec.title}`,
       confirm: 'Save section',
+      closeButtons: false,   // outside-click, Escape and Save all close it
+      // The nesting syntax is not guessable, so that one line stays. What this used
+      // to also explain -- that editing a line keeps its identity -- is already
+      // visible in the change marks themselves.
       body: `<div class="s dim" style="font-size:12px;line-height:1.6;margin-bottom:12px">
-          One rule per line. Indent with four spaces to nest. Editing a line keeps its identity, so it
-          shows as <b style="color:var(--heat)">Changed</b>; a new line shows as
-          <b style="color:var(--mint)">New</b>.</div>
+          One rule per line. Indent with four spaces to nest.</div>
         <div class="field"><label>Section title</label><input name="title" value="${esc(sec.title)}"></div>
         <div class="field"><label>Rules</label><textarea name="body" style="min-height:260px;font-size:13px">${
           esc(sec.items.map((it) => '    '.repeat(it.depth) + it.text).join('\n'))}</textarea></div>`,
@@ -4282,10 +4290,8 @@ function mount(root, db, go, setState, params = {}) {
     openModal({
       title: 'Start a new rulebook',
       confirm: 'Create draft',
-      body: `<div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Copies a season forward as a draft. Every rule keeps its identity, so whatever you then edit
-          shows up as a tracked change and everything else stays quiet.</div>
-        <div class="fgrid">
+      closeButtons: false,
+      body: `<div class="fgrid">
           <div class="field"><label>New season</label>
             <input name="year" type="number" inputmode="numeric" value="${next}"></div>
           <div class="field"><label>Copy from</label>

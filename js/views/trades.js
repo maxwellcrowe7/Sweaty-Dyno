@@ -98,6 +98,7 @@ export function mount(root, db, go, setState) {
     if (kind === 'waivers') {
       return openModal({
         title: 'Waiver claim', confirm: 'Add claim',
+        closeButtons: false,   // outside-click, Escape and Save all close it
         body: `<div class="field"><label>Player</label><input name="player" required placeholder="Player name"></div>
           <div class="fgrid">
             <div class="field"><label>Team</label><select name="team">${teamOptions(teams)}</select></div>
@@ -120,6 +121,7 @@ export function mount(root, db, go, setState) {
     openModal({
       title: isCond ? 'Conditional trade' : 'New trade',
       confirm: 'Log it',
+      closeButtons: false,
       body: `
         <div class="field"><label>Date</label><input name="date" type="date" value="${today}"></div>
         <div class="section-title" style="margin-top:6px">Side A</div>

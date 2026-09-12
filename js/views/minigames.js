@@ -75,7 +75,7 @@ function gameRow(db, g, S, admin) {
         <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
         ${g.summary && !empty ? `<span class="mg-sum">${esc(g.summary)}</span>` : ''}
       </span>
-      ${admin && !pointer ? `<button class="mg-pencil" data-edit="${esc(g.id)}"
+      ${admin && !pointer ? `<button class="edit-pencil" data-edit="${esc(g.id)}"
         aria-label="${g.name ? 'Edit' : 'Add'} ${esc(slotLabel(g))} minigame"
         title="${g.name ? 'Edit' : 'Add a minigame'}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
       ${canceled ? '<span class="chip red">Cancelled</span>'
@@ -132,7 +132,7 @@ function guillotineCard(db, G, S, admin) {
         ${icon('blade')}
         <div class="guil-main"><h3>Guillotine</h3>
           ${G.summary ? `<span class="mg-sum">${esc(G.summary)}</span>` : ''}</div>
-        ${admin ? `<button class="mg-pencil" data-editguil aria-label="Edit the guillotine"
+        ${admin ? `<button class="edit-pencil" data-editguil aria-label="Edit the guillotine"
           title="Edit">${icon('pencil')}</button>` : ''}
         <span class="gap"></span>
         <span class="chip ${run.winner || alive === 1 ? 'gold' : 'mint'}">${
@@ -289,7 +289,7 @@ export function mount(root, db) {
       const open = toggle();
       el.setAttribute('aria-expanded', String(open));
     };
-    el.addEventListener('click', (e) => { if (!e.target.closest('.mg-pencil')) fire(); });
+    el.addEventListener('click', (e) => { if (!e.target.closest('.edit-pencil')) fire(); });
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); }
     });

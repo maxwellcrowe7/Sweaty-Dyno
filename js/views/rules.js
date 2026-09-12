@@ -103,10 +103,11 @@ export function render(db, state = {}) {
       ${bk.sections.map((s) => {
         const d = diff?.perSection[s.id];
         return `<section class="rule-sec" id="s-${esc(s.id)}">
-          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}</h2>
+          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}${
+            admin ? `<button class="edit-pencil" data-edit-sec="${esc(s.id)}"
+              aria-label="Edit ${esc(s.title)}" title="Edit section">${icon('pencil')}</button>` : ''}</h2>
           <ul>${s.items.map((it) =>
             itemHtml(it, diff?.byId.get(it.id), diff?.wasById.get(it.id), showDiff)).join('')}</ul>
-          ${admin ? `<button class="btn sm ghost" data-edit-sec="${esc(s.id)}">${icon('pencil')} Edit section</button>` : ''}
         </section>`;
       }).join('')}
     </article>`;
@@ -210,10 +211,12 @@ export function mount(root, db, go, setState, params = {}) {
     openModal({
       title: `Edit — ${sec.title}`,
       confirm: 'Save section',
+      closeButtons: false,   // outside-click, Escape and Save all close it
+      // The nesting syntax is not guessable, so that one line stays. What this used
+      // to also explain -- that editing a line keeps its identity -- is already
+      // visible in the change marks themselves.
       body: `<div class="s dim" style="font-size:12px;line-height:1.6;margin-bottom:12px">
-          One rule per line. Indent with four spaces to nest. Editing a line keeps its identity, so it
-          shows as <b style="color:var(--heat)">Changed</b>; a new line shows as
-          <b style="color:var(--mint)">New</b>.</div>
+          One rule per line. Indent with four spaces to nest.</div>
         <div class="field"><label>Section title</label><input name="title" value="${esc(sec.title)}"></div>
         <div class="field"><label>Rules</label><textarea name="body" style="min-height:260px;font-size:13px">${
           esc(sec.items.map((it) => '    '.repeat(it.depth) + it.text).join('\n'))}</textarea></div>`,
@@ -254,10 +257,8 @@ export function mount(root, db, go, setState, params = {}) {
     openModal({
       title: 'Start a new rulebook',
       confirm: 'Create draft',
-      body: `<div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Copies a season forward as a draft. Every rule keeps its identity, so whatever you then edit
-          shows up as a tracked change and everything else stays quiet.</div>
-        <div class="fgrid">
+      closeButtons: false,
+      body: `<div class="fgrid">
           <div class="field"><label>New season</label>
             <input name="year" type="number" inputmode="numeric" value="${next}"></div>
           <div class="field"><label>Copy from</label>

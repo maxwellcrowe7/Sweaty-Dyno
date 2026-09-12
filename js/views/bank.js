@@ -59,7 +59,7 @@ function seasonPayouts(db, season, open, admin) {
             <span class="chip ${c.chip}">${c.label}</span>
             <div class="grow"><div class="s">${sub}</div></div>
             ${can && l.paidCount < l.rows.length ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
-            <div class="pay-val${l.total ? '' : ' zero'}">${money(l.total)}</div>
+            <div class="pay-val${!l.total ? ' zero' : l.paidTotal === l.total ? ' won' : ''}">${money(l.total)}</div>
           </button>
           ${can ? `<ul class="pay-rows">
             ${l.rows.map((r) => `<li>
