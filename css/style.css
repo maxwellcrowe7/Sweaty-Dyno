@@ -322,14 +322,16 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   background:radial-gradient(circle,rgba(156,140,250,.17),transparent 62%);
 }
 .empire-top .pot-side > *{position:relative}
-.empire-top .race{padding:12px 0}
+.empire-top .race{padding:10px 0 12px}
 
 /* The pot's growth chart takes whatever height the race leaves, so the two
    halves finish together instead of the left one trailing off into a gap. */
 .pot-growth{
   display:flex;gap:4px;justify-content:center;align-items:stretch;
-  /* the rule text above wraps to two lines and was landing almost on the bars */
-  margin-top:30px;flex:1 1 auto;
+  /* the rule text above wraps to two lines and was landing almost on the bars.
+     Only the desktop column has slack to give -- stacked, the card is already
+     snug and a big gap there would just look loose. */
+  margin-top:22px;flex:1 1 auto;
   /* takes up slack, but capped: the pot plateaus once it is funded, so the flat
      grey tail would otherwise become the biggest thing on the card */
   min-height:62px;max-height:116px;
@@ -345,10 +347,24 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
      height of the card instead of stopping where the pot's content ends */
   .empire-top{display:grid;grid-template-columns:minmax(272px,336px) 1fr}
   .empire-top .pot-side{border-bottom:none;border-right:1px solid var(--line-soft)}
+  .empire-top .pot-growth{margin-top:46px}
 }
 
 /* One line per manager, no rules between them -- ten of them read as a block. */
 .race{display:flex;flex-direction:column}
+/* The bars run 0 to the threshold, so their right edge is the number to beat.
+   One tick above the rows says so, instead of repeating it on all ten. */
+.race-scale{padding-top:0;padding-bottom:1px}
+.race-scale .scale-track{flex:1;position:relative;height:13px;min-width:0}
+.race-scale .scale-track::after{
+  content:"";position:absolute;right:0;bottom:0;width:1px;height:7px;background:var(--ink-3);
+  opacity:.55;
+}
+.race-scale b{
+  position:absolute;right:-2px;bottom:7px;
+  font-family:var(--f-display);font-size:11px;font-weight:700;letter-spacing:.08em;
+  color:var(--ink-2);
+}
 .race-row{display:flex;align-items:center;gap:12px;padding:4px 16px}
 .race-row .who{
   flex:none;width:76px;font-size:13.5px;font-weight:600;color:var(--ink);

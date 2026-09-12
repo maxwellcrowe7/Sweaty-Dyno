@@ -49,6 +49,14 @@ export function render(db) {
        The slot is always as wide as the pot demands, so an earned crown lands
        in the same column on every row and the empty space says what is left. */''}
   <div class="race">
+    ${/* The meter runs 0 to the threshold, so its right edge IS the line to hit.
+         Mark it once above the rows rather than on every bar. */''}
+    ${e.threshold ? `<div class="race-row race-scale">
+      <span class="who"></span>
+      <span class="scale-track"><b>${e.threshold}</b></span>
+      <span class="pts"></span>
+      <span class="ttl" style="--slots:${slots}"></span>
+    </div>` : ''}
     ${e.board.map((t) => `
       <div class="race-row${t.total ? '' : ' out'}">
         <span class="who">${esc(t.manager)}</span>
