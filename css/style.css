@@ -299,13 +299,39 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .rows{display:flex;flex-direction:column}
 .row{
   display:flex;align-items:center;gap:12px;padding:12px 16px;
-  border-bottom:1px solid var(--line-soft);
+  border-bottom:2px solid var(--line);
 }
 .row:last-child{border-bottom:none}
 .row .grow{flex:1;min-width:0}
 .row .t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .s{font-size:11.5px;color:var(--ink-3);margin-top:2px}
 .row .val{font-family:var(--f-display);font-size:19px;font-weight:700;flex:none}
+
+/* The empire race: one line per manager, nothing above or below the bar.
+   Bar length is points against the threshold, so it matches the sort order. */
+.race{display:flex;flex-direction:column}
+.race-row{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  border-bottom:2px solid var(--line);
+}
+.race-row:last-child{border-bottom:none}
+.race-row .who{
+  flex:none;width:76px;font-size:13.5px;font-weight:600;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.race-row.out .who{color:var(--ink-3);font-weight:500}
+.race-row .meter{flex:1;height:10px}
+.race-row .pts{
+  flex:none;min-width:28px;text-align:right;font-variant-numeric:tabular-nums;
+  font-family:var(--f-display);font-size:18px;font-weight:700;color:var(--violet);
+}
+.race-row .pts.zero{color:var(--ink-3)}
+.race-row .ttl{
+  flex:none;width:34px;display:flex;align-items:center;justify-content:flex-end;gap:3px;
+  color:var(--gold);
+}
+.race-row .ttl svg{width:17px;height:17px;stroke-width:2.1}
+.race-row .ttl b{font-family:var(--f-display);font-size:12px;font-weight:700}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
@@ -505,6 +531,10 @@ table.dt th.sticky{z-index:3}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
   .hero .tiles{grid-template-columns:repeat(2,1fr)}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
+  /* the race is the tall one, so the pot sits against its top rather than being
+     stretched to ten rows' height with its contents floating in the middle.
+     Scoped to the empire hero -- the dashboard's gauge still fills its column. */
+  .hero:has(.race-card) .gauge-card{align-self:start}
   .sidenav .brand small{white-space:nowrap;letter-spacing:.11em;font-size:9.5px}
   .sidenav .brand h1{font-size:19px}
   .trade-body{grid-template-columns:1fr 1fr}

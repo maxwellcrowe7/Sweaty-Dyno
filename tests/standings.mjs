@@ -50,4 +50,53 @@ await db.update('bank',(b)=>{
   [a.team,c.team]=[c.team,a.team];
 });
 eq('restored', nm(db.payoutLines(2025).find(l=>l.category==='placement').rows[0].team), 'Max');
+print('\n— the race sorts on points, then a title, then team number —');
+{
+  const order = () => db.empire().board.map(t=>t.manager);
+  eq('points first', order().slice(0,2), ['Max','Tanner']);
+  // 5 pts each, no title either way -> Andrew (T4) ahead of Tyler (T9)
+  eq('equal points with no title: team number', order().slice(2,4), ['Andrew','Tyler']);
+  eq('and again lower down', order().slice(4,6), ['Alex','Sam']);
+  eq('teams on nothing keep team order',
+     order().slice(6), ['Noah','Neal','Damon','Matt']);
+
+  // give Tyler (T9) a title in a season nobody else placed: he now outranks
+  // Andrew (T4) on the same points, purely on the tie-break
+  const before = db.get('bank').finishes.map(f=>({...f}));
+  await db.update('bank',(b)=>{
+    b.finishes = b.finishes.filter(f=>!(f.season===2026));
+    b.finishes.push({season:2026, team:9, place:1});   // Tyler, +20 and a title
+    b.finishes.push({season:2026, team:4, place:2});   // Andrew, +10
+  });
+  const bd = db.empire().board;
+  eq('Tyler now leads on points', [bd[0].manager, bd[0].total, bd[0].titles], ['Tyler',25,1]);
+  eq('then Max on 20, then Andrew on 15',
+     bd.slice(1,3).map(t=>[t.manager,t.total]), [['Max',20],['Andrew',15]]);
+  await db.update('bank',(b)=>{ b.finishes = before; });
+
+  // the rule that actually matters: equal points, one has a title. Noah (T1)
+  // gets there via two runner-up finishes, Neal (T2) via one championship, so
+  // team number would put Noah first -- the title has to override it.
+  await db.update('bank',(b)=>{ b.finishes = b.finishes.filter(f=>f.season===2025);
+    b.finishes.push({season:2026, team:2, place:1});   // Neal T2: 20, 1 title
+    b.finishes.push({season:2026, team:1, place:2});   // Noah T1: 10
+    b.finishes.push({season:2027, team:1, place:2});   // Noah T1: 10 more -> 20, no title
+  });
+  const tie = db.empire().board.filter(t=>t.total===20);
+  eq('both on 20', tie.map(t=>[t.manager,t.titles]), [['Neal',1],['Max',1],['Noah',0]]);
+  eq('the titled team wins the tie even with the higher team number',
+     tie.map(t=>t.manager).indexOf('Neal') < tie.map(t=>t.manager).indexOf('Noah'), true);
+  await db.update('bank',(b)=>{ b.finishes = before; });
+
+  // a straight tie WITH a title on both sides
+  await db.update('bank',(b)=>{ b.finishes = b.finishes.filter(f=>f.season!==2026);
+    b.finishes.push({season:2026, team:7, place:1});   // Sam T7: 3+20=23, 1 title
+    b.finishes.push({season:2026, team:3, place:1});   // Alex T3: 3+20=23, 1 title
+  });
+  eq('two champions tie on points, lower team number wins',
+     db.empire().board.slice(0,2).map(t=>t.manager), ['Alex','Sam']);
+  await db.update('bank',(b)=>{ b.finishes = before; });
+  eq('restored again', db.empire().board.map(t=>t.manager).slice(0,2), ['Max','Tanner']);
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nStandings passed.');

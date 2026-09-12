@@ -408,7 +408,7 @@ class Store {
       const titlePct = titlesNeeded ? Math.min(1, titles / titlesNeeded) : 0;
       const eligible = !L.empireRequiresTitle || titles >= 1;
       return {
-        ...t, bySeason, total, titles, eligible,
+        ...t, bySeason, total, titles, eligible, ptsPct,
         needsTitle: L.empireRequiresTitle && titles === 0,
         titlesToGo: Math.max(0, titlesNeeded - titles),
         pointsToGo: Math.max(0, (L.empireThreshold || 0) - total),
@@ -416,7 +416,9 @@ class Store {
         pct: Math.max(titlePct, eligible ? ptsPct : 0),
         wins: titles >= titlesNeeded || (eligible && total >= (L.empireThreshold || Infinity)),
       };
-    }).sort((a, b2) => b2.pct - a.pct || b2.total - a.total || a.number - b2.number);
+      // Points order, because that is what the race actually shows. A tie goes to
+      // whoever has a title -- they are the one who can claim it -- then team number.
+    }).sort((a, b2) => b2.total - a.total || b2.titles - a.titles || a.number - b2.number);
     return { pot, contributions, board, threshold: L.empireThreshold,
              titlesToWin: titlesNeeded, requiresTitle: Boolean(L.empireRequiresTitle),
              claimed: b.empirePot?.claimedBy ?? null };

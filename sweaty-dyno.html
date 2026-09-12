@@ -317,13 +317,39 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .rows{display:flex;flex-direction:column}
 .row{
   display:flex;align-items:center;gap:12px;padding:12px 16px;
-  border-bottom:1px solid var(--line-soft);
+  border-bottom:2px solid var(--line);
 }
 .row:last-child{border-bottom:none}
 .row .grow{flex:1;min-width:0}
 .row .t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .s{font-size:11.5px;color:var(--ink-3);margin-top:2px}
 .row .val{font-family:var(--f-display);font-size:19px;font-weight:700;flex:none}
+
+/* The empire race: one line per manager, nothing above or below the bar.
+   Bar length is points against the threshold, so it matches the sort order. */
+.race{display:flex;flex-direction:column}
+.race-row{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  border-bottom:2px solid var(--line);
+}
+.race-row:last-child{border-bottom:none}
+.race-row .who{
+  flex:none;width:76px;font-size:13.5px;font-weight:600;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.race-row.out .who{color:var(--ink-3);font-weight:500}
+.race-row .meter{flex:1;height:10px}
+.race-row .pts{
+  flex:none;min-width:28px;text-align:right;font-variant-numeric:tabular-nums;
+  font-family:var(--f-display);font-size:18px;font-weight:700;color:var(--violet);
+}
+.race-row .pts.zero{color:var(--ink-3)}
+.race-row .ttl{
+  flex:none;width:34px;display:flex;align-items:center;justify-content:flex-end;gap:3px;
+  color:var(--gold);
+}
+.race-row .ttl svg{width:17px;height:17px;stroke-width:2.1}
+.race-row .ttl b{font-family:var(--f-display);font-size:12px;font-weight:700}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
@@ -523,6 +549,10 @@ table.dt th.sticky{z-index:3}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
   .hero .tiles{grid-template-columns:repeat(2,1fr)}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
+  /* the race is the tall one, so the pot sits against its top rather than being
+     stretched to ten rows' height with its contents floating in the middle.
+     Scoped to the empire hero -- the dashboard's gauge still fills its column. */
+  .hero:has(.race-card) .gauge-card{align-self:start}
   .sidenav .brand small{white-space:nowrap;letter-spacing:.11em;font-size:9.5px}
   .sidenav .brand h1{font-size:19px}
   .trade-body{grid-template-columns:1fr 1fr}
@@ -1865,7 +1895,7 @@ class Store {
       const titlePct = titlesNeeded ? Math.min(1, titles / titlesNeeded) : 0;
       const eligible = !L.empireRequiresTitle || titles >= 1;
       return {
-        ...t, bySeason, total, titles, eligible,
+        ...t, bySeason, total, titles, eligible, ptsPct,
         needsTitle: L.empireRequiresTitle && titles === 0,
         titlesToGo: Math.max(0, titlesNeeded - titles),
         pointsToGo: Math.max(0, (L.empireThreshold || 0) - total),
@@ -1873,7 +1903,9 @@ class Store {
         pct: Math.max(titlePct, eligible ? ptsPct : 0),
         wins: titles >= titlesNeeded || (eligible && total >= (L.empireThreshold || Infinity)),
       };
-    }).sort((a, b2) => b2.pct - a.pct || b2.total - a.total || a.number - b2.number);
+      // Points order, because that is what the race actually shows. A tie goes to
+      // whoever has a title -- they are the one who can claim it -- then team number.
+    }).sort((a, b2) => b2.total - a.total || b2.titles - a.titles || a.number - b2.number);
     return { pot, contributions, board, threshold: L.empireThreshold,
              titlesToWin: titlesNeeded, requiresTitle: Boolean(L.empireRequiresTitle),
              claimed: b.empirePot?.claimedBy ?? null };
@@ -4322,20 +4354,28 @@ return { render, mount };
 
 /* ===== js/views/empire.js ===== */
 __M["js/views/empire.js"] = (function () {
-const { money, esc, icon, teamTag, empty, ordinal } = __M["js/util.js"];
+const { money, esc, icon, teamTag, ordinal } = __M["js/util.js"];
 function render(db) {
   const e = db.empire();
   const L = db.league;
   const seasons = db.seasons;
   const bank = db.get('bank');
-  const leader = e.board[0];
-  const chase = e.board[1];
+  // How full the bar reads: points against the threshold, or against the pack
+  // if no threshold is configured, so the longest bar is always the leader.
+  const top = Math.max(...e.board.map((t) => t.total), 0);
+  const barPct = (t) => {
+    const den = e.threshold || top;
+    return den ? Math.min(1, t.total / den) : 0;
+  };
 
   let running = 0;
   const growth = e.contributions.map((c) => ({ ...c, running: (running += c.amount) }));
   const maxRun = Math.max(...growth.map((g) => g.running), 1);
 
   return `
+  ${/* Pot and race are the page header: one block, side by side once there is
+       room for it, and neither tucked inside a collapsible section. */''}
+  <div class="hero">
   <div class="card gauge-card" style="padding-top:26px">
     <div class="k" style="font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);font-weight:700">The Empire Pot</div>
     <div style="font-family:var(--f-display);font-size:56px;font-weight:700;line-height:1;margin:8px 0 4px;color:var(--violet);
@@ -4355,38 +4395,22 @@ function render(db) {
     <div class="s dimmer" style="font-size:11px;margin-top:8px">${money(L.empireContribution[String(db.season)] || 0)} set aside each season</div>
   </div>
 
-  <div class="section-title">The race</div>
-  <div class="card">
+  ${/* One line per manager: name, bar, points, a crown if they hold a title.
+       Bar is points against the threshold so its length tracks the sort. */''}
+  <div class="card race-card">
     <div class="card-hd"><h3>Empire points</h3><div class="spacer"></div>
       <span class="chip violet">${e.titlesToWin} titles &middot; or 1 + ${e.threshold}</span></div>
-    <div class="card-bd flush"><div class="rows">
-      ${e.board.map((t, i) => `
-        <div class="row">
-          <div style="width:20px;flex:none;font-family:var(--f-display);font-weight:700;font-size:15px;
-            color:${i === 0 ? 'var(--gold)' : 'var(--ink-3)'}">${i + 1}</div>
-          <div class="grow">
-            <div class="t">${teamTag(t)}</div>
-            <div class="meter violet" style="margin-top:7px"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div>
-            <div class="s" style="margin-top:5px">${
-              t.wins ? `<b style="color:var(--gold)">Claims ${money(e.pot)}</b>`
-              : t.titles >= 1
-                ? `${t.titles} title${t.titles === 1 ? '' : 's'} &middot; ${t.titlesToGo} more title or ${t.pointsToGo} more points`
-              : t.total
-                ? `${t.pointsToGo} points to go &mdash; but a title is required to claim`
-                : 'yet to score'}</div>
-          </div>
-          <div style="text-align:right;flex:none">
-            <div class="val" style="color:${t.total ? 'var(--violet)' : 'var(--ink-3)'}">${t.total}</div>
-            ${t.titles ? `<div class="s" style="color:var(--gold);font-size:11px">${'★'.repeat(t.titles)}</div>` : ''}
-          </div>
+    <div class="card-bd flush"><div class="race">
+      ${e.board.map((t) => `
+        <div class="race-row${t.total ? '' : ' out'}">
+          <span class="who">${esc(t.manager)}</span>
+          <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
+          <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
+          <span class="ttl">${t.titles
+            ? `${icon('crown')}${t.titles > 1 ? `<b>${t.titles}</b>` : ''}` : ''}</span>
         </div>`).join('')}
     </div></div>
-    ${leader && chase ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="banner" style="background:rgba(156,140,250,.07);border-color:rgba(156,140,250,.26)">
-        ${icon('crown')}<div><b style="color:var(--violet)">${esc(leader.manager)}</b> leads by
-        ${leader.total - chase.total} point${leader.total - chase.total === 1 ? '' : 's'} and is
-        ${((leader.pct) * 100).toFixed(0)}% of the way to the pot.</div></div>
-    </div>` : ''}
+  </div>
   </div>
 
   <div class="section-title">How points are earned</div>

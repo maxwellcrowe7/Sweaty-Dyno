@@ -1,18 +1,26 @@
-import { money, esc, icon, teamTag, empty, ordinal } from '../util.js';
+import { money, esc, icon, teamTag, ordinal } from '../util.js';
 
 export function render(db) {
   const e = db.empire();
   const L = db.league;
   const seasons = db.seasons;
   const bank = db.get('bank');
-  const leader = e.board[0];
-  const chase = e.board[1];
+  // How full the bar reads: points against the threshold, or against the pack
+  // if no threshold is configured, so the longest bar is always the leader.
+  const top = Math.max(...e.board.map((t) => t.total), 0);
+  const barPct = (t) => {
+    const den = e.threshold || top;
+    return den ? Math.min(1, t.total / den) : 0;
+  };
 
   let running = 0;
   const growth = e.contributions.map((c) => ({ ...c, running: (running += c.amount) }));
   const maxRun = Math.max(...growth.map((g) => g.running), 1);
 
   return `
+  ${/* Pot and race are the page header: one block, side by side once there is
+       room for it, and neither tucked inside a collapsible section. */''}
+  <div class="hero">
   <div class="card gauge-card" style="padding-top:26px">
     <div class="k" style="font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);font-weight:700">The Empire Pot</div>
     <div style="font-family:var(--f-display);font-size:56px;font-weight:700;line-height:1;margin:8px 0 4px;color:var(--violet);
@@ -32,38 +40,22 @@ export function render(db) {
     <div class="s dimmer" style="font-size:11px;margin-top:8px">${money(L.empireContribution[String(db.season)] || 0)} set aside each season</div>
   </div>
 
-  <div class="section-title">The race</div>
-  <div class="card">
+  ${/* One line per manager: name, bar, points, a crown if they hold a title.
+       Bar is points against the threshold so its length tracks the sort. */''}
+  <div class="card race-card">
     <div class="card-hd"><h3>Empire points</h3><div class="spacer"></div>
       <span class="chip violet">${e.titlesToWin} titles &middot; or 1 + ${e.threshold}</span></div>
-    <div class="card-bd flush"><div class="rows">
-      ${e.board.map((t, i) => `
-        <div class="row">
-          <div style="width:20px;flex:none;font-family:var(--f-display);font-weight:700;font-size:15px;
-            color:${i === 0 ? 'var(--gold)' : 'var(--ink-3)'}">${i + 1}</div>
-          <div class="grow">
-            <div class="t">${teamTag(t)}</div>
-            <div class="meter violet" style="margin-top:7px"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div>
-            <div class="s" style="margin-top:5px">${
-              t.wins ? `<b style="color:var(--gold)">Claims ${money(e.pot)}</b>`
-              : t.titles >= 1
-                ? `${t.titles} title${t.titles === 1 ? '' : 's'} &middot; ${t.titlesToGo} more title or ${t.pointsToGo} more points`
-              : t.total
-                ? `${t.pointsToGo} points to go &mdash; but a title is required to claim`
-                : 'yet to score'}</div>
-          </div>
-          <div style="text-align:right;flex:none">
-            <div class="val" style="color:${t.total ? 'var(--violet)' : 'var(--ink-3)'}">${t.total}</div>
-            ${t.titles ? `<div class="s" style="color:var(--gold);font-size:11px">${'★'.repeat(t.titles)}</div>` : ''}
-          </div>
+    <div class="card-bd flush"><div class="race">
+      ${e.board.map((t) => `
+        <div class="race-row${t.total ? '' : ' out'}">
+          <span class="who">${esc(t.manager)}</span>
+          <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
+          <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
+          <span class="ttl">${t.titles
+            ? `${icon('crown')}${t.titles > 1 ? `<b>${t.titles}</b>` : ''}` : ''}</span>
         </div>`).join('')}
     </div></div>
-    ${leader && chase ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="banner" style="background:rgba(156,140,250,.07);border-color:rgba(156,140,250,.26)">
-        ${icon('crown')}<div><b style="color:var(--violet)">${esc(leader.manager)}</b> leads by
-        ${leader.total - chase.total} point${leader.total - chase.total === 1 ? '' : 's'} and is
-        ${((leader.pct) * 100).toFixed(0)}% of the way to the pot.</div></div>
-    </div>` : ''}
+  </div>
   </div>
 
   <div class="section-title">How points are earned</div>
