@@ -20,6 +20,9 @@ export function render(db) {
   // has filled it. Widens if someone collects more than that, to keep rows aligned.
   const slots = Math.max(e.titlesToWin, ...e.board.map((t) => t.titles), 1);
 
+  // Seasons whose final standings are recorded -- everything else is still open.
+  const decided = new Set((bank.finishes || []).map((f) => f.season));
+
   let running = 0;
   const growth = e.contributions.map((c) => ({ ...c, running: (running += c.amount) }));
   const maxRun = Math.max(...growth.map((g) => g.running), 1);
@@ -79,8 +82,12 @@ export function render(db) {
       ${seasons.map((s) => `<th class="n">${String(s).slice(2)}</th>`).join('')}
       <th class="n">Total</th></tr></thead>
     <tbody>
+      ${/* A season with finishes on the board has been scored, so nobody there is
+           unknown -- they scored zero. The dash is reserved for seasons whose
+           standings are not in yet. */''}
       ${e.board.map((t) => `<tr><td class="sticky">${teamTag(t)}</td>
-        ${seasons.map((s) => `<td class="n ${t.bySeason[s] ? '' : 'dimmer'}">${t.bySeason[s] || '&mdash;'}</td>`).join('')}
+        ${seasons.map((s) => `<td class="n ${t.bySeason[s] ? '' : 'dimmer'}">${
+          t.bySeason[s] || (decided.has(s) ? 0 : '&mdash;')}</td>`).join('')}
         <td class="n" style="font-weight:700;color:var(--violet)">${t.total}</td></tr>`).join('')}
       <tr class="total"><td class="sticky">Pot</td>
         ${seasons.map((s) => {

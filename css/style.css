@@ -414,7 +414,12 @@ table.dt th.sticky{background:var(--bg-2);z-index:3}
    going to whichever column happens to hold the widest figure. The label column
    takes width:1% -- with nowrap that collapses it to its longest name and hands
    the rest of the table to the columns that carry the data. */
-table.dt th.n{width:76px}
+/* width equalises the SURPLUS when the table is narrower than its container;
+   min-width stops the columns being squeezed proportionally when it is wider,
+   which is what let the "$150" column win again on a phone. With a floor, the
+   table overflows instead and .tw scrolls it -- which is the intended behaviour
+   there anyway. */
+table.dt th.n{width:76px;min-width:76px}
 table.dt th.sticky{width:1%}
 
 /* empty state */
