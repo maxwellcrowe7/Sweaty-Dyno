@@ -331,7 +331,8 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .empire-top{overflow:hidden}
 .empire-top .pot-side{
   position:relative;overflow:hidden;text-align:center;
-  padding:26px 16px 18px;border-bottom:1px solid var(--line-soft);
+  padding:24px 16px 18px;border-bottom:1px solid var(--line-soft);
+  display:flex;flex-direction:column;justify-content:center;
 }
 .empire-top .pot-side::before{
   content:"";position:absolute;left:50%;top:-46%;transform:translateX(-50%);
@@ -339,7 +340,23 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   background:radial-gradient(circle,rgba(156,140,250,.17),transparent 62%);
 }
 .empire-top .pot-side > *{position:relative}
-.empire-top .race{padding:10px 0}
+.empire-top .race{padding:12px 0}
+
+/* The pot's growth chart takes whatever height the race leaves, so the two
+   halves finish together instead of the left one trailing off into a gap. */
+.pot-growth{
+  display:flex;gap:4px;justify-content:center;align-items:stretch;
+  margin-top:18px;flex:1 1 auto;
+  /* takes up slack, but capped: the pot plateaus once it is funded, so the flat
+     grey tail would otherwise become the biggest thing on the card */
+  min-height:62px;max-height:116px;
+}
+.pot-growth .col{
+  flex:1;max-width:56px;min-width:0;
+  display:flex;flex-direction:column;justify-content:flex-end;gap:5px;
+}
+.pot-growth .bar{width:100%;border-radius:3px;flex:none}
+.pot-growth span{font-size:9.5px;color:var(--ink-3);font-weight:600;flex:none}
 @media (min-width:900px){
   /* no align-items:start -- the columns stretch so the divider runs the full
      height of the card instead of stopping where the pot's content ends */
@@ -349,7 +366,7 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 
 /* One line per manager, no rules between them -- ten of them read as a block. */
 .race{display:flex;flex-direction:column}
-.race-row{display:flex;align-items:center;gap:12px;padding:6px 16px}
+.race-row{display:flex;align-items:center;gap:12px;padding:4px 16px}
 .race-row .who{
   flex:none;width:76px;font-size:13.5px;font-weight:600;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -361,12 +378,14 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   font-family:var(--f-display);font-size:18px;font-weight:700;color:var(--violet);
 }
 .race-row .pts.zero{color:var(--ink-3)}
-/* A crown per title the pot demands: gold when earned, a faint outline while
-   it is still owed -- the empty slots say how many are left to get. */
-.race-row .ttl{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:4px}
+/* Room for every crown the pot demands, filled or not, so an earned one always
+   lands in the same column and the gap beside it is what is still to win. */
+.race-row .ttl{
+  flex:none;display:flex;align-items:center;gap:4px;
+  width:calc(var(--slots,2) * 16px + (var(--slots,2) - 1) * 4px);
+}
 .race-row .ttl svg{width:16px;height:16px;stroke-width:2.1}
 .race-row .ttl .on{color:var(--gold)}
-.race-row .ttl .off{color:var(--ink-3);opacity:.34}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
@@ -4381,8 +4400,8 @@ function render(db) {
     return den ? Math.min(1, t.total / den) : 0;
   };
 
-  // One crown slot per title the pot demands, so an empty row shows what is owed.
-  // Widen if anyone has somehow collected more than that, to keep rows aligned.
+  // The crown column is always as wide as the pot demands, whether or not anyone
+  // has filled it. Widens if someone collects more than that, to keep rows aligned.
   const slots = Math.max(e.titlesToWin, ...e.board.map((t) => t.titles), 1);
 
   let running = 0;
@@ -4401,28 +4420,29 @@ function render(db) {
     <div class="s dim" style="font-size:12.5px">${e.claimed
       ? `Claimed by <b style="color:var(--gold)">${esc(db.team(e.claimed)?.manager ?? '')}</b>`
       : `Rolls over until a manager wins <b style="color:var(--violet)">${e.titlesToWin} titles</b>, or <b style="color:var(--violet)">1 title and ${e.threshold}+ points</b>`}</div>
-    <div style="margin-top:18px;display:flex;gap:3px;align-items:flex-end;height:60px;justify-content:center">
+    <div class="pot-growth">
       ${growth.map((g) => `
-        <div style="flex:1;max-width:56px;display:flex;flex-direction:column;align-items:center;gap:5px">
-          <div style="width:100%;height:${g.running ? Math.max(6, (g.running / maxRun) * 46) : 3}px;border-radius:3px;
+        <div class="col">
+          <div class="bar" style="height:${g.running ? Math.max(8, (g.running / maxRun) * 100) : 4}%;
             background:${g.amount ? 'linear-gradient(180deg,#C9BDFF,var(--violet))' : 'var(--surface-3)'}"
             title="${g.season}: ${money(g.running)}"></div>
-          <div style="font-size:9.5px;color:var(--ink-3);font-weight:600">${String(g.season).slice(2)}</div>
+          <span>${String(g.season).slice(2)}</span>
         </div>`).join('')}
     </div>
     <div class="s dimmer" style="font-size:11px;margin-top:8px">${money(L.empireContribution[String(db.season)] || 0)} set aside each season</div>
   </div>
 
-  ${/* One line per manager: name, bar, points, then a crown per title needed --
-       gold once earned, a faint outline while it is still owed. */''}
+  ${/* One line per manager: name, bar, points, then a crown per title held.
+       The slot is always as wide as the pot demands, so an earned crown lands
+       in the same column on every row and the empty space says what is left. */''}
   <div class="race">
     ${e.board.map((t) => `
       <div class="race-row${t.total ? '' : ' out'}">
         <span class="who">${esc(t.manager)}</span>
         <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
         <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
-        <span class="ttl">${Array.from({ length: slots }, (_, i) =>
-          icon('crown', i < t.titles ? 'on' : 'off')).join('')}</span>
+        <span class="ttl" style="--slots:${slots}">${
+          Array.from({ length: t.titles }, () => icon('crown', 'on')).join('')}</span>
       </div>`).join('')}
   </div>
   </div>

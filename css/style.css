@@ -313,7 +313,8 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .empire-top{overflow:hidden}
 .empire-top .pot-side{
   position:relative;overflow:hidden;text-align:center;
-  padding:26px 16px 18px;border-bottom:1px solid var(--line-soft);
+  padding:24px 16px 18px;border-bottom:1px solid var(--line-soft);
+  display:flex;flex-direction:column;justify-content:center;
 }
 .empire-top .pot-side::before{
   content:"";position:absolute;left:50%;top:-46%;transform:translateX(-50%);
@@ -321,7 +322,23 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   background:radial-gradient(circle,rgba(156,140,250,.17),transparent 62%);
 }
 .empire-top .pot-side > *{position:relative}
-.empire-top .race{padding:10px 0}
+.empire-top .race{padding:12px 0}
+
+/* The pot's growth chart takes whatever height the race leaves, so the two
+   halves finish together instead of the left one trailing off into a gap. */
+.pot-growth{
+  display:flex;gap:4px;justify-content:center;align-items:stretch;
+  margin-top:18px;flex:1 1 auto;
+  /* takes up slack, but capped: the pot plateaus once it is funded, so the flat
+     grey tail would otherwise become the biggest thing on the card */
+  min-height:62px;max-height:116px;
+}
+.pot-growth .col{
+  flex:1;max-width:56px;min-width:0;
+  display:flex;flex-direction:column;justify-content:flex-end;gap:5px;
+}
+.pot-growth .bar{width:100%;border-radius:3px;flex:none}
+.pot-growth span{font-size:9.5px;color:var(--ink-3);font-weight:600;flex:none}
 @media (min-width:900px){
   /* no align-items:start -- the columns stretch so the divider runs the full
      height of the card instead of stopping where the pot's content ends */
@@ -331,7 +348,7 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 
 /* One line per manager, no rules between them -- ten of them read as a block. */
 .race{display:flex;flex-direction:column}
-.race-row{display:flex;align-items:center;gap:12px;padding:6px 16px}
+.race-row{display:flex;align-items:center;gap:12px;padding:4px 16px}
 .race-row .who{
   flex:none;width:76px;font-size:13.5px;font-weight:600;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -343,12 +360,14 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   font-family:var(--f-display);font-size:18px;font-weight:700;color:var(--violet);
 }
 .race-row .pts.zero{color:var(--ink-3)}
-/* A crown per title the pot demands: gold when earned, a faint outline while
-   it is still owed -- the empty slots say how many are left to get. */
-.race-row .ttl{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:4px}
+/* Room for every crown the pot demands, filled or not, so an earned one always
+   lands in the same column and the gap beside it is what is still to win. */
+.race-row .ttl{
+  flex:none;display:flex;align-items:center;gap:4px;
+  width:calc(var(--slots,2) * 16px + (var(--slots,2) - 1) * 4px);
+}
 .race-row .ttl svg{width:16px;height:16px;stroke-width:2.1}
 .race-row .ttl .on{color:var(--gold)}
-.race-row .ttl .off{color:var(--ink-3);opacity:.34}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}

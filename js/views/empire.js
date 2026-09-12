@@ -13,8 +13,8 @@ export function render(db) {
     return den ? Math.min(1, t.total / den) : 0;
   };
 
-  // One crown slot per title the pot demands, so an empty row shows what is owed.
-  // Widen if anyone has somehow collected more than that, to keep rows aligned.
+  // The crown column is always as wide as the pot demands, whether or not anyone
+  // has filled it. Widens if someone collects more than that, to keep rows aligned.
   const slots = Math.max(e.titlesToWin, ...e.board.map((t) => t.titles), 1);
 
   let running = 0;
@@ -33,28 +33,29 @@ export function render(db) {
     <div class="s dim" style="font-size:12.5px">${e.claimed
       ? `Claimed by <b style="color:var(--gold)">${esc(db.team(e.claimed)?.manager ?? '')}</b>`
       : `Rolls over until a manager wins <b style="color:var(--violet)">${e.titlesToWin} titles</b>, or <b style="color:var(--violet)">1 title and ${e.threshold}+ points</b>`}</div>
-    <div style="margin-top:18px;display:flex;gap:3px;align-items:flex-end;height:60px;justify-content:center">
+    <div class="pot-growth">
       ${growth.map((g) => `
-        <div style="flex:1;max-width:56px;display:flex;flex-direction:column;align-items:center;gap:5px">
-          <div style="width:100%;height:${g.running ? Math.max(6, (g.running / maxRun) * 46) : 3}px;border-radius:3px;
+        <div class="col">
+          <div class="bar" style="height:${g.running ? Math.max(8, (g.running / maxRun) * 100) : 4}%;
             background:${g.amount ? 'linear-gradient(180deg,#C9BDFF,var(--violet))' : 'var(--surface-3)'}"
             title="${g.season}: ${money(g.running)}"></div>
-          <div style="font-size:9.5px;color:var(--ink-3);font-weight:600">${String(g.season).slice(2)}</div>
+          <span>${String(g.season).slice(2)}</span>
         </div>`).join('')}
     </div>
     <div class="s dimmer" style="font-size:11px;margin-top:8px">${money(L.empireContribution[String(db.season)] || 0)} set aside each season</div>
   </div>
 
-  ${/* One line per manager: name, bar, points, then a crown per title needed --
-       gold once earned, a faint outline while it is still owed. */''}
+  ${/* One line per manager: name, bar, points, then a crown per title held.
+       The slot is always as wide as the pot demands, so an earned crown lands
+       in the same column on every row and the empty space says what is left. */''}
   <div class="race">
     ${e.board.map((t) => `
       <div class="race-row${t.total ? '' : ' out'}">
         <span class="who">${esc(t.manager)}</span>
         <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
         <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
-        <span class="ttl">${Array.from({ length: slots }, (_, i) =>
-          icon('crown', i < t.titles ? 'on' : 'off')).join('')}</span>
+        <span class="ttl" style="--slots:${slots}">${
+          Array.from({ length: t.titles }, () => icon('crown', 'on')).join('')}</span>
       </div>`).join('')}
   </div>
   </div>
