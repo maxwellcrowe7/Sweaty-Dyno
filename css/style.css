@@ -328,7 +328,8 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
    halves finish together instead of the left one trailing off into a gap. */
 .pot-growth{
   display:flex;gap:4px;justify-content:center;align-items:stretch;
-  margin-top:18px;flex:1 1 auto;
+  /* the rule text above wraps to two lines and was landing almost on the bars */
+  margin-top:30px;flex:1 1 auto;
   /* takes up slack, but capped: the pot plateaus once it is funded, so the flat
      grey tail would otherwise become the biggest thing on the card */
   min-height:62px;max-height:116px;
