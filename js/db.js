@@ -13,6 +13,10 @@ const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 's
 const LS_KEY = 'sweatydyno:overlay:v1';
 const LS_ADMIN = 'sweatydyno:admin';
 
+/* The regular season is 18 weeks, always. The weekly slate shows every one of
+   them, whether or not there is a minigame that week. */
+export const SEASON_WEEKS = 18;
+
 /* ---------- adapter: static JSON + localStorage overlay ---------- */
 class JsonAdapter {
   constructor(base = 'data') { this.base = base; this.data = {}; this.overlay = {}; }
@@ -427,14 +431,41 @@ class Store {
     const s = this.get('minigames').seasons[String(season)];
     return s || { games: [], guillotine: null, legacy: null };
   }
-  /** Minigames grouped by phase, each already in the order they are played. */
+  /** An empty week — a slot on the slate that nothing has been put in yet. */
+  blankWeek(season, week) {
+    return {
+      id: `${season}-week${String(week).padStart(2, '0')}`,
+      phase: 'week', week, order: null,
+      name: null, summary: null, rules: null,
+      payout: { 1: 0, 2: 0, 3: 0 },
+      status: 'none', results: { 1: null, 2: null, 3: null },
+    };
+  }
+
+  /**
+   * Minigames grouped by phase, each already in the order they are played.
+   * The weekly slate is the season itself: weeks 1-SEASON_WEEKS are always there
+   * whether or not a game has been set for one, so deleting a minigame empties
+   * its week rather than removing the week. Those empty weeks are built on the
+   * fly and are not stored, so a blank week costs nothing and clutters nothing.
+   */
   minigamePhases(season = this.season) {
     const games = this.minigames(season).games || [];
     const ord = (g) => (g.phase === 'week' ? g.week : g.order) ?? 0;
     const pick = (ph) => games.filter((g) => (g.phase || 'week') === ph).sort((a, b) => ord(a) - ord(b));
+
+    const stored = pick('week');
+    const byWeek = new Map(stored.map((g) => [Number(g.week), g]));
+    const weekly = [];
+    for (let w = 1; w <= SEASON_WEEKS; w++) weekly.push(byWeek.get(w) || this.blankWeek(season, w));
+    // a stray game — a week outside 1-18, or a second game on the same week —
+    // is tacked on the end rather than silently dropped
+    const shown = new Set(weekly);
+    for (const g of stored) if (!shown.has(g)) weekly.push(g);
+
     return [
       { phase: 'pre',  title: 'Preseason',   games: pick('pre') },
-      { phase: 'week', title: 'Weekly slate', games: pick('week') },
+      { phase: 'week', title: 'Weekly slate', games: weekly },
       { phase: 'post', title: 'Post-season',  games: pick('post') },
     ];
   }

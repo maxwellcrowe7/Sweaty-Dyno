@@ -90,7 +90,11 @@ Hit **Admin → Edit mode**. That turns on, across the app:
 
 - **Bank** — tap any buy-in cell to toggle paid/unpaid
 - **Games** — set each week's minigame name, rules, payouts and 1st/2nd/3rd
-  (with the free-text "what won it"); chop teams from the guillotine and crown the survivor
+  (with the free-text "what won it"); chop teams from the guillotine and crown the survivor.
+  The weekly slate is always weeks 1–18 — not every week needs a game, and deleting a
+  game empties its week rather than removing it. There is no status to set: no name and
+  no rules means no minigame that week, a name with no winner is undecided, and naming a
+  winner settles it
 - **Trades** — log trades, conditional trades (open / met / expired), and waiver claims
 
 Edits save to your browser immediately. They are **not** live for anyone else until you

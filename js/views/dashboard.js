@@ -48,7 +48,9 @@ export function render(db) {
   const { trades, conditional } = db.trades();
   const openCond = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
   const mg = db.minigames(S);
-  const nextGame = mg.games.find((g) => g.status !== 'final');
+  // Up next is the next minigame that is actually set and still undecided —
+  // a week with nothing in it is not something to look forward to.
+  const nextGame = mg.games.find((g) => g.name && g.status === 'scheduled');
   const spend = db.minigameSpend(S);
   const st = db.stats(S);
   const leader = emp.board[0];
@@ -130,8 +132,9 @@ export function render(db) {
       <div class="card-bd">
         ${nextGame ? `
           <div class="row" style="padding:0 0 12px;border-bottom:1px solid var(--line-soft)">
-            <span class="chip heat">Week ${nextGame.week}</span>
-            <div class="grow"><div class="t">${nextGame.name ? esc(nextGame.name) : 'Minigame not set'}</div>
+            <span class="chip heat">${nextGame.phase === 'week' ? `Week ${nextGame.week}`
+              : nextGame.phase === 'pre' ? 'Preseason' : 'Post-season'}</span>
+            <div class="grow"><div class="t">${esc(nextGame.name)}</div>
               <div class="s">${money(nextGame.payout?.['1'] || 0)} to the winner</div></div>
           </div>` : ''}
         <div class="meter" style="margin-top:12px"><i style="width:${spend.committed ? Math.min(100, (spend.paid / spend.committed) * 100).toFixed(1) : 0}%"></i></div>

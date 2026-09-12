@@ -128,3 +128,36 @@ print('\n— season setup normalises blank slots without touching real ones —'
   eq('allocated is only the real prizes', db.minigameSpend(2026).committed,
      10+10  /* the two named weeks */ + 10 /* guillotine */ + 10+10 /* pre + post added earlier */);
 }
+
+print('\n— the weekly slate is always weeks 1-18 —');
+{
+  // strip the file back to two named weeks: nothing else is stored at all
+  await db.update('minigames',(m)=>{
+    const sn=m.seasons['2026'];
+    sn.games=sn.games.filter(g=>g.phase!=='week'||g.name);
+  });
+  eq('only the two named weeks are stored', db.minigames(2026).games.filter(g=>g.phase==='week').length, 2);
+  const slate=()=>db.minigamePhases(2026)[1].games;
+  eq('the slate still runs 1-18', slate().map(g=>g.week), [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]);
+  eq('the unstored weeks are empty slots',
+     slate().filter(g=>!g.name).every(g=>g.status==='none'&&g.payout['1']===0), true);
+  eq('and cost nothing', db.minigameSpend(2026).committed, 10+10+10+10+10);
+
+  // deleting a minigame empties its week; it does not take the week away
+  await db.update('minigames',(m)=>{
+    m.seasons['2026'].games=m.seasons['2026'].games.filter(g=>!(g.phase==='week'&&g.week===5));
+  });
+  eq('week 5 is still on the slate', slate().find(g=>g.week===5).week, 5);
+  eq('but is now an empty slot', slate().find(g=>g.week===5).status, 'none');
+  eq('still 18 weeks', slate().length, 18);
+  eq('its prize is no longer allocated', db.minigameSpend(2026).committed, 10+10+10+10);
+
+  // a season with nothing at all still gets a full slate
+  await db.update('minigames',(m)=>{m.seasons['2027']={games:[],guillotine:null,legacy:null};});
+  eq('a brand new season starts with 18 weeks', db.minigamePhases(2027)[1].games.map(g=>g.week),
+     [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]);
+  eq('and allocates nothing', db.minigameSpend(2027).committed, 0);
+  eq('no preseason or post-season until something is put there',
+     [db.minigamePhases(2027)[0].games.length, db.minigamePhases(2027)[2].games.length], [0,0]);
+}
+print(fail?`\n${fail} FAILURE(S)`:'\nSlate passed.');
