@@ -3,6 +3,6 @@
     <stop offset="0%" stop-color="#FFFDF6"/><stop offset="50%" stop-color="#E8F4FF"/><stop offset="100%" stop-color="#A9D8F5"/>
   </linearGradient></defs>
   <rect width="512" height="512" rx="114" fill="url(#bg)"/>
-  <text x="256" y="262" font-size="310" text-anchor="middle"
+  <text x="256" y="262" font-size="350" text-anchor="middle"
         dominant-baseline="central">&#129397;</text>
 </svg>

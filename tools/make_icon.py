@@ -37,7 +37,7 @@ SVG = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="5
     {''.join(f'<stop offset="{o}" stop-color="{c}"/>' for o, c in STOPS)}
   </linearGradient></defs>
   <rect width="512" height="512" rx="114" fill="url(#bg)"/>
-  <text x="256" y="262" font-size="310" text-anchor="middle"
+  <text x="256" y="262" font-size="350" text-anchor="middle"
         dominant-baseline="central">{EMOJI}</text>
 </svg>
 '''
