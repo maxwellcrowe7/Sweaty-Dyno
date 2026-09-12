@@ -13,15 +13,20 @@ export function render(db) {
     return den ? Math.min(1, t.total / den) : 0;
   };
 
+  // One crown slot per title the pot demands, so an empty row shows what is owed.
+  // Widen if anyone has somehow collected more than that, to keep rows aligned.
+  const slots = Math.max(e.titlesToWin, ...e.board.map((t) => t.titles), 1);
+
   let running = 0;
   const growth = e.contributions.map((c) => ({ ...c, running: (running += c.amount) }));
   const maxRun = Math.max(...growth.map((g) => g.running), 1);
 
   return `
-  ${/* Pot and race are the page header: one block, side by side once there is
-       room for it, and neither tucked inside a collapsible section. */''}
-  <div class="hero">
-  <div class="card gauge-card" style="padding-top:26px">
+  ${/* Pot and race are ONE block at the top of the page -- the pot states the
+       rule, the race shows who is close to it, so they are two halves of the
+       same card rather than two cards that happen to sit together. */''}
+  <div class="card empire-top">
+  <div class="pot-side">
     <div class="k" style="font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);font-weight:700">The Empire Pot</div>
     <div style="font-family:var(--f-display);font-size:56px;font-weight:700;line-height:1;margin:8px 0 4px;color:var(--violet);
       text-shadow:0 0 30px rgba(156,140,250,.35)">${money(e.pot)}</div>
@@ -40,21 +45,17 @@ export function render(db) {
     <div class="s dimmer" style="font-size:11px;margin-top:8px">${money(L.empireContribution[String(db.season)] || 0)} set aside each season</div>
   </div>
 
-  ${/* One line per manager: name, bar, points, a crown if they hold a title.
-       Bar is points against the threshold so its length tracks the sort. */''}
-  <div class="card race-card">
-    <div class="card-hd"><h3>Empire points</h3><div class="spacer"></div>
-      <span class="chip violet">${e.titlesToWin} titles &middot; or 1 + ${e.threshold}</span></div>
-    <div class="card-bd flush"><div class="race">
-      ${e.board.map((t) => `
-        <div class="race-row${t.total ? '' : ' out'}">
-          <span class="who">${esc(t.manager)}</span>
-          <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
-          <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
-          <span class="ttl">${t.titles
-            ? `${icon('crown')}${t.titles > 1 ? `<b>${t.titles}</b>` : ''}` : ''}</span>
-        </div>`).join('')}
-    </div></div>
+  ${/* One line per manager: name, bar, points, then a crown per title needed --
+       gold once earned, a faint outline while it is still owed. */''}
+  <div class="race">
+    ${e.board.map((t) => `
+      <div class="race-row${t.total ? '' : ' out'}">
+        <span class="who">${esc(t.manager)}</span>
+        <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
+        <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
+        <span class="ttl">${Array.from({ length: slots }, (_, i) =>
+          icon('crown', i < t.titles ? 'on' : 'off')).join('')}</span>
+      </div>`).join('')}
   </div>
   </div>
 
