@@ -1,4 +1,4 @@
-import { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts, info } from '../util.js';
+import { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts, info, seasonPicker } from '../util.js';
 
 const SUMMARY_MAX = 60;
 /* Every week of the regular season is a line on the slate, game or no game. */
@@ -75,9 +75,11 @@ function gameRow(db, g, S, admin) {
         <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
         ${g.summary && !empty ? `<span class="mg-sum">${esc(g.summary)}</span>` : ''}
       </span>
+      ${/* always the pencil, even on an empty slot: it is the same control doing the
+           same thing, and a + here read as a second, different affordance */''}
       ${admin && !pointer ? `<button class="edit-pencil" data-edit="${esc(g.id)}"
         aria-label="${g.name ? 'Edit' : 'Add'} ${esc(slotLabel(g))} minigame"
-        title="${g.name ? 'Edit' : 'Add a minigame'}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
+        title="${g.name ? 'Edit' : 'Add a minigame'}">${icon('pencil')}</button>` : ''}
       ${canceled ? '<span class="chip red">Cancelled</span>'
         : pointer ? '<span class="chip heat">below</span>'
         : winner ? `<span class="mg-win">${esc(winner)}</span>`
@@ -213,7 +215,8 @@ export function render(db) {
   return `
   <div class="card money">
     <div class="card-hd">
-      <div class="grow"><h3>${S} minigames</h3></div>
+      <div class="grow"><h3>Minigames</h3></div>
+      ${seasonPicker(db)}
       ${admin ? `<button class="btn sm ghost" data-setup aria-label="${S} season setup"
         title="Season setup">${icon('cog')}</button>` : ''}
     </div>
@@ -502,7 +505,11 @@ export function mount(root, db) {
         <div class="field"><label>What won it</label>
           <input name="val1" value="${esc(r.value || '')}" placeholder="player / score / note"></div>`,
       closeButtons: false,   // outside-click, Escape and Save all close it
-      extra: filled(g)
+      // A week is always a line, so Clear only means something once there is
+      // something in it. A pre/post slot IS the thing being removed, so the button
+      // has to be there even when empty -- otherwise a slot added by mistake can
+      // never be taken off the slate.
+      extra: (filled(g) || g.phase !== 'week')
         ? `<button type="button" class="btn danger" data-clear>${
             g.phase === 'week' ? 'Clear' : 'Remove'}</button>`
         : '',

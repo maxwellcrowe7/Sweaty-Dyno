@@ -104,16 +104,23 @@ table{border-collapse:collapse; width:100%}
 .brand h1{font-size:21px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap}
 .brand small{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); margin-top:1px}
 
-.season-pick{
-  margin-left:auto; display:flex; align-items:center; gap:6px;
-  background:var(--surface); border:1px solid var(--line); border-radius:999px;
-  padding:6px 6px 6px 12px;
-}
-.season-pick label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+/* Sits inside a page now, not the chrome -- and the select is already a pill,
+   so it does not need a second one wrapped around it and the label. */
+.season-pick{display:flex; align-items:center; gap:8px; flex:none}
+.season-pick span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
 .season-pick select{
   background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
-  padding:4px 8px; font-family:var(--f-display); font-weight:700; font-size:15px; letter-spacing:.03em;
+  padding:3px 8px; font-family:var(--f-display); font-weight:700; font-size:14px; letter-spacing:.03em;
 }
+
+/* A page that owns a season control puts it on a header line with the title. */
+.view-hd{display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+.view-hd h2{
+  font-family:var(--f-display);font-size:20px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;margin-right:auto;
+}
+.view-hd .chip{margin-right:auto;margin-left:-4px}
+.view-hd h2 + .chip{margin-left:0}
 
 main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) + 28px); max-width:1180px; width:100%; margin:0 auto}
 
@@ -454,31 +461,97 @@ table.dt th.sticky{width:1%}
 .gauge-legend i{width:8px;height:8px;border-radius:2px;display:block}
 
 /* ---------- draft board ---------- */
+/* One rule covers both cases, with no breakpoint and no min-width:max-content
+   (which is what used to force the grid wider than its card and push the tenth
+   column off): each column is at least 78px and otherwise shares the width
+   evenly. Wide enough, every slot is on screen; too narrow, .board scrolls. */
 .board{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 8px}
-.board-grid{display:grid;gap:7px;padding:0 16px 4px;min-width:max-content}
+.board-grid{
+  display:grid;gap:6px;padding:0 14px 4px;
+  grid-template-columns:repeat(var(--cols),minmax(78px,1fr));
+}
+/* the board is the whole card -- no rule under the header, nothing under the grid */
+.draft-card .card-hd{border-bottom:none}
+
+/* Name only, no slot number and no team stripe -- the pick numbers underneath
+   carry the slot, so the header can be a thin label instead of a card. */
 .board-head{
-  display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:flex-end;
-  padding:8px 6px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;min-width:0;
+  padding:5px 6px;border-radius:var(--r-sm);
+  background:var(--surface-2);border:1px solid var(--line);
+  font-size:11.5px;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.board-head .sl{font-family:var(--f-display);font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.1em}
-.board-head .nm{font-size:11.5px;font-weight:700;white-space:nowrap}
 .pick{
-  width:132px;padding:8px 9px;border-radius:var(--r-sm);
+  min-width:0;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--line);
-  display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;position:relative;overflow:hidden;
 }
+.pick .body{padding:7px 9px 8px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .pick .no{font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);letter-spacing:.08em}
-.pick .pl{font-size:12.5px;font-weight:600;line-height:1.25}
-.pick .via{
-  font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
-  color:var(--heat);display:flex;align-items:center;gap:4px;
+/* first name small over last name -- the shape a draft board is read in */
+.pick .nm{display:flex;flex-direction:column;line-height:1.16;min-width:0}
+.pick .nm b,.pick .nm i{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.pick .nm b{font-size:11.5px;font-weight:500;color:var(--ink-2)}
+.pick .nm i{font-style:normal;font-size:13px;font-weight:700;color:var(--ink)}
+
+/* A traded slot says so in a strip along the BOTTOM: the pick number and the
+   name then sit at the same height in every cell, traded or not. */
+.tr-banner{
+  margin-top:auto;
+  display:flex;align-items:center;gap:4px;padding:2px 8px;min-width:0;
+  font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--heat);background:rgba(255,107,44,.15);
+  border-top:1px solid rgba(255,107,44,.3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.pick.traded{border-color:rgba(255,107,44,.34)}
-.pick.traded::before{
-  content:"";position:absolute;left:0;top:0;bottom:0;width:2.5px;background:var(--heat);
-}
-.pick .top{display:flex;align-items:center;gap:6px}
+.tr-banner .ar{font-size:11px;line-height:1;flex:none}
 .pick.blank{background:repeating-linear-gradient(45deg,var(--surface) 0 6px,transparent 6px 12px);opacity:.5}
+
+/* ---------- draft haul ---------- */
+/* One row per manager, same shape and divider weight as a minigame row. */
+.haul-list{display:flex;flex-direction:column}
+.haul{border-bottom:2px solid var(--line)}
+.haul:last-child{border-bottom:none}
+.haul-hd{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;min-width:0}
+.haul-hd:focus-visible{outline:2px solid var(--heat);outline-offset:-2px}
+.haul-hd:active{background:var(--surface-2)}
+.haul-hd .tnum{
+  font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:4px;padding:2px 5px;flex:none;min-width:30px;text-align:center;
+}
+.haul-hd .who{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.haul-hd .cnt{
+  margin-left:auto;flex:none;white-space:nowrap;color:var(--ink-3);
+  font-family:var(--f-display);font-size:15px;font-weight:700;
+}
+.haul .acc-caret{transition:transform .18s;color:var(--ink-3);flex:none}
+.haul.open .acc-caret{transform:rotate(90deg)}
+/* Pills sized to their own name, wrapping, flush with the row's left edge. */
+.haul-bd{display:none;flex-wrap:wrap;gap:6px;padding:0 14px 11px}
+.haul.open .haul-bd{display:flex}
+.haul-pick{
+  display:inline-flex;align-items:baseline;gap:7px;min-width:0;max-width:100%;
+  padding:4px 11px;border-radius:999px;font-size:12.5px;font-weight:600;
+  background:var(--surface);border:1px solid var(--line);
+}
+.haul-pick b{
+  font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.06em;flex:none;
+}
+.haul-pick > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Position is carried by the surface itself, so no chip inside it. Tinted rather
+   than solid: thirty saturated blocks would drown the names they are labelling.
+   Shared by the board cells and the draft-haul rows -- declared after both so it
+   wins over their base background. */
+.tint-QB{background:rgba(245,105,95,.15);border-color:rgba(245,105,95,.36)}
+.tint-RB{background:rgba(61,220,151,.13);border-color:rgba(61,220,151,.34)}
+.tint-WR{background:rgba(90,200,250,.13);border-color:rgba(90,200,250,.34)}
+.tint-TE{background:rgba(245,169,76,.14);border-color:rgba(245,169,76,.36)}
+.tint-K{background:rgba(156,140,250,.15);border-color:rgba(156,140,250,.36)}
+
 
 /* ---------- trades ---------- */
 .trade{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
@@ -588,8 +661,12 @@ table.dt th.sticky{width:1%}
   .sidenav button[aria-current="page"]{background:rgba(255,107,44,.12);color:var(--heat)}
   .sidenav button[aria-current="page"] svg{color:var(--heat)}
   .col{display:flex;flex-direction:column;flex:1;min-width:0}
-  .topbar .brand{display:none}
-  .topbar{justify-content:flex-end}
+  /* Nothing left in it at this width -- the sidenav carries the brand and the
+     season control now lives in the pages that use it -- so it would render as
+     an empty dark band across the top of every page. Its 45px also used to be
+     what kept the first card off the top edge, hence the extra padding here. */
+  .topbar{display:none}
+  main{padding-top:30px}
   main{padding:22px 28px 60px}
   .tiles{grid-template-columns:repeat(4,1fr);gap:12px}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
@@ -610,7 +687,10 @@ table.dt th.sticky{width:1%}
 /* ---------- rules ---------- */
 .rules-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .rules-meta{display:flex;align-items:flex-end;gap:12px;margin:4px 0 14px;flex-wrap:wrap}
-.rules-title{font-size:26px;text-transform:uppercase;letter-spacing:.03em}
+.rules-title{
+  font-size:26px;text-transform:uppercase;letter-spacing:.03em;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
 
 .rules-layout{display:block}
 .toc{
@@ -812,9 +892,9 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 .owed-flag{color:var(--gold);font-weight:700;margin-left:3px}
 
 /* ---------- the season's minigame money ---------- */
-.money .card-hd{gap:10px}
-.money .card-hd .grow{flex:1;min-width:0}
-.money .card-hd h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.money .card-hd,.pos-split .card-hd{gap:10px}
+.money .card-hd .grow,.pos-split .card-hd .grow{flex:1;min-width:0}
+.money .card-hd h3,.pos-split .card-hd h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* The numbers and the bar share one line; the bar drops below them only when
    there is genuinely no room for it. Everything aligns to the TOP so the slash
    and the bar sit on the numbers' line, not on the middle of the taller
@@ -837,7 +917,10 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 }
 /* one block per section; inside it, no gap — the shade change is the boundary */
 .mb-part{display:flex;height:100%;min-width:4px}
-.mb-part > i{display:block;height:100%}
+/* a plain segment, for a track whose parts are not split two ways */
+.mb-part > i,.mb-track > i{display:block;height:100%}
+.mb-track > i{min-width:4px}
+.ps-none{background:var(--surface-3)}
 .mb-pre{background:var(--mg-pre)} .mb-pre.dim{background:var(--mg-pre-dim)}
 .mb-week{background:var(--mg-week)} .mb-week.dim{background:var(--mg-week-dim)}
 .mb-post{background:var(--mg-post)} .mb-post.dim{background:var(--mg-post-dim)}
@@ -847,7 +930,7 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
    pair is centred in its own share of the line rather than ragged-left.
    Keyed off the CARD's width, not the viewport: the sidenav appears at 900px and
    takes width a viewport query cannot see, which would crush the labels. */
-.money .card-bd{container-type:inline-size}
+.money .card-bd,.pos-split .card-bd{container-type:inline-size}
 .mb-legend{
   list-style:none;margin:15px 0 0;padding:0;
   display:grid;grid-template-columns:repeat(2,1fr);gap:4px 26px;

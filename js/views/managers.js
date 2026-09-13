@@ -2,7 +2,6 @@ import { money, esc, icon, teamTag, teamColor, empty } from '../util.js';
 
 export function render(db) {
   const led = db.ledger();
-  const S = db.season;
   const mg = db.get('managers');
   const emp = db.empire();
   const finishes = db.get('bank').finishes || [];

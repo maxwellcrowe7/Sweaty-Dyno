@@ -1,4 +1,4 @@
-import { esc, icon, teamTag, pts, empty, teamColor, money } from '../util.js';
+import { esc, icon, teamTag, pts, empty, teamColor, money, seasonPicker } from '../util.js';
 
 /* ---------------------------------------------------------------
    Charts here deliberately use ONE accent series over recessive
@@ -97,6 +97,7 @@ export function render(db, state = {}) {
   const best = st.weekly.length ? st.weekly.reduce((a, b) => (b.points > a.points ? b : a)) : null;
 
   return `
+  <div class="view-hd"><h2>${S} stats</h2>${seasonPicker(db)}</div>
   <div class="tiles">
     <div class="tile accent"><div class="k">Points leader</div>
       <div class="v" style="font-size:23px">${esc(lead?.manager ?? '--')}</div>

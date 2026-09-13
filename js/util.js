@@ -65,7 +65,9 @@ const I = {
   wallet:'M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6M16 12.5h.01',
   trophy:'M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 14v6',
   board:'M4 4h16v16H4zM4 9.5h16M9.5 9.5V20M15 9.5V20',
-  swap:'M7 4 3 8l4 4M3 8h13a4 4 0 0 1 0 8H9M17 20l4-4-4-4',
+  // two straight arrows running opposite ways, clear of each other -- the old
+  // one looped back on itself with a curved U-turn
+  swap:'M3 8h16M16 5l3 3-3 3M19 16H3M6 13l-3 3 3 3',
   chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
   crown:'M3 17h18M4 7l4 4 4-6 4 6 4-4-1.5 10h-13z',
   users:'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.87M16 2.1a4 4 0 0 1 0 7.75',
@@ -158,6 +160,16 @@ export function openModal({ title, body, confirm = 'Save', danger = false, extra
   setTimeout(() => form.querySelector('input,select,textarea')?.focus(), 260);
   return { close, root: bd };
 }
+
+/** The season control. Rendered BY the season-scoped views rather than by the
+    chrome, so a page never advertises a year it does not use -- and it writes to
+    the one shared db.season, so those pages agree with each other. */
+export const seasonPicker = (db, label = 'Season') => `<div class="season-pick">
+  <span>${esc(label)}</span>
+  <select data-season aria-label="Season">
+    ${db.seasons.map((s) => `<option value="${s}" ${s === db.season ? 'selected' : ''}>${s}</option>`).join('')}
+  </select>
+</div>`;
 
 /** <option> list of teams for a select. */
 export const teamOptions = (teams, sel = '', blank = '— none —') =>

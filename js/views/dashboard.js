@@ -40,7 +40,9 @@ function gauge(free, locked) {
 }
 
 export function render(db) {
-  const S = db.season;
+  // Home is pinned to the current season rather than the shared browsing one:
+  // it has no picker, so following it would show a stale year with no way back.
+  const S = db.league.currentSeason ?? db.season;
   const all = db.bank();
   const emp = db.empire();
   const led = db.ledger();

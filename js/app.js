@@ -17,7 +17,7 @@ const VIEWS = {
   home:      { label: 'Home',      icon: 'home',   mod: Dashboard, primary: true },
   bank:      { label: 'Bank',      icon: 'wallet', mod: Bank,      primary: true },
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
-  drafts:    { label: 'Draft',     icon: 'board',  mod: Drafts,    primary: true },
+  drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts,    primary: true },
   trades:    { label: 'Trades',    icon: 'swap',   mod: Trades },
   rules:     { label: 'Rules',     icon: 'book',   mod: Rules },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
@@ -74,12 +74,6 @@ function shell() {
     <div class="col">
       <header class="topbar">
         ${brand()}
-        <div class="season-pick">
-          <label for="seasonSel">Season</label>
-          <select id="seasonSel" aria-label="Season">
-            ${db.seasons.map((s) => `<option value="${s}" ${s === db.season ? 'selected' : ''}>${s}</option>`).join('')}
-          </select>
-        </div>
       </header>
       <main id="main"></main>
     </div>
@@ -102,7 +96,12 @@ function shell() {
     if (e.target.closest('[data-sheet]')) openSheet();
   });
   $('#sheetBd').addEventListener('click', closeSheet);
-  $('#seasonSel').addEventListener('change', (e) => { db.season = Number(e.target.value); });
+  // The picker is rendered by whichever view is season-scoped, so listen once
+  // here by delegation rather than rewiring it on every paint.
+  document.body.addEventListener('change', (e) => {
+    const sel = e.target.closest('[data-season]');
+    if (sel) db.season = Number(sel.value);
+  });
 }
 
 const openSheet  = () => { $('#sheet').classList.add('open'); $('#sheetBd').classList.add('open'); };
@@ -243,8 +242,6 @@ function paint() {
     if (b.dataset.view === state.view) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  const sel = $('#seasonSel');
-  if (sel && Number(sel.value) !== db.season) sel.value = db.season;
   // Only jump to the top when the section actually changed. Expanding a row or
   // switching a tab within a view must leave the reader where they were.
   if (paint._last !== state.view) {
@@ -280,9 +277,5 @@ function paint() {
   if (Auto.shouldConsider(db)) {
     Auto.run(db, (msg) => toast(msg)).then((summary) => { if (summary) toast(summary); });
   }
-  db.on(() => {
-    const sel = $('#seasonSel');
-    if (sel) sel.value = db.season;
-    paint();
-  });
+  db.on(paint);
 })();

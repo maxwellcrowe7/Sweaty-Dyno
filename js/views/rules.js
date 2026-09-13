@@ -1,4 +1,4 @@
-import { esc, icon, empty, fmtDate, openModal, toast } from '../util.js';
+import { esc, icon, empty, fmtDate, openModal, toast, seasonPicker } from '../util.js';
 
 const MARK = {
   added:   { chip: 'mint',  label: 'New' },
@@ -45,7 +45,10 @@ export function render(db, state = {}) {
   if (!seasons.length)
     return empty('No rulebook yet', 'Publish a rulebook and it will appear here with a table of contents.', 'book');
 
-  const year = seasons.includes(Number(P.year)) ? Number(P.year) : seasons[0];
+  // A ?year= deep link still wins for this paint -- mount then adopts it into the
+  // shared season, so the link works AND the app stays on one year afterwards.
+  const urlYear = seasons.includes(Number(P.year)) ? Number(P.year) : null;
+  const year = urlYear ?? (seasons.includes(db.season) ? db.season : seasons[0]);
   const bk = db.rulebook(year);
   const diff = db.rulesDiff(year);
   const showDiff = P.marks !== '0';
@@ -113,18 +116,10 @@ export function render(db, state = {}) {
     </article>`;
 
   return `
-  <div class="rules-bar">
-    <div class="pills" style="flex:1">
-      ${seasons.map((y) => {
-        const st = db.get('rules').seasons[String(y)].status;
-        return `<button data-ryear="${y}" aria-pressed="${y === year}">${y}${st !== 'published' ? ' · draft' : ''}</button>`;
-      }).join('')}
-    </div>
-  </div>
 
   <div class="rules-meta">
     <div>
-      <h1 class="rules-title">${esc(bk.season)} Rulebook</h1>
+      <h1 class="rules-title">Rulebook ${seasonPicker(db)}</h1>
       <div class="s dim" style="font-size:12px">
         ${bk.status === 'published'
           ? `Published ${fmtDate(bk.published, { year: true })}`
@@ -161,8 +156,12 @@ export function mount(root, db, go, setState, params = {}) {
   root._params = params;
   const P = { ...(root._params || {}) };
   const nav = (patch) => go('rules', { ...P, ...patch });
-  root.querySelectorAll('[data-ryear]').forEach((b) => b.addEventListener('click', () =>
-    nav({ year: b.dataset.ryear, tab: null })));
+  // the deep link is a one-shot: adopt it, then the shared season carries on
+  const urlYear = Number(P.year);
+  if (urlYear && db.seasons.includes(urlYear) && db.season !== urlYear) db.season = urlYear;
+  // the book this paint is actually showing -- render picks it the same way
+  const books = db.rulebookSeasons();
+  const shownYear = books.includes(db.season) ? db.season : books[0];
   root.querySelectorAll('[data-rtab]').forEach((b) => b.addEventListener('click', () =>
     nav({ tab: b.dataset.rtab === 'rules' ? null : b.dataset.rtab })));
   root.querySelector('#diffToggle')?.addEventListener('change', (e) =>
@@ -206,8 +205,7 @@ export function mount(root, db, go, setState, params = {}) {
 
   /* ---------- editing ---------- */
   root.querySelectorAll('[data-edit-sec]').forEach((b) => b.addEventListener('click', () => {
-    const year = Number(root.querySelector('[data-ryear][aria-pressed="true"]').dataset.ryear);
-    const sec = db.rulebook(year).sections.find((s) => s.id === b.dataset.editSec);
+    const sec = db.rulebook(shownYear).sections.find((s) => s.id === b.dataset.editSec);
     openModal({
       title: `Edit — ${sec.title}`,
       confirm: 'Save section',
@@ -223,7 +221,7 @@ export function mount(root, db, go, setState, params = {}) {
       onConfirm: async (d) => {
         const lines = d.body.split('\n').filter((l) => l.trim());
         await db.update('rules', (r) => {
-          const s = r.seasons[String(year)].sections.find((x) => x.id === sec.id);
+          const s = r.seasons[String(shownYear)].sections.find((x) => x.id === sec.id);
           s.title = d.title.trim() || s.title;
           const old = sec.items;
           s.items = lines.map((l, i) => {

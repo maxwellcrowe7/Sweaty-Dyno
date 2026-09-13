@@ -122,16 +122,23 @@ table{border-collapse:collapse; width:100%}
 .brand h1{font-size:21px; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap}
 .brand small{display:block; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-3); margin-top:1px}
 
-.season-pick{
-  margin-left:auto; display:flex; align-items:center; gap:6px;
-  background:var(--surface); border:1px solid var(--line); border-radius:999px;
-  padding:6px 6px 6px 12px;
-}
-.season-pick label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+/* Sits inside a page now, not the chrome -- and the select is already a pill,
+   so it does not need a second one wrapped around it and the label. */
+.season-pick{display:flex; align-items:center; gap:8px; flex:none}
+.season-pick span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
 .season-pick select{
   background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
-  padding:4px 8px; font-family:var(--f-display); font-weight:700; font-size:15px; letter-spacing:.03em;
+  padding:3px 8px; font-family:var(--f-display); font-weight:700; font-size:14px; letter-spacing:.03em;
 }
+
+/* A page that owns a season control puts it on a header line with the title. */
+.view-hd{display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}
+.view-hd h2{
+  font-family:var(--f-display);font-size:20px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.05em;margin-right:auto;
+}
+.view-hd .chip{margin-right:auto;margin-left:-4px}
+.view-hd h2 + .chip{margin-left:0}
 
 main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) + 28px); max-width:1180px; width:100%; margin:0 auto}
 
@@ -472,31 +479,97 @@ table.dt th.sticky{width:1%}
 .gauge-legend i{width:8px;height:8px;border-radius:2px;display:block}
 
 /* ---------- draft board ---------- */
+/* One rule covers both cases, with no breakpoint and no min-width:max-content
+   (which is what used to force the grid wider than its card and push the tenth
+   column off): each column is at least 78px and otherwise shares the width
+   evenly. Wide enough, every slot is on screen; too narrow, .board scrolls. */
 .board{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 8px}
-.board-grid{display:grid;gap:7px;padding:0 16px 4px;min-width:max-content}
+.board-grid{
+  display:grid;gap:6px;padding:0 14px 4px;
+  grid-template-columns:repeat(var(--cols),minmax(78px,1fr));
+}
+/* the board is the whole card -- no rule under the header, nothing under the grid */
+.draft-card .card-hd{border-bottom:none}
+
+/* Name only, no slot number and no team stripe -- the pick numbers underneath
+   carry the slot, so the header can be a thin label instead of a card. */
 .board-head{
-  display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:flex-end;
-  padding:8px 6px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;min-width:0;
+  padding:5px 6px;border-radius:var(--r-sm);
+  background:var(--surface-2);border:1px solid var(--line);
+  font-size:11.5px;font-weight:700;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.board-head .sl{font-family:var(--f-display);font-size:11px;font-weight:700;color:var(--ink-3);letter-spacing:.1em}
-.board-head .nm{font-size:11.5px;font-weight:700;white-space:nowrap}
 .pick{
-  width:132px;padding:8px 9px;border-radius:var(--r-sm);
+  min-width:0;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--line);
-  display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;
+  display:flex;flex-direction:column;position:relative;overflow:hidden;
 }
+.pick .body{padding:7px 9px 8px;display:flex;flex-direction:column;gap:3px;min-width:0}
 .pick .no{font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);letter-spacing:.08em}
-.pick .pl{font-size:12.5px;font-weight:600;line-height:1.25}
-.pick .via{
-  font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;
-  color:var(--heat);display:flex;align-items:center;gap:4px;
+/* first name small over last name -- the shape a draft board is read in */
+.pick .nm{display:flex;flex-direction:column;line-height:1.16;min-width:0}
+.pick .nm b,.pick .nm i{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.pick .nm b{font-size:11.5px;font-weight:500;color:var(--ink-2)}
+.pick .nm i{font-style:normal;font-size:13px;font-weight:700;color:var(--ink)}
+
+/* A traded slot says so in a strip along the BOTTOM: the pick number and the
+   name then sit at the same height in every cell, traded or not. */
+.tr-banner{
+  margin-top:auto;
+  display:flex;align-items:center;gap:4px;padding:2px 8px;min-width:0;
+  font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--heat);background:rgba(255,107,44,.15);
+  border-top:1px solid rgba(255,107,44,.3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.pick.traded{border-color:rgba(255,107,44,.34)}
-.pick.traded::before{
-  content:"";position:absolute;left:0;top:0;bottom:0;width:2.5px;background:var(--heat);
-}
-.pick .top{display:flex;align-items:center;gap:6px}
+.tr-banner .ar{font-size:11px;line-height:1;flex:none}
 .pick.blank{background:repeating-linear-gradient(45deg,var(--surface) 0 6px,transparent 6px 12px);opacity:.5}
+
+/* ---------- draft haul ---------- */
+/* One row per manager, same shape and divider weight as a minigame row. */
+.haul-list{display:flex;flex-direction:column}
+.haul{border-bottom:2px solid var(--line)}
+.haul:last-child{border-bottom:none}
+.haul-hd{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;min-width:0}
+.haul-hd:focus-visible{outline:2px solid var(--heat);outline-offset:-2px}
+.haul-hd:active{background:var(--surface-2)}
+.haul-hd .tnum{
+  font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:4px;padding:2px 5px;flex:none;min-width:30px;text-align:center;
+}
+.haul-hd .who{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.haul-hd .cnt{
+  margin-left:auto;flex:none;white-space:nowrap;color:var(--ink-3);
+  font-family:var(--f-display);font-size:15px;font-weight:700;
+}
+.haul .acc-caret{transition:transform .18s;color:var(--ink-3);flex:none}
+.haul.open .acc-caret{transform:rotate(90deg)}
+/* Pills sized to their own name, wrapping, flush with the row's left edge. */
+.haul-bd{display:none;flex-wrap:wrap;gap:6px;padding:0 14px 11px}
+.haul.open .haul-bd{display:flex}
+.haul-pick{
+  display:inline-flex;align-items:baseline;gap:7px;min-width:0;max-width:100%;
+  padding:4px 11px;border-radius:999px;font-size:12.5px;font-weight:600;
+  background:var(--surface);border:1px solid var(--line);
+}
+.haul-pick b{
+  font-family:var(--f-display);font-size:10px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.06em;flex:none;
+}
+.haul-pick > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Position is carried by the surface itself, so no chip inside it. Tinted rather
+   than solid: thirty saturated blocks would drown the names they are labelling.
+   Shared by the board cells and the draft-haul rows -- declared after both so it
+   wins over their base background. */
+.tint-QB{background:rgba(245,105,95,.15);border-color:rgba(245,105,95,.36)}
+.tint-RB{background:rgba(61,220,151,.13);border-color:rgba(61,220,151,.34)}
+.tint-WR{background:rgba(90,200,250,.13);border-color:rgba(90,200,250,.34)}
+.tint-TE{background:rgba(245,169,76,.14);border-color:rgba(245,169,76,.36)}
+.tint-K{background:rgba(156,140,250,.15);border-color:rgba(156,140,250,.36)}
+
 
 /* ---------- trades ---------- */
 .trade{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
@@ -606,8 +679,12 @@ table.dt th.sticky{width:1%}
   .sidenav button[aria-current="page"]{background:rgba(255,107,44,.12);color:var(--heat)}
   .sidenav button[aria-current="page"] svg{color:var(--heat)}
   .col{display:flex;flex-direction:column;flex:1;min-width:0}
-  .topbar .brand{display:none}
-  .topbar{justify-content:flex-end}
+  /* Nothing left in it at this width -- the sidenav carries the brand and the
+     season control now lives in the pages that use it -- so it would render as
+     an empty dark band across the top of every page. Its 45px also used to be
+     what kept the first card off the top edge, hence the extra padding here. */
+  .topbar{display:none}
+  main{padding-top:30px}
   main{padding:22px 28px 60px}
   .tiles{grid-template-columns:repeat(4,1fr);gap:12px}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
@@ -628,7 +705,10 @@ table.dt th.sticky{width:1%}
 /* ---------- rules ---------- */
 .rules-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .rules-meta{display:flex;align-items:flex-end;gap:12px;margin:4px 0 14px;flex-wrap:wrap}
-.rules-title{font-size:26px;text-transform:uppercase;letter-spacing:.03em}
+.rules-title{
+  font-size:26px;text-transform:uppercase;letter-spacing:.03em;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
 
 .rules-layout{display:block}
 .toc{
@@ -830,9 +910,9 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 .owed-flag{color:var(--gold);font-weight:700;margin-left:3px}
 
 /* ---------- the season's minigame money ---------- */
-.money .card-hd{gap:10px}
-.money .card-hd .grow{flex:1;min-width:0}
-.money .card-hd h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.money .card-hd,.pos-split .card-hd{gap:10px}
+.money .card-hd .grow,.pos-split .card-hd .grow{flex:1;min-width:0}
+.money .card-hd h3,.pos-split .card-hd h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* The numbers and the bar share one line; the bar drops below them only when
    there is genuinely no room for it. Everything aligns to the TOP so the slash
    and the bar sit on the numbers' line, not on the middle of the taller
@@ -855,7 +935,10 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 }
 /* one block per section; inside it, no gap — the shade change is the boundary */
 .mb-part{display:flex;height:100%;min-width:4px}
-.mb-part > i{display:block;height:100%}
+/* a plain segment, for a track whose parts are not split two ways */
+.mb-part > i,.mb-track > i{display:block;height:100%}
+.mb-track > i{min-width:4px}
+.ps-none{background:var(--surface-3)}
 .mb-pre{background:var(--mg-pre)} .mb-pre.dim{background:var(--mg-pre-dim)}
 .mb-week{background:var(--mg-week)} .mb-week.dim{background:var(--mg-week-dim)}
 .mb-post{background:var(--mg-post)} .mb-post.dim{background:var(--mg-post-dim)}
@@ -865,7 +948,7 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
    pair is centred in its own share of the line rather than ragged-left.
    Keyed off the CARD's width, not the viewport: the sidenav appears at 900px and
    takes width a viewport query cannot see, which would crush the labels. */
-.money .card-bd{container-type:inline-size}
+.money .card-bd,.pos-split .card-bd{container-type:inline-size}
 .mb-legend{
   list-style:none;margin:15px 0 0;padding:0;
   display:grid;grid-template-columns:repeat(2,1fr);gap:4px 26px;
@@ -1444,7 +1527,9 @@ const I = {
   wallet:'M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6M16 12.5h.01',
   trophy:'M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 14v6',
   board:'M4 4h16v16H4zM4 9.5h16M9.5 9.5V20M15 9.5V20',
-  swap:'M7 4 3 8l4 4M3 8h13a4 4 0 0 1 0 8H9M17 20l4-4-4-4',
+  // two straight arrows running opposite ways, clear of each other -- the old
+  // one looped back on itself with a curved U-turn
+  swap:'M3 8h16M16 5l3 3-3 3M19 16H3M6 13l-3 3 3 3',
   chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
   crown:'M3 17h18M4 7l4 4 4-6 4 6 4-4-1.5 10h-13z',
   users:'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.87M16 2.1a4 4 0 0 1 0 7.75',
@@ -1536,12 +1621,22 @@ function openModal({ title, body, confirm = 'Save', danger = false, extra = '',
   return { close, root: bd };
 }
 
+/** The season control. Rendered BY the season-scoped views rather than by the
+    chrome, so a page never advertises a year it does not use -- and it writes to
+    the one shared db.season, so those pages agree with each other. */
+const seasonPicker = (db, label = 'Season') => `<div class="season-pick">
+  <span>${esc(label)}</span>
+  <select data-season aria-label="Season">
+    ${db.seasons.map((s) => `<option value="${s}" ${s === db.season ? 'selected' : ''}>${s}</option>`).join('')}
+  </select>
+</div>`;
+
 /** <option> list of teams for a select. */
 const teamOptions = (teams, sel = '', blank = '— none —') =>
   `<option value="">${esc(blank)}</option>` + teams.map((t) =>
     `<option value="${t.number}" ${String(sel) === String(t.number) ? 'selected' : ''}>T${t.number} · ${esc(t.manager)}</option>`).join('');
 
-return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, teamOptions };
+return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, seasonPicker, teamOptions };
 })();
 
 /* ===== js/db.js ===== */
@@ -2602,7 +2697,9 @@ function gauge(free, locked) {
   </svg>`;
 }
 function render(db) {
-  const S = db.season;
+  // Home is pinned to the current season rather than the shared browsing one:
+  // it has no picker, so following it would show a stale year with no way back.
+  const S = db.league.currentSeason ?? db.season;
   const all = db.bank();
   const emp = db.empire();
   const led = db.ledger();
@@ -3074,7 +3171,7 @@ return { render, mount };
 
 /* ===== js/views/minigames.js ===== */
 __M["js/views/minigames.js"] = (function () {
-const { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts, info } = __M["js/util.js"];
+const { money, esc, icon, teamTag, empty, openModal, teamOptions, toast, pts, info, seasonPicker } = __M["js/util.js"];
 const SUMMARY_MAX = 60;
 /* Every week of the regular season is a line on the slate, game or no game. */
 const WEEKS = 18;
@@ -3150,9 +3247,11 @@ function gameRow(db, g, S, admin) {
         <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
         ${g.summary && !empty ? `<span class="mg-sum">${esc(g.summary)}</span>` : ''}
       </span>
+      ${/* always the pencil, even on an empty slot: it is the same control doing the
+           same thing, and a + here read as a second, different affordance */''}
       ${admin && !pointer ? `<button class="edit-pencil" data-edit="${esc(g.id)}"
         aria-label="${g.name ? 'Edit' : 'Add'} ${esc(slotLabel(g))} minigame"
-        title="${g.name ? 'Edit' : 'Add a minigame'}">${icon(g.name ? 'pencil' : 'plus')}</button>` : ''}
+        title="${g.name ? 'Edit' : 'Add a minigame'}">${icon('pencil')}</button>` : ''}
       ${canceled ? '<span class="chip red">Cancelled</span>'
         : pointer ? '<span class="chip heat">below</span>'
         : winner ? `<span class="mg-win">${esc(winner)}</span>`
@@ -3287,7 +3386,8 @@ function render(db) {
   return `
   <div class="card money">
     <div class="card-hd">
-      <div class="grow"><h3>${S} minigames</h3></div>
+      <div class="grow"><h3>Minigames</h3></div>
+      ${seasonPicker(db)}
       ${admin ? `<button class="btn sm ghost" data-setup aria-label="${S} season setup"
         title="Season setup">${icon('cog')}</button>` : ''}
     </div>
@@ -3575,7 +3675,11 @@ function mount(root, db) {
         <div class="field"><label>What won it</label>
           <input name="val1" value="${esc(r.value || '')}" placeholder="player / score / note"></div>`,
       closeButtons: false,   // outside-click, Escape and Save all close it
-      extra: filled(g)
+      // A week is always a line, so Clear only means something once there is
+      // something in it. A pre/post slot IS the thing being removed, so the button
+      // has to be there even when empty -- otherwise a slot added by mistake can
+      // never be taken off the slate.
+      extra: (filled(g) || g.phase !== 'week')
         ? `<button type="button" class="btn danger" data-clear>${
             g.phase === 'week' ? 'Clear' : 'Remove'}</button>`
         : '',
@@ -3628,16 +3732,31 @@ return { filled, setStatus, render, mount };
 
 /* ===== js/views/drafts.js ===== */
 __M["js/views/drafts.js"] = (function () {
-const { esc, icon, teamTag, posChip, empty, teamColor } = __M["js/util.js"];
-function render(db, state = {}) {
+const { esc, icon, empty, seasonPicker } = __M["js/util.js"];
+/* Which hauls are open -- module scope so a repaint does not close them. */
+const HAUL_OPEN = new Set();
+function render(db) {
   const seasons = db.draftSeasons();
   if (!seasons.length) return empty('No drafts yet', 'Rookie draft boards will appear here.', 'board');
-  const year = state.draftYear && seasons.includes(state.draftYear) ? state.draftYear : seasons[0];
+  // One shared season for the whole app -- no private year here any more, which
+  // is what used to let this page and the chrome disagree on screen.
+  const year = db.season;
+  if (!seasons.includes(year)) {
+    return `<div class="view-hd"><h2>Drafts</h2>${seasonPicker(db)}</div>
+      ${empty(`No ${year} draft`, 'No rookie board has been set up for this season yet.', 'board')}`;
+  }
   const d = db.draft(year);
   const teams = db.teams(year);
   const tOf = (n) => teams.find((t) => t.number === n);
 
   const traded = d.picks.filter((p) => p.traded);
+  // biggest position group first, so the bar and its key read left to right
+  const counts = {};
+  for (const p of d.picks) {
+    const q = db.position(p.player) || '?';
+    counts[q] = (counts[q] || 0) + 1;
+  }
+  const split = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const haul = {};
   for (const p of d.picks) haul[p.pickedBy] = (haul[p.pickedBy] || 0) + 1;
   const board = Object.entries(haul).map(([n, c]) => ({ t: tOf(+n), c }))
@@ -3645,74 +3764,107 @@ function render(db, state = {}) {
 
   const cols = d.order.length;
   return `
-  <div class="pills">
-    ${seasons.map((y) => `<button data-year="${y}" aria-pressed="${y === year}">${y}</button>`).join('')}
+  ${/* The one thing the board cannot tell you without counting thirty cells: how
+       the class broke down by position, in the cells' own colours so it reads as
+       a key for the board too. Built from the minigame money bar's own .mb-*
+       classes rather than a parallel set, so the two cannot drift apart. */''}
+  <div class="card pos-split">
+    <div class="card-hd"><div class="grow"><h3>Drafts</h3></div>${seasonPicker(db)}</div>
+    <div class="card-bd">
+    <div class="mb-top">
+      <span class="mb-stat"><b class="mb-fig">${traded.length}</b><span class="mb-lbl">traded</span></span>
+      <span class="mb-div">/</span>
+      <span class="mb-stat"><b class="mb-fig">${d.picks.length}</b><span class="mb-lbl">picks</span></span>
+      <div class="mb-track" role="img" aria-label="${split.map(([q, c]) =>
+        `${q === '?' ? 'unknown' : q} ${c}`).join(', ')}">
+        ${split.map(([q, c]) => `<i class="${q === '?' ? 'ps-none' : `pos-${esc(q)}`}"
+          style="width:${(c / d.picks.length * 100).toFixed(2)}%"
+          title="${esc(q)} &mdash; ${c} of ${d.picks.length}"></i>`).join('')}
+      </div>
+    </div>
+    <ul class="mb-legend">
+      ${split.map(([q, c]) => `<li>
+        <i class="${q === '?' ? 'ps-none' : `pos-${esc(q)}`}"></i>
+        <span>${q === '?' ? 'Other' : esc(q)}</span><b>${c}</b></li>`).join('')}
+    </ul>
+    </div>
   </div>
 
-  <div class="tiles" style="margin-top:8px">
-    <div class="tile"><div class="k">Picks</div><div class="v">${d.picks.length}</div><div class="m">${d.rounds} rounds</div></div>
-    <div class="tile accent"><div class="k">Traded slots</div><div class="v">${traded.length}</div>
-      <div class="m">${((traded.length / d.picks.length) * 100).toFixed(0)}% changed hands</div></div>
-    <div class="tile mint"><div class="k">Most picks</div><div class="v">${board[0]?.c ?? 0}</div>
-      <div class="m">${esc(board[0]?.t?.manager ?? '')}</div></div>
-    <div class="tile"><div class="k">Own slot</div><div class="v">${d.picks.length - traded.length}</div>
-      <div class="m">picks never traded</div></div>
-  </div>
-
-  <div class="section-title">${year} rookie board</div>
-  <div class="card">
+  <div class="section-title">Draft board</div>
+  <div class="card draft-card">
     <div class="card-hd"><h3>Draft board</h3><div class="spacer"></div>
       <span class="chip heat">${icon('swap')} traded</span></div>
     <div class="card-bd flush">
-      <div class="board"><div class="board-grid" style="grid-template-columns:repeat(${cols},132px)">
-        ${d.order.map((n, i) => {
-          const t = tOf(n);
-          return `<div class="board-head" style="border-top:2px solid ${teamColor(n)}">
-            <div class="sl">${String(i + 1).padStart(2, '0')}</div>
-            <div class="nm">${esc(t?.manager ?? 'T' + n)}</div></div>`;
-        }).join('')}
+      <div class="board"><div class="board-grid" style="--cols:${cols}">
+        ${/* just the name: the slot number is already the back half of every pick
+             number in the column below it */''}
+        ${d.order.map((n) => `<div class="board-head">${
+          esc(tOf(n)?.manager ?? 'T' + n)}</div>`).join('')}
         ${Array.from({ length: d.rounds }, (_, r) =>
           d.order.map((_, s) => {
             const p = d.picks.find((x) => x.round === r + 1 && x.slot === s + 1);
             if (!p) return `<div class="pick blank"></div>`;
             const by = tOf(p.pickedBy);
             const pos = db.position(p.player);
-            return `<div class="pick ${p.traded ? 'traded' : ''}">
-              <div class="top"><span class="no">${p.pick}</span>
-                <div style="flex:1"></div>${posChip(pos)}</div>
-              <div class="pl">${esc(p.player)}</div>
-              ${p.traded ? `<div class="via">via ${esc(by?.manager ?? 'T' + p.pickedBy)}</div>`
-                         : `<div class="via" style="color:var(--ink-3)">&nbsp;</div>`}
+            // first name over last, the way a draft board reads
+            const parts = String(p.player).trim().split(/\s+/);
+            const first = parts.length > 1 ? parts[0] : '';
+            const last = parts.length > 1 ? parts.slice(1).join(' ') : p.player;
+            return `<div class="pick${pos ? ` tint-${esc(pos)}` : ''}${p.traded ? ' traded' : ''}">
+              <div class="body">
+                <span class="no">${p.pick}</span>
+                <span class="nm">${first ? `<b>${esc(first)}</b>` : ''}<i>${esc(last)}</i></span>
+              </div>
+              ${p.traded ? `<div class="tr-banner"><span class="ar">&rarr;</span>${
+                esc(by?.manager ?? 'T' + p.pickedBy)}</div>` : ''}
             </div>`;
           }).join('')).join('')}
       </div></div>
     </div>
-    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px">Columns are the original slot owner. An orange bar means the pick was
-      traded — the name underneath is who actually made the selection. Swipe the board sideways.</div>
-    </div>
   </div>
 
-  <div class="section-title">Who drafted what</div>
-  <div class="card"><div class="card-bd flush"><div class="rows">
+  ${/* One row per manager, opening in place to the players they took -- the same
+       shape as a minigame row. The row itself stays plain; the colour belongs to
+       the player tags, where it means something. */''}
+  <div class="section-title">Draft haul</div>
+  <div class="card"><div class="card-bd flush"><div class="haul-list">
     ${board.map((b) => {
-      const mine = d.picks.filter((p) => p.pickedBy === b.t.number);
-      return `<div class="row">
-        <div class="grow">
-          <div class="t">${teamTag(b.t)}</div>
-          <div class="s" style="white-space:normal;line-height:1.7;margin-top:4px">
-            ${mine.map((p) => `<span class="chip ghost plain" style="margin:0 3px 3px 0"><b style="color:var(--ink-3);font-weight:700">${p.pick}</b> ${esc(p.player)}</span>`).join('')}
-          </div>
+      const n = b.t.number;
+      const mine = d.picks.filter((p) => p.pickedBy === n);
+      const open = HAUL_OPEN.has(n);
+      return `<div class="haul${open ? ' open' : ''}">
+        <div class="haul-hd" role="button" tabindex="0" aria-expanded="${open}" data-haul="${n}">
+          <span class="tnum">T${n}</span>
+          <span class="who">${esc(b.t.manager)}</span>
+          <span class="cnt">${mine.length} player${mine.length === 1 ? '' : 's'}</span>
+          ${icon('chev', 'acc-caret')}
         </div>
-        <div class="val">${b.c}</div>
+        <div class="haul-bd">
+          ${mine.map((p) => {
+            const pos = db.position(p.player);
+            return `<span class="haul-pick${pos ? ` tint-${esc(pos)}` : ''}">
+              <b>${p.pick}</b><span>${esc(p.player)}</span></span>`;
+          }).join('')}
+        </div>
       </div>`;
     }).join('')}
   </div></div></div>
   `;
 }
-function mount(root, db, go, setState) {
-  root.querySelectorAll('[data-year]').forEach((b) => b.addEventListener('click', () =>
-    setState({ draftYear: Number(b.dataset.year) })));
+function mount(root) {
+  root.querySelectorAll('[data-haul]').forEach((hd) => {
+    const n = Number(hd.dataset.haul);
+    const fire = () => {
+      HAUL_OPEN.has(n) ? HAUL_OPEN.delete(n) : HAUL_OPEN.add(n);
+      const open = HAUL_OPEN.has(n);
+      hd.setAttribute('aria-expanded', String(open));
+      hd.closest('.haul').classList.toggle('open', open);
+    };
+    hd.addEventListener('click', fire);
+    hd.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fire(); }
+    });
+  });
 }
 
 return { render, mount };
@@ -3893,7 +4045,7 @@ return { render, mount };
 
 /* ===== js/views/stats.js ===== */
 __M["js/views/stats.js"] = (function () {
-const { esc, icon, teamTag, pts, empty, teamColor, money } = __M["js/util.js"];
+const { esc, icon, teamTag, pts, empty, teamColor, money, seasonPicker } = __M["js/util.js"];
 /* ---------------------------------------------------------------
    Charts here deliberately use ONE accent series over recessive
    context lines rather than ten categorical hues: ten hues cannot be
@@ -3990,6 +4142,7 @@ function render(db, state = {}) {
   const best = st.weekly.length ? st.weekly.reduce((a, b) => (b.points > a.points ? b : a)) : null;
 
   return `
+  <div class="view-hd"><h2>${S} stats</h2>${seasonPicker(db)}</div>
   <div class="tiles">
     <div class="tile accent"><div class="k">Points leader</div>
       <div class="v" style="font-size:23px">${esc(lead?.manager ?? '--')}</div>
@@ -4125,7 +4278,7 @@ return { render, mount };
 
 /* ===== js/views/rules.js ===== */
 __M["js/views/rules.js"] = (function () {
-const { esc, icon, empty, fmtDate, openModal, toast } = __M["js/util.js"];
+const { esc, icon, empty, fmtDate, openModal, toast, seasonPicker } = __M["js/util.js"];
 const MARK = {
   added:   { chip: 'mint',  label: 'New' },
   changed: { chip: 'heat',  label: 'Changed' },
@@ -4170,7 +4323,10 @@ function render(db, state = {}) {
   if (!seasons.length)
     return empty('No rulebook yet', 'Publish a rulebook and it will appear here with a table of contents.', 'book');
 
-  const year = seasons.includes(Number(P.year)) ? Number(P.year) : seasons[0];
+  // A ?year= deep link still wins for this paint -- mount then adopts it into the
+  // shared season, so the link works AND the app stays on one year afterwards.
+  const urlYear = seasons.includes(Number(P.year)) ? Number(P.year) : null;
+  const year = urlYear ?? (seasons.includes(db.season) ? db.season : seasons[0]);
   const bk = db.rulebook(year);
   const diff = db.rulesDiff(year);
   const showDiff = P.marks !== '0';
@@ -4238,18 +4394,10 @@ function render(db, state = {}) {
     </article>`;
 
   return `
-  <div class="rules-bar">
-    <div class="pills" style="flex:1">
-      ${seasons.map((y) => {
-        const st = db.get('rules').seasons[String(y)].status;
-        return `<button data-ryear="${y}" aria-pressed="${y === year}">${y}${st !== 'published' ? ' · draft' : ''}</button>`;
-      }).join('')}
-    </div>
-  </div>
 
   <div class="rules-meta">
     <div>
-      <h1 class="rules-title">${esc(bk.season)} Rulebook</h1>
+      <h1 class="rules-title">Rulebook ${seasonPicker(db)}</h1>
       <div class="s dim" style="font-size:12px">
         ${bk.status === 'published'
           ? `Published ${fmtDate(bk.published, { year: true })}`
@@ -4285,8 +4433,12 @@ function mount(root, db, go, setState, params = {}) {
   root._params = params;
   const P = { ...(root._params || {}) };
   const nav = (patch) => go('rules', { ...P, ...patch });
-  root.querySelectorAll('[data-ryear]').forEach((b) => b.addEventListener('click', () =>
-    nav({ year: b.dataset.ryear, tab: null })));
+  // the deep link is a one-shot: adopt it, then the shared season carries on
+  const urlYear = Number(P.year);
+  if (urlYear && db.seasons.includes(urlYear) && db.season !== urlYear) db.season = urlYear;
+  // the book this paint is actually showing -- render picks it the same way
+  const books = db.rulebookSeasons();
+  const shownYear = books.includes(db.season) ? db.season : books[0];
   root.querySelectorAll('[data-rtab]').forEach((b) => b.addEventListener('click', () =>
     nav({ tab: b.dataset.rtab === 'rules' ? null : b.dataset.rtab })));
   root.querySelector('#diffToggle')?.addEventListener('change', (e) =>
@@ -4330,8 +4482,7 @@ function mount(root, db, go, setState, params = {}) {
 
   /* ---------- editing ---------- */
   root.querySelectorAll('[data-edit-sec]').forEach((b) => b.addEventListener('click', () => {
-    const year = Number(root.querySelector('[data-ryear][aria-pressed="true"]').dataset.ryear);
-    const sec = db.rulebook(year).sections.find((s) => s.id === b.dataset.editSec);
+    const sec = db.rulebook(shownYear).sections.find((s) => s.id === b.dataset.editSec);
     openModal({
       title: `Edit — ${sec.title}`,
       confirm: 'Save section',
@@ -4347,7 +4498,7 @@ function mount(root, db, go, setState, params = {}) {
       onConfirm: async (d) => {
         const lines = d.body.split('\n').filter((l) => l.trim());
         await db.update('rules', (r) => {
-          const s = r.seasons[String(year)].sections.find((x) => x.id === sec.id);
+          const s = r.seasons[String(shownYear)].sections.find((x) => x.id === sec.id);
           s.title = d.title.trim() || s.title;
           const old = sec.items;
           s.items = lines.map((l, i) => {
@@ -4520,7 +4671,6 @@ __M["js/views/managers.js"] = (function () {
 const { money, esc, icon, teamTag, teamColor, empty } = __M["js/util.js"];
 function render(db) {
   const led = db.ledger();
-  const S = db.season;
   const mg = db.get('managers');
   const emp = db.empire();
   const finishes = db.get('bank').finishes || [];
@@ -5049,7 +5199,7 @@ const VIEWS = {
   home:      { label: 'Home',      icon: 'home',   mod: Dashboard, primary: true },
   bank:      { label: 'Bank',      icon: 'wallet', mod: Bank,      primary: true },
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
-  drafts:    { label: 'Draft',     icon: 'board',  mod: Drafts,    primary: true },
+  drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts,    primary: true },
   trades:    { label: 'Trades',    icon: 'swap',   mod: Trades },
   rules:     { label: 'Rules',     icon: 'book',   mod: Rules },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
@@ -5106,12 +5256,6 @@ function shell() {
     <div class="col">
       <header class="topbar">
         ${brand()}
-        <div class="season-pick">
-          <label for="seasonSel">Season</label>
-          <select id="seasonSel" aria-label="Season">
-            ${db.seasons.map((s) => `<option value="${s}" ${s === db.season ? 'selected' : ''}>${s}</option>`).join('')}
-          </select>
-        </div>
       </header>
       <main id="main"></main>
     </div>
@@ -5134,7 +5278,12 @@ function shell() {
     if (e.target.closest('[data-sheet]')) openSheet();
   });
   $('#sheetBd').addEventListener('click', closeSheet);
-  $('#seasonSel').addEventListener('change', (e) => { db.season = Number(e.target.value); });
+  // The picker is rendered by whichever view is season-scoped, so listen once
+  // here by delegation rather than rewiring it on every paint.
+  document.body.addEventListener('change', (e) => {
+    const sel = e.target.closest('[data-season]');
+    if (sel) db.season = Number(sel.value);
+  });
 }
 
 const openSheet  = () => { $('#sheet').classList.add('open'); $('#sheetBd').classList.add('open'); };
@@ -5275,8 +5424,6 @@ function paint() {
     if (b.dataset.view === state.view) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  const sel = $('#seasonSel');
-  if (sel && Number(sel.value) !== db.season) sel.value = db.season;
   // Only jump to the top when the section actually changed. Expanding a row or
   // switching a tab within a view must leave the reader where they were.
   if (paint._last !== state.view) {
@@ -5312,11 +5459,7 @@ function paint() {
   if (Auto.shouldConsider(db)) {
     Auto.run(db, (msg) => toast(msg)).then((summary) => { if (summary) toast(summary); });
   }
-  db.on(() => {
-    const sel = $('#seasonSel');
-    if (sel) sel.value = db.season;
-    paint();
-  });
+  db.on(paint);
 })();
 
 return {};
