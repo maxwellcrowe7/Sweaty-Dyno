@@ -25,7 +25,12 @@ ORDER = [
     'js/app.js',
 ]
 
-IMPORT_RE  = re.compile(r'^\s*import\s+(.+?)\s+from\s+[\'"](.+?)[\'"]\s*;?\s*$', re.M)
+# DOTALL so a clause that wraps onto a second line is still one import. Without
+# it the statement is left in the bundle verbatim, and a classic <script> reads
+# `import { x } from '...'` as a call to import() -- a syntax error that takes
+# the whole app down with a blank page.
+IMPORT_RE  = re.compile(r'^[ \t]*import\s+([^;]+?)\s+from\s+[\'"]([^\'"]+)[\'"]\s*;?[ \t]*$',
+                        re.M | re.S)
 EXPORT_DECL = re.compile(r'^\s*export\s+(?=(?:async\s+)?(?:const|let|var|function|class)\b)', re.M)
 
 

@@ -734,6 +734,72 @@ table.dt th.sticky{width:1%}
 }
 .toc a span{flex:1;min-width:0}
 .toc a:hover{background:var(--surface-2)}
+/* section tools, only while the rulebook is in edit mode */
+.toc li{position:relative}
+.toc.editing a{padding-left:38px;padding-right:56px}
+/* the grip stays put -- it is the affordance for dragging, so hiding it would
+   leave nothing to reach for. The edit and delete buttons surface on hover. */
+.toc-grip{
+  position:absolute;left:5px;top:50%;transform:translateY(-50%);z-index:1;
+  width:22px;height:24px;display:grid;place-items:center;border-radius:5px;
+  padding:0;line-height:0;   /* the UA button padding was pushing the glyph off-centre */
+  color:var(--ink-3);cursor:grab;touch-action:none;
+}
+.toc-grip:hover{color:var(--ink-2);background:var(--surface-3)}
+.toc-grip svg{width:15px;height:15px;display:block}
+.toc li.dragging{opacity:.45}
+.toc li.dragging .toc-grip{cursor:grabbing}
+.toc ol{position:relative}
+.toc ol.reordering a{pointer-events:none}
+/* where the row will land, shown before anything moves */
+.toc-drop{
+  position:absolute;left:6px;right:6px;height:2px;margin-top:-1px;
+  background:var(--heat);border-radius:2px;pointer-events:none;
+  box-shadow:0 0 0 3px rgba(255,107,44,.18);
+}
+.toc-drop.nil{opacity:0}
+.toc-tools{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:1px;
+}
+.toc-tools button{
+  width:24px;height:24px;display:grid;place-items:center;border-radius:5px;
+  color:var(--ink-3);line-height:0;padding:0;
+}
+.toc-tools button svg{display:block}
+.toc-tools button:hover{background:var(--surface-3);color:var(--ink)}
+.toc-tools button.del:hover{background:rgba(255,77,94,.16);color:var(--red)}
+.toc-tools svg{width:13px;height:13px}
+@media (hover:hover){
+  .toc-tools{opacity:0;transition:opacity .13s}
+  .toc li:hover .toc-tools,.toc-tools:focus-within{opacity:1}
+}
+/* formatting toolbar */
+.fmt-bar{
+  display:flex;align-items:center;gap:2px;margin-bottom:-1px;
+  padding:4px 5px;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:var(--r-sm) var(--r-sm) 0 0;
+}
+.fmt-bar button{
+  min-width:28px;height:26px;display:grid;place-items:center;padding:0;line-height:0;
+  border-radius:5px;color:var(--ink-2);font-size:13px;font-family:var(--f-body);
+}
+.fmt-bar button:hover{background:var(--surface-3);color:var(--ink)}
+.fmt-bar button b,.fmt-bar button i,.fmt-bar button u{line-height:1;font-size:13px}
+.fmt-bar svg{width:14px;height:14px}
+.fmt-bar .sep{width:1px;height:16px;background:var(--line);margin:0 4px}
+textarea.rule-edit{
+  border-radius:0 0 var(--r-sm) var(--r-sm);font-size:13px;line-height:1.6;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+/* renaming happens where the name is, not in a dialog over the page */
+.toc-rename{
+  flex:1;min-width:0;background:var(--bg-2);border:1px solid var(--heat);
+  border-radius:5px;padding:2px 6px;font-size:12.5px;font-weight:600;color:var(--ink);
+}
+.toc-add{padding:4px 6px 8px}
+.toc-add .btn{width:100%;justify-content:center}
 .toc a.on{background:rgba(255,107,44,.12);color:var(--heat)}
 .toc a.on::before{color:var(--heat)}
 .toc-dot{
@@ -751,7 +817,7 @@ table.dt th.sticky{width:1%}
   display:flex;align-items:center;
 }
 .rule-sec h2 .edit-pencil{margin-left:7px}
-.rule-sec > ul{list-style:none;margin:0;padding:0}
+.rule-sec .rule-list{list-style:none;margin:0;padding:0}
 .rule-item{
   position:relative;padding:5px 0 5px 18px;scroll-margin-top:86px;
   color:var(--ink-2);
@@ -764,6 +830,21 @@ table.dt th.sticky{width:1%}
 .rule-item.d2{padding-left:58px} .rule-item.d2::before{left:43px;width:4px;height:4px;border-radius:1px}
 .rule-item.d3{padding-left:78px} .rule-item.d3::before{left:63px;width:4px;height:4px;border-radius:1px}
 .rule-item.d0{color:var(--ink)}
+/* numbered runs: a counter in place of the bullet, restarting per list */
+ol.rule-list{counter-reset:rule}
+.rule-item.ord{counter-increment:rule;padding-left:28px}
+.rule-item.ord::before{
+  content:counter(rule) ".";
+  left:2px;top:4px;width:auto;height:auto;border-radius:0;background:none;
+  font-family:var(--f-display);font-size:12px;font-weight:700;color:var(--ink-3);
+}
+.rule-item.ord.d1{padding-left:48px} .rule-item.ord.d1::before{left:22px}
+.rule-item.ord.d2{padding-left:68px} .rule-item.ord.d2::before{left:42px}
+.rule-item.ord.d3{padding-left:88px} .rule-item.ord.d3::before{left:62px}
+/* inline formatting */
+.rule-text strong{font-weight:700;color:var(--ink)}
+.rule-text em{font-style:italic}
+.rule-text u{text-decoration:underline;text-underline-offset:2px}
 .rule-text{display:inline}
 
 /* change marks */

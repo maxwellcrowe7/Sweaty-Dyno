@@ -1,4 +1,5 @@
-import { esc, icon, empty, fmtDate, openModal, toast, seasonPicker } from '../util.js';
+import { esc, icon, empty, fmtDate, openModal, toast, seasonPicker, fmt, unfmt,
+  formatBar, wireFormatBar } from '../util.js';
 
 const MARK = {
   added:   { chip: 'mint',  label: 'New' },
@@ -7,6 +8,11 @@ const MARK = {
 };
 
 /** Word-level diff so a changed line shows what actually moved. */
+
+/* Edit mode is module state, not persisted: a reload always lands you reading
+   rather than editing, and it can never be on for someone without rights. */
+let EDITING = false;
+
 function inlineDiff(before, after) {
   const a = before.split(/(\s+)/), b = after.split(/(\s+)/);
   const n = a.length, m = b.length;
@@ -30,10 +36,25 @@ function inlineDiff(before, after) {
     : `<del>${esc(t)}</del>`).join('');
 }
 
+/* Consecutive items of the same kind share one list, so a numbered run counts
+   1,2,3 and a bullet after it does not reset or continue anything. */
+function listHtml(items, diff, showDiff) {
+  const out = [];
+  for (let i = 0; i < items.length;) {
+    const ord = Boolean(items[i].ordered);
+    const run = [];
+    while (i < items.length && Boolean(items[i].ordered) === ord) run.push(items[i++]);
+    out.push(`<${ord ? 'ol' : 'ul'} class="rule-list">${run.map((it) =>
+      itemHtml(it, diff?.byId.get(it.id), diff?.wasById.get(it.id), showDiff)).join('')}</${ord ? 'ol' : 'ul'}>`);
+  }
+  return out.join('');
+}
+
 const itemHtml = (it, mark, was, showDiff) => {
   const m = mark ? MARK[mark] : null;
-  const body = (mark === 'changed' && was && showDiff) ? inlineDiff(was, it.text) : esc(it.text);
-  return `<li class="rule-item d${it.depth}${m ? ' mk-' + mark : ''}" id="i-${esc(it.id)}">
+  const body = (mark === 'changed' && was && showDiff) ? inlineDiff(was, it.text) : fmt(it.text);
+  return `<li class="rule-item d${it.depth}${it.ordered ? ' ord' : ''}${
+    m ? ' mk-' + mark : ''}" id="i-${esc(it.id)}">
     ${m ? `<span class="rule-flag ${m.chip}">${m.label}</span>` : ''}
     <span class="rule-text">${body}</span>
   </li>`;
@@ -55,18 +76,30 @@ export function render(db, state = {}) {
   const tab = P.tab === 'changes' && diff ? 'changes' : 'rules';
   const admin = db.isAdmin;
 
+  const editing = admin && EDITING;
   const toc = `
-    <nav class="toc" aria-label="Contents">
+    <nav class="toc${editing ? ' editing' : ''}" aria-label="Contents">
       <div class="toc-hd">${icon('list')} Contents</div>
       <ol>
-        ${bk.sections.map((s) => {
+        ${bk.sections.map((s, i) => {
           const d = diff?.perSection[s.id];
-          return `<li><a href="#s-${esc(s.id)}" data-jump="${esc(s.id)}">
-            <span>${esc(s.title)}</span>
+          return `<li data-sec="${esc(s.id)}">
+            ${editing ? `<button class="toc-grip" data-grip aria-label="Drag to reorder"
+              title="Drag to reorder">${icon('grip')}</button>` : ''}
+            <a href="#s-${esc(s.id)}" data-jump="${esc(s.id)}">
+            <span class="toc-name">${esc(s.title)}</span>
             ${d ? `<i class="toc-dot" title="${d.total} change${d.total === 1 ? '' : 's'}">${d.total}</i>` : ''}
-          </a></li>`;
+          </a>
+          ${editing ? `<span class="toc-tools">
+            <button data-sec-rename="${esc(s.id)}" aria-label="Rename ${esc(s.title)}"
+              title="Rename">${icon('pencil')}</button>
+            <button data-sec-del="${esc(s.id)}" class="del" aria-label="Delete ${esc(s.title)}"
+              title="Delete">${icon('x')}</button>
+          </span>` : ''}</li>`;
         }).join('')}
       </ol>
+      ${editing ? `<div class="toc-add">
+        <button class="btn sm" data-sec-add>${icon('plus')} Add section</button></div>` : ''}
     </nav>`;
 
   const changesPanel = !diff ? '' : `
@@ -109,8 +142,7 @@ export function render(db, state = {}) {
           <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}${
             admin ? `<button class="edit-pencil" data-edit-sec="${esc(s.id)}"
               aria-label="Edit ${esc(s.title)}" title="Edit section">${icon('pencil')}</button>` : ''}</h2>
-          <ul>${s.items.map((it) =>
-            itemHtml(it, diff?.byId.get(it.id), diff?.wasById.get(it.id), showDiff)).join('')}</ul>
+          ${listHtml(s.items, diff, showDiff)}
         </section>`;
       }).join('')}
     </article>`;
@@ -130,9 +162,11 @@ export function render(db, state = {}) {
     ${diff && diff.count ? `<label class="toggle" style="margin-left:auto">
       <input type="checkbox" id="diffToggle" ${showDiff ? 'checked' : ''}><span class="tr"></span>
       <span style="font-size:12px;color:var(--ink-2)">Mark changes</span></label>` : ''}
+    ${admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode
+      style="${diff && diff.count ? '' : 'margin-left:auto'}">${icon(editing ? 'check' : 'pencil')} ${
+      editing ? 'Done' : 'Edit'}</button>` : ''}
   </div>
 
-  ${bk.summary ? `<div class="banner" style="margin-bottom:14px">${icon('book')}<div>${esc(bk.summary)}</div></div>` : ''}
 
   ${diff ? `<div class="pills" style="margin-bottom:12px">
     <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
@@ -204,9 +238,142 @@ export function mount(root, db, go, setState, params = {}) {
   }
 
   /* ---------- editing ---------- */
+  root.querySelector('[data-edit-mode]')?.addEventListener('click', () => {
+    EDITING = !EDITING;
+    db.emit();
+  });
+
+  // `secs` above is the scroll-spy's list of section ELEMENTS; this is the data
+  const secList = () => db.rulebook(shownYear)?.sections ?? [];
+  const nameOf = (id) => secList().find((s) => s.id === id)?.title ?? '';
+
+  /* Drag to reorder. Pointer events rather than HTML5 drag-and-drop, which does
+     not fire on touch -- the rail is used on a phone too.
+
+     Nothing moves while you drag: a line shows where the row will land and the
+     list is rewritten once, on release. Reordering live instead means every
+     insertion changes the geometry you are measuring the pointer against, which
+     is what made it jump around. */
+  const list = root.querySelector('.toc.editing ol');
+  if (list) root.querySelectorAll('[data-grip]').forEach((grip) => {
+    grip.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const li = grip.closest('li');
+      const rows = [...list.querySelectorAll('li')];
+      const from = rows.indexOf(li);
+      let target = from;
+
+      grip.setPointerCapture(e.pointerId);
+      li.classList.add('dragging');
+      list.classList.add('reordering');
+      const mark = document.createElement('div');
+      mark.className = 'toc-drop';
+      list.appendChild(mark);
+
+      const move = (ev) => {
+        target = rows.length;
+        for (let k = 0; k < rows.length; k++) {
+          const r = rows[k].getBoundingClientRect();
+          if (ev.clientY < r.top + r.height / 2) { target = k; break; }
+        }
+        const at = target < rows.length
+          ? rows[target].offsetTop
+          : rows[rows.length - 1].offsetTop + rows[rows.length - 1].offsetHeight;
+        mark.style.top = `${at}px`;
+        // landing either side of where it already is changes nothing
+        mark.classList.toggle('nil', target === from || target === from + 1);
+      };
+      const done = async () => {
+        grip.removeEventListener('pointermove', move);
+        grip.removeEventListener('pointerup', done);
+        grip.removeEventListener('pointercancel', done);
+        mark.remove();
+        li.classList.remove('dragging');
+        list.classList.remove('reordering');
+        if (target === from || target === from + 1) return;
+        const ids = rows.map((x) => x.dataset.sec);
+        const [moved] = ids.splice(from, 1);
+        ids.splice(target > from ? target - 1 : target, 0, moved);
+        await db.setSectionOrder(shownYear, ids);
+      };
+      grip.addEventListener('pointermove', move);
+      grip.addEventListener('pointerup', done);
+      grip.addEventListener('pointercancel', done);
+    });
+  });
+
+  /* Rename in place: the title becomes an input where it sits. Enter or blur
+     commits, Escape puts it back. */
+  root.querySelectorAll('[data-sec-rename]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.secRename;
+    const li = b.closest('li');
+    const name = li.querySelector('.toc-name');
+    if (!name || li.querySelector('.toc-rename')) return;
+    const was = nameOf(id);
+    const input = document.createElement('input');
+    input.className = 'toc-rename';
+    input.value = was;
+    input.setAttribute('aria-label', 'Section title');
+    name.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let settled = false;
+    const cancel = () => { if (!settled) { settled = true; db.emit(); } };
+    const commit = async () => {
+      if (settled) return;
+      settled = true;
+      const v = input.value.trim();
+      if (!v || v === was) { db.emit(); return; }
+      await db.renameSection(shownYear, id, v);
+      toast('Section renamed');
+    };
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); commit(); }
+      if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+    });
+    input.addEventListener('blur', commit);
+    input.addEventListener('click', (e) => e.preventDefault());
+  }));
+
+  root.querySelectorAll('[data-sec-del]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.secDel;
+    const sec = secList().find((x) => x.id === id);
+    const n = sec?.items.length ?? 0;
+    openModal({
+      title: `Delete ${sec?.title ?? 'section'}?`, confirm: 'Delete', danger: true,
+      body: `<p style="margin:0;font-size:13.5px;line-height:1.6">This removes the section and
+        ${n === 0 ? 'it is empty' : `the <b>${n}</b> rule${n === 1 ? '' : 's'} in it`}. It only affects
+        the ${shownYear} book &mdash; earlier years keep their copy.</p>`,
+      onConfirm: async () => {
+        await db.removeSection(shownYear, id);
+        toast('Section deleted');
+      },
+    });
+  }));
+
+  root.querySelector('[data-sec-add]')?.addEventListener('click', () => {
+    openModal({
+      title: 'Add section', confirm: 'Add', closeButtons: false,
+      body: `<div class="field"><label>Title</label>
+          <input name="title" placeholder="e.g. Waivers" required></div>
+        <div class="field"><label>Position</label>
+          <select name="at">
+            ${secList().map((x, i) => `<option value="${i}">Before ${esc(x.title)}</option>`).join('')}
+            <option value="" selected>At the end</option>
+          </select></div>`,
+      onConfirm: async (d) => {
+        if (!d.title.trim()) return false;
+        const id = await db.addSection(shownYear, d.title, d.at === '' ? null : +d.at);
+        toast(`${d.title.trim()} added`);
+        setTimeout(() => document.getElementById(`s-${id}`)?.scrollIntoView({ block: 'start' }), 60);
+      },
+    });
+  });
+
   root.querySelectorAll('[data-edit-sec]').forEach((b) => b.addEventListener('click', () => {
     const sec = db.rulebook(shownYear).sections.find((s) => s.id === b.dataset.editSec);
-    openModal({
+    const m = openModal({
       title: `Edit — ${sec.title}`,
       confirm: 'Save section',
       closeButtons: false,   // outside-click, Escape and Save all close it
@@ -215,29 +382,36 @@ export function mount(root, db, go, setState, params = {}) {
       // visible in the change marks themselves.
       body: `<div class="s dim" style="font-size:12px;line-height:1.6;margin-bottom:12px">
           One rule per line. Indent with four spaces to nest.</div>
-        <div class="field"><label>Section title</label><input name="title" value="${esc(sec.title)}"></div>
-        <div class="field"><label>Rules</label><textarea name="body" style="min-height:260px;font-size:13px">${
-          esc(sec.items.map((it) => '    '.repeat(it.depth) + it.text).join('\n'))}</textarea></div>`,
+        <div class="field"><label>Rules</label>
+          ${formatBar()}
+          <textarea name="body" class="rule-edit" style="min-height:300px">${
+            esc(sec.items.map((it) =>
+              '    '.repeat(it.depth) + (it.ordered ? '1. ' : '') + it.text).join('\n'))}</textarea></div>`,
       onConfirm: async (d) => {
         const lines = d.body.split('\n').filter((l) => l.trim());
         await db.update('rules', (r) => {
           const s = r.seasons[String(shownYear)].sections.find((x) => x.id === sec.id);
-          s.title = d.title.trim() || s.title;
           const old = sec.items;
           s.items = lines.map((l, i) => {
             const depth = Math.floor((l.length - l.trimStart().length) / 4);
-            const text = l.trim();
+            // a leading "1." is how a numbered line is written; it is not part of
+            // the rule, and the number itself is whatever the list counts to
+            const raw = l.trim();
+            const ordered = /^\d+[.)]\s+/.test(raw);
+            const text = ordered ? raw.replace(/^\d+[.)]\s+/, '') : raw;
             // keep the id of the line that was in this position, so an edit reads
             // as a change rather than a delete + add
             const prior = old[i];
             const id = prior ? prior.id
               : `${sec.id}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-').filter(Boolean).slice(0, 6).join('-')}-${Date.now().toString(36)}${i}`;
-            return { id, depth, text };
+            return ordered ? { id, depth, text, ordered: true } : { id, depth, text };
           });
         });
         toast('Section saved');
       },
     });
+
+    wireFormatBar(m.root.querySelector('.fmt-bar'), m.root.querySelector('textarea[name="body"]'));
   }));
 
   root.querySelector('[data-publish-book]')?.addEventListener('click', async (e) => {
@@ -263,15 +437,14 @@ export function mount(root, db, go, setState, params = {}) {
             <select name="from">${years.sort((a, b) => b - a).map((y) =>
               `<option value="${y}">${y}</option>`).join('')}</select></div>
         </div>
-        <div class="field"><label>Summary (optional)</label>
-          <input name="summary" placeholder="What's different this year"></div>`,
+        `,
       onConfirm: async (d) => {
         const y = String(+d.year);
         if (db.get('rules').seasons[y]) { toast(`${y} already exists`); return false; }
         await db.update('rules', (r) => {
           r.seasons[y] = {
             status: 'draft', published: null, basedOn: +d.from,
-            summary: d.summary.trim() || null,
+            summary: null,
             sections: structuredClone(r.seasons[String(d.from)].sections),
           };
         });

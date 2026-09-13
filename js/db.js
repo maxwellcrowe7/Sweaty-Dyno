@@ -8,6 +8,7 @@
 import { SUPABASE, isConfigured } from './config.js';
 import { migrate } from './migrate.js';
 import { Supabase } from './supabase.js';
+import { unfmt } from './util.js';
 
 const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players', 'rules'];
 const LS_KEY = 'sweatydyno:overlay:v1';
@@ -630,6 +631,54 @@ class Store {
    * Items carry stable ids, so an edit reads as `changed` rather than as a
    * remove plus an add — which is the whole point of copying last year forward.
    */
+  /* ---------- rulebook sections ----------
+     Ids are the spine of the diff: a section or rule keeps its id across the
+     copy forward, which is what makes an edit read as "changed" rather than as
+     a delete plus an add. So ids are minted once, here, and never rewritten. */
+  sectionId(title, taken = []) {
+    const base = String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '').slice(0, 32) || 'section';
+    let id = base, n = 2;
+    while (taken.includes(id)) id = `${base}-${n++}`;
+    return id;
+  }
+
+  async addSection(season, title, at = null) {
+    const id = this.sectionId(title, this.rulebook(season).sections.map((s) => s.id));
+    await this.update('rules', (r) => {
+      const secs = r.seasons[String(season)].sections;
+      const sec = { id, title: String(title).trim(), items: [] };
+      secs.splice(at == null ? secs.length : at, 0, sec);
+    });
+    return id;
+  }
+
+  async renameSection(season, id, title) {
+    await this.update('rules', (r) => {
+      const sec = r.seasons[String(season)].sections.find((s) => s.id === id);
+      if (sec) sec.title = String(title).trim();
+    });
+  }
+
+  async removeSection(season, id) {
+    await this.update('rules', (r) => {
+      const bk = r.seasons[String(season)];
+      bk.sections = bk.sections.filter((s) => s.id !== id);
+    });
+  }
+
+  /** Reorder to exactly `ids`. Anything not named keeps its place at the end, so
+      a stale list can never silently drop a section. */
+  async setSectionOrder(season, ids) {
+    await this.update('rules', (r) => {
+      const bk = r.seasons[String(season)];
+      const by = new Map(bk.sections.map((s) => [s.id, s]));
+      const out = [];
+      for (const id of ids) if (by.has(id)) { out.push(by.get(id)); by.delete(id); }
+      bk.sections = [...out, ...by.values()];
+    });
+  }
+
   rulesDiff(season) {
     const cur = this.rulebook(season);
     const prev = this.previousRulebook(season);
@@ -647,7 +696,9 @@ class Store {
     for (const [id, it] of B) {
       const was = A.get(id);
       if (!was) added.push(it);
-      else if (was.text !== it.text) changed.push({ ...it, was: was.text });
+      // compare the words, not the markers: bolding a phrase is not a rule change,
+      // and flagging it would show a "changed" rule with nothing visibly different
+      else if (unfmt(was.text) !== unfmt(it.text)) changed.push({ ...it, was: was.text });
     }
     for (const [id, it] of A) if (!B.has(id)) removed.push(it);
 

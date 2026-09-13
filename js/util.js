@@ -76,7 +76,9 @@ const I = {
   alert:'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z',
   check:'M20 6 9 17l-5-5',
   plus:'M12 5v14M5 12h14',
-  pencil:'m18 2 4 4-13 13H5v-4L18 2Z',
+  // spans 3.5-20.5 on both axes: the old path sat at x 5-22 / y 2-19, so it
+  // drew up and to the right of centre in every button it was dropped into
+  pencil:'m16.5 3.5 4 4-13 13H3.5v-4L16.5 3.5Z',
   down:'M12 3v13M6 11l6 6 6-6M4 21h16',
   sync:'M3 12a9 9 0 0 1 15-6.7L21 8M21 4v4h-4M21 12a9 9 0 0 1-15 6.7L3 16M3 20v-4h4',
   blade:'M6 2v20M18 2v20M4 2h16M4 17h16M8 5h8v2.5l-8 4z',
@@ -90,6 +92,9 @@ const I = {
   list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   diff:'M12 3v6M9 6h6M12 15v6M9 18h6M5 12h14',
   chev:'m9 18 6-6-6-6',
+  // two bars, not the usual six dots: at 14px the dots are sub-pixel and
+  // disappear entirely
+  grip:'M5 9.5h14M5 14.5h14',
   inbox:'M4 13h4l2 3h4l2-3h4M4 13 6.6 5.2A2 2 0 0 1 8.5 4h7a2 2 0 0 1 1.9 1.2L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-5Z',
 };
 export const icon = (name, cls = '') =>
@@ -169,6 +174,85 @@ export const seasonPicker = (db, label = 'Season') => `<div class="season-pick">
   <select data-season aria-label="Season">
     ${db.seasons.map((s) => `<option value="${s}" ${s === db.season ? 'selected' : ''}>${s}</option>`).join('')}
   </select>
+</div>`;
+
+/* Inline formatting lives in the rule text as markers, not as HTML. Three
+   reasons: the word-level diff below stays meaningful (bolding a word changes
+   one token, not a sentence of markup), the JSON stays readable and editable by
+   hand like every other data file here, and there is no HTML to sanitise --
+   everything is escaped first and only these markers become tags.
+   Longest first, so __u__ is never read as two _i_ runs. */
+const MARKS = [
+  [/\*\*(?=\S)([\s\S]*?\S)\*\*/g, 'strong'],
+  [/__(?=\S)([\s\S]*?\S)__/g, 'u'],
+  [/_(?=\S)([\s\S]*?\S)_/g, 'em'],
+];
+export function fmt(text) {
+  let out = esc(String(text ?? ''));
+  for (const [re, tag] of MARKS) out = out.replace(re, `<${tag}>$1</${tag}>`);
+  return out;
+}
+/** The same text with the markers stripped -- for anything that needs it plain. */
+export const unfmt = (text) => String(text ?? '')
+  .replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, '$1')
+  .replace(/__(?=\S)([\s\S]*?\S)__/g, '$1')
+  .replace(/_(?=\S)([\s\S]*?\S)_/g, '$1');
+
+/** A formatting toolbar bound to a textarea: wraps the selection in markers,
+    or toggles the list kind on whole lines. Kept here so the rule editor and
+    anything else that needs one behave identically. */
+export function wireFormatBar(bar, ta) {
+  const wrap = (mark) => {
+    const { selectionStart: a, selectionEnd: b, value: v } = ta;
+    const sel = v.slice(a, b);
+    if (!sel) return;
+    const on = sel.startsWith(mark) && sel.endsWith(mark) && sel.length > mark.length * 2;
+    const next = on ? sel.slice(mark.length, -mark.length) : mark + sel + mark;
+    ta.setRangeText(next, a, b, 'select');
+    ta.focus();
+  };
+  // whole lines: a numbered line carries "1." at its indent, a bullet carries none
+  const relist = (ordered) => {
+    const v = ta.value;
+    const from = v.lastIndexOf('\n', ta.selectionStart - 1) + 1;
+    let to = v.indexOf('\n', ta.selectionEnd);
+    if (to === -1) to = v.length;
+    const lines = v.slice(from, to).split('\n').map((l) => {
+      const indent = l.slice(0, l.length - l.trimStart().length);
+      const body = l.trimStart().replace(/^\d+[.)]\s+/, '');
+      return indent + (ordered ? '1. ' : '') + body;
+    });
+    ta.setRangeText(lines.join('\n'), from, to, 'select');
+    ta.focus();
+  };
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fmt]');
+    if (!b) return;
+    e.preventDefault();
+    const k = b.dataset.fmt;
+    if (k === 'b') wrap('**');
+    else if (k === 'i') wrap('_');
+    else if (k === 'u') wrap('__');
+    else if (k === 'ul') relist(false);
+    else if (k === 'ol') relist(true);
+  });
+  ta.addEventListener('keydown', (e) => {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'b') { e.preventDefault(); wrap('**'); }
+    if (k === 'i') { e.preventDefault(); wrap('_'); }
+    if (k === 'u') { e.preventDefault(); wrap('__'); }
+  });
+}
+
+/** The buttons themselves. */
+export const formatBar = () => `<div class="fmt-bar" role="toolbar" aria-label="Formatting">
+  <button type="button" data-fmt="b" title="Bold (⌘B)" aria-label="Bold"><b>B</b></button>
+  <button type="button" data-fmt="i" title="Italic (⌘I)" aria-label="Italic"><i>I</i></button>
+  <button type="button" data-fmt="u" title="Underline (⌘U)" aria-label="Underline"><u>U</u></button>
+  <span class="sep"></span>
+  <button type="button" data-fmt="ul" title="Bulleted" aria-label="Bulleted list">${icon('list')}</button>
+  <button type="button" data-fmt="ol" title="Numbered" aria-label="Numbered list">1.</button>
 </div>`;
 
 /** <option> list of teams for a select. */
