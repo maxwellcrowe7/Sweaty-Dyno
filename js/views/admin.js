@@ -73,6 +73,21 @@ export function render(db) {
     </div>
   </div>`}
 
+  ${db.hasAdminRights ? `
+  <div class="section-title">View as</div>
+  <div class="card">
+    <div class="card-hd">${icon('users')}<h3>Guest preview</h3><div class="spacer"></div>
+      <span class="chip ${db.asGuest ? 'heat' : 'mint'}">${db.asGuest ? 'Guest' : 'Commissioner'}</span></div>
+    <div class="card-bd">
+      <label class="toggle"><input type="checkbox" id="guestToggle" ${db.asGuest ? 'checked' : ''}>
+        <span class="tr"></span><span style="font-size:12.5px">See the app as the league sees it</span></label>
+      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-top:11px">
+        Hides every edit control without signing you out. Nothing is saved either way,
+        and a reload puts you back.
+      </div>
+    </div>
+  </div>` : ''}
+
   ${issues.length ? `
   <div class="section-title">Needs a look</div>
   <div class="card"><div class="card-bd flush"><div class="rows">
@@ -293,6 +308,11 @@ export function mount(root, db) {
   root.querySelector('[data-signout]')?.addEventListener('click', async () => {
     await db.auth.signOut();
     toast('Signed out');
+  });
+
+  root.querySelector('#guestToggle')?.addEventListener('change', (e) => {
+    db.setAsGuest(e.target.checked);
+    toast(e.target.checked ? 'Viewing as a guest' : 'Back to commissioner view');
   });
 
   root.querySelector('#adminToggle')?.addEventListener('change', (e) => {

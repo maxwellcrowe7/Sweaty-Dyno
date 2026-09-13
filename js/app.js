@@ -221,7 +221,21 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInfo(
 window.addEventListener('scroll', closeInfo, { passive: true });
 
 /* ---------- render ---------- */
+/* A standing way out of the guest preview. Without it you can forget you are in
+   it and read the missing edit controls as the app being broken. */
+function paintGuestBar() {
+  let bar = document.getElementById('guestBar');
+  if (!db.asGuest) { bar?.remove(); return; }
+  if (bar) return;
+  bar = el('div', { id: 'guestBar', class: 'guest-bar' });
+  bar.innerHTML = `${icon('users')}<span>Viewing as a guest</span>
+    <button type="button" data-exit-guest>Exit</button>`;
+  bar.querySelector('[data-exit-guest]').addEventListener('click', () => db.setAsGuest(false));
+  document.body.appendChild(bar);
+}
+
 function paint() {
+  paintGuestBar();
   const v = VIEWS[state.view];
   const main = $('#main');
   if (!main) return;

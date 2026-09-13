@@ -650,6 +650,22 @@ table.dt th.sticky{width:1%}
 .modal-ft{display:flex;gap:9px;padding:0 18px;margin-top:4px}
 .modal-ft .btn{flex:1}
 
+/* guest preview */
+.guest-bar{
+  position:fixed;left:50%;transform:translateX(-50%);z-index:70;
+  bottom:calc(var(--tab-h) + env(safe-area-inset-bottom) + 14px);
+  display:flex;align-items:center;gap:9px;white-space:nowrap;
+  background:var(--surface-3);border:1px solid rgba(255,107,44,.42);
+  border-radius:999px;padding:6px 6px 6px 14px;box-shadow:var(--shadow);
+  font-size:12.5px;font-weight:600;color:var(--ink-2);
+}
+.guest-bar svg{width:15px;height:15px;color:var(--heat);flex:none}
+.guest-bar button{
+  background:var(--heat);color:#160800;border-radius:999px;
+  padding:4px 12px;font-size:11.5px;font-weight:700;letter-spacing:.02em;
+}
+@media (min-width:900px){ .guest-bar{bottom:22px} }
+
 .toast{
   position:fixed;left:50%;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom) + 16px);
   transform:translate(-50%,14px);z-index:90;
@@ -1794,10 +1810,18 @@ class Store {
      With Supabase the gate is real: writes are refused by RLS unless a
      signed-in user made them. Without it, this is a local convenience
      switch only — the honest framing is "this browser", not "security". */
-  get isAdmin() {
+  /** Whether this browser actually HAS edit rights, ignoring any guest preview.
+      Anything that offers a way back out of the preview must ask this, not
+      isAdmin -- otherwise the control hides itself and strands you. */
+  get hasAdminRights() {
     if (this.cloud) return this.cloud.signedIn;
     return localStorage.getItem(LS_ADMIN) === '1';
   }
+  /** What the app renders against: rights, unless you asked to look as a guest. */
+  get isAdmin() { return this.hasAdminRights && !this._asGuest; }
+  /** Deliberately NOT persisted -- a reload is always an escape hatch. */
+  get asGuest() { return this._asGuest === true; }
+  setAsGuest(on) { this._asGuest = Boolean(on); this.emit(); }
   setAdmin(on) {
     if (this.cloud) return;   // Supabase mode: sign in / out instead
     on ? localStorage.setItem(LS_ADMIN, '1') : localStorage.removeItem(LS_ADMIN);
@@ -4815,6 +4839,21 @@ function render(db) {
     </div>
   </div>`}
 
+  ${db.hasAdminRights ? `
+  <div class="section-title">View as</div>
+  <div class="card">
+    <div class="card-hd">${icon('users')}<h3>Guest preview</h3><div class="spacer"></div>
+      <span class="chip ${db.asGuest ? 'heat' : 'mint'}">${db.asGuest ? 'Guest' : 'Commissioner'}</span></div>
+    <div class="card-bd">
+      <label class="toggle"><input type="checkbox" id="guestToggle" ${db.asGuest ? 'checked' : ''}>
+        <span class="tr"></span><span style="font-size:12.5px">See the app as the league sees it</span></label>
+      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-top:11px">
+        Hides every edit control without signing you out. Nothing is saved either way,
+        and a reload puts you back.
+      </div>
+    </div>
+  </div>` : ''}
+
   ${issues.length ? `
   <div class="section-title">Needs a look</div>
   <div class="card"><div class="card-bd flush"><div class="rows">
@@ -5034,6 +5073,11 @@ function mount(root, db) {
   root.querySelector('[data-signout]')?.addEventListener('click', async () => {
     await db.auth.signOut();
     toast('Signed out');
+  });
+
+  root.querySelector('#guestToggle')?.addEventListener('change', (e) => {
+    db.setAsGuest(e.target.checked);
+    toast(e.target.checked ? 'Viewing as a guest' : 'Back to commissioner view');
   });
 
   root.querySelector('#adminToggle')?.addEventListener('change', (e) => {
@@ -5403,7 +5447,21 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeInfo(
 window.addEventListener('scroll', closeInfo, { passive: true });
 
 /* ---------- render ---------- */
+/* A standing way out of the guest preview. Without it you can forget you are in
+   it and read the missing edit controls as the app being broken. */
+function paintGuestBar() {
+  let bar = document.getElementById('guestBar');
+  if (!db.asGuest) { bar?.remove(); return; }
+  if (bar) return;
+  bar = el('div', { id: 'guestBar', class: 'guest-bar' });
+  bar.innerHTML = `${icon('users')}<span>Viewing as a guest</span>
+    <button type="button" data-exit-guest>Exit</button>`;
+  bar.querySelector('[data-exit-guest]').addEventListener('click', () => db.setAsGuest(false));
+  document.body.appendChild(bar);
+}
+
 function paint() {
+  paintGuestBar();
   const v = VIEWS[state.view];
   const main = $('#main');
   if (!main) return;

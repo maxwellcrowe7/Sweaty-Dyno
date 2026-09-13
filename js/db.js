@@ -153,10 +153,18 @@ class Store {
      With Supabase the gate is real: writes are refused by RLS unless a
      signed-in user made them. Without it, this is a local convenience
      switch only — the honest framing is "this browser", not "security". */
-  get isAdmin() {
+  /** Whether this browser actually HAS edit rights, ignoring any guest preview.
+      Anything that offers a way back out of the preview must ask this, not
+      isAdmin -- otherwise the control hides itself and strands you. */
+  get hasAdminRights() {
     if (this.cloud) return this.cloud.signedIn;
     return localStorage.getItem(LS_ADMIN) === '1';
   }
+  /** What the app renders against: rights, unless you asked to look as a guest. */
+  get isAdmin() { return this.hasAdminRights && !this._asGuest; }
+  /** Deliberately NOT persisted -- a reload is always an escape hatch. */
+  get asGuest() { return this._asGuest === true; }
+  setAsGuest(on) { this._asGuest = Boolean(on); this.emit(); }
   setAdmin(on) {
     if (this.cloud) return;   // Supabase mode: sign in / out instead
     on ? localStorage.setItem(LS_ADMIN, '1') : localStorage.removeItem(LS_ADMIN);
