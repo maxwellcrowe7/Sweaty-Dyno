@@ -239,18 +239,21 @@ export function render(db, state = {}) {
 
   ${/* The control row lives in the same place in BOTH tabs. It used to be inside
        the rulebook branch, so opening What changed took the way back with it. */''}
+  ${/* Above everything, so the rail and the body start at the same line and the
+       tabs are in the same place whichever one you are on. */''}
+  <div class="rules-bar">
+    ${diff ? `<div class="pills">
+      <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
+      <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
+    </div>` : ''}
+    ${bk.status !== 'published' ? '<span class="chip heat">Draft</span>' : ''}
+    ${tab === 'changes' ? '' : admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
+      icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
+  </div>
+
   <div class="rules-layout${editing ? ' editing' : ''}${tab === 'changes' ? ' solo' : ''}">
     ${tab === 'changes' ? '' : toc}
     <div class="rules-main">
-      <div class="rules-bar">
-        ${diff ? `<div class="pills">
-          <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
-          <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
-        </div>` : ''}
-        ${bk.status !== 'published' ? '<span class="chip heat">Draft</span>' : ''}
-        ${tab === 'changes' ? '' : admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
-          icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
-      </div>
       ${tab === 'changes' ? changesPanel
         : `<div class="rules-doc card"><div class="card-bd">${doc}</div></div>`}
     </div>
