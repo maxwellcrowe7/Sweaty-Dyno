@@ -135,4 +135,29 @@ print('\n— the change list groups by section —');
      ['Changed','New','Removed'].every(k=>p.includes(`>${k}<`)), true);
 }
 
+
+print('\n— a deleted SECTION shows in the contents rail —');
+{
+  const ru=await import('../js/views/rules.js');
+  await db.update('rules',(r)=>{
+    r.seasons['2025'].sections=[
+      {id:'a',title:'Buy-In',items:[{id:'a1',depth:0,text:'One'}]},
+      {id:'b',title:'Retired Section',items:[{id:'b1',depth:0,text:'Gone'}]},
+      {id:'c',title:'Waivers',items:[{id:'c1',depth:0,text:'Three'}]}];
+    r.seasons['2026'].sections=[
+      {id:'a',title:'Buy-In',items:[{id:'a1',depth:0,text:'One'}]},
+      {id:'c',title:'Waivers',items:[{id:'c1',depth:0,text:'Three'}]}];
+  });
+  db.season=2026;
+  const on=ru.render(db,{params:{}}), off=ru.render(db,{params:{marks:'0'}});
+  const toc=(h)=>h.slice(h.indexOf('<nav class="toc'), h.indexOf('</nav>'));
+  eq('on: the gone section is listed', toc(on).includes('Retired Section'), true);
+  eq('on: struck through',  /<del>Retired Section<\/del>/.test(toc(on)), true);
+  eq('on: in its old place', toc(on).indexOf('Buy-In') < toc(on).indexOf('Retired Section')
+     && toc(on).indexOf('Retired Section') < toc(on).indexOf('Waivers'), true);
+  eq('on: not clickable',   /data-jump="b"/.test(toc(on)), false);
+  eq('off: not listed at all', toc(off).includes('Retired Section'), false);
+  eq('the book still has 2 sections', db.rulebook(2026).sections.length, 2);
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRule deletion passed.');

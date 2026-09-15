@@ -832,6 +832,11 @@ table.dt th.sticky{width:1%}
 .toc-add .btn{width:100%;justify-content:center}
 .toc a.on{background:rgba(255,107,44,.12);color:var(--heat)}
 .toc a.on::before{color:var(--heat)}
+/* a section that no longer exists in this book */
+.toc li.gone{padding:8px 10px;display:flex;align-items:center;gap:10px;opacity:.75}
+.toc li.gone .toc-name{flex:1;min-width:0;font-size:13.5px;color:var(--ink-3)}
+.toc li.gone del{text-decoration-color:rgba(255,77,94,.75)}
+.toc-dot.red{background:rgba(255,77,94,.16);color:var(--red)}
 .toc-dot{
   flex:none;font-style:normal;font-size:10px;font-weight:700;
   min-width:17px;height:17px;padding:0 4px;border-radius:99px;

@@ -714,7 +714,10 @@ class Store {
     const prevSecs = new Set(prev.sections.map((s) => s.id));
     const curSecs = new Set(cur.sections.map((s) => s.id));
     const sectionsAdded = cur.sections.filter((s) => !prevSecs.has(s.id));
-    const sectionsRemoved = prev.sections.filter((s) => !curSecs.has(s.id));
+    // with `index` so a deleted section can be shown back in its place in the rail
+    const sectionsRemoved = prev.sections
+      .map((s, i) => ({ ...s, index: i }))
+      .filter((s) => !curSecs.has(s.id));
 
     const byId = new Map();
     for (const it of added) byId.set(it.id, 'added');

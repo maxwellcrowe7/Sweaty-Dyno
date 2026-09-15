@@ -850,6 +850,11 @@ table.dt th.sticky{width:1%}
 .toc-add .btn{width:100%;justify-content:center}
 .toc a.on{background:rgba(255,107,44,.12);color:var(--heat)}
 .toc a.on::before{color:var(--heat)}
+/* a section that no longer exists in this book */
+.toc li.gone{padding:8px 10px;display:flex;align-items:center;gap:10px;opacity:.75}
+.toc li.gone .toc-name{flex:1;min-width:0;font-size:13.5px;color:var(--ink-3)}
+.toc li.gone del{text-decoration-color:rgba(255,77,94,.75)}
+.toc-dot.red{background:rgba(255,77,94,.16);color:var(--red)}
 .toc-dot{
   flex:none;font-style:normal;font-size:10px;font-weight:700;
   min-width:17px;height:17px;padding:0 4px;border-radius:99px;
@@ -2656,7 +2661,10 @@ class Store {
     const prevSecs = new Set(prev.sections.map((s) => s.id));
     const curSecs = new Set(cur.sections.map((s) => s.id));
     const sectionsAdded = cur.sections.filter((s) => !prevSecs.has(s.id));
-    const sectionsRemoved = prev.sections.filter((s) => !curSecs.has(s.id));
+    // with `index` so a deleted section can be shown back in its place in the rail
+    const sectionsRemoved = prev.sections
+      .map((s, i) => ({ ...s, index: i }))
+      .filter((s) => !curSecs.has(s.id));
 
     const byId = new Map();
     for (const it of added) byId.set(it.id, 'added');
@@ -4826,9 +4834,27 @@ function render(db, state = {}) {
     <nav class="toc${editing ? ' editing' : ''}" aria-label="Contents">
       <div class="toc-hd">${icon('list')} Contents</div>
       <ol>
-        ${bk.sections.map((s, i) => {
-          const d = diff?.perSection[s.id];
-          return `<li data-sec="${esc(s.id)}">
+        ${/* deleted sections go back in their own place, struck through */''}
+        ${(() => {
+          const rows = bk.sections.map((s) => ({ s, gone: false }));
+          if (showDiff && diff) {
+            for (const g of [...diff.sectionsRemoved].sort((a, b) => a.index - b.index))
+              rows.splice(Math.min(g.index, rows.length), 0, { s: g, gone: true });
+          }
+          return rows.map(({ s, gone }) => gone
+            ? `<li class="gone"><span class="toc-name"><del>${esc(s.title)}</del></span>
+                 <i class="toc-dot red" title="Section removed">&minus;</i></li>`
+            : sectionRow(s));
+        })().join('')}
+      </ol>
+      ${editing ? `<div class="toc-add">
+        <button class="btn sm" data-sec-add>${icon('plus')} Add section</button></div>` : ''}
+    </nav>`;
+
+  /* one row of the contents rail */
+  function sectionRow(s) {
+    const d = diff?.perSection[s.id];
+    return `<li data-sec="${esc(s.id)}">
             ${editing ? `<button class="toc-grip" data-grip aria-label="Drag to reorder"
               title="Drag to reorder">${icon('grip')}</button>` : ''}
             <a href="#s-${esc(s.id)}" data-jump="${esc(s.id)}">
@@ -4842,11 +4868,7 @@ function render(db, state = {}) {
             <button data-sec-del="${esc(s.id)}" class="del" aria-label="Delete ${esc(s.title)}"
               title="Delete">${icon('x')}</button>
           </span>` : ''}</li>`;
-        }).join('')}
-      </ol>
-      ${editing ? `<div class="toc-add">
-        <button class="btn sm" data-sec-add>${icon('plus')} Add section</button></div>` : ''}
-    </nav>`;
+  }
 
   const changesPanel = !diff ? '' : `
     <div class="card">
@@ -4986,7 +5008,13 @@ function mount(root, db, go, setState, params = {}) {
     setTimeout(() => el.classList.remove('flash'), 1400);
   };
   root.querySelectorAll('[data-jump]').forEach((a) => a.addEventListener('click', (e) => {
-    e.preventDefault(); scrollTo(root.querySelector(`#s-${CSS.escape(a.dataset.jump)}`));
+    e.preventDefault();
+    // mark it straight away and hold off the spy: the section you clicked may not
+    // be able to reach the top of the screen, and the spy would hand the
+    // highlight to whatever is up there instead
+    root.querySelectorAll('[data-jump]').forEach((x) => x.classList.toggle('on', x === a));
+    root._spyHold = Date.now() + 700;
+    scrollTo(root.querySelector(`#s-${CSS.escape(a.dataset.jump)}`));
   }));
   // arriving from a link: ?sec= or ?item=
   const deep = params.item ? `#i-${CSS.escape(params.item)}`
@@ -5003,8 +5031,18 @@ function mount(root, db, go, setState, params = {}) {
   const secs = links.map((a) => root.querySelector(`#s-${CSS.escape(a.dataset.jump)}`)).filter(Boolean);
   if (secs.length) {
     const spy = () => {
+      if (root._spyHold && Date.now() < root._spyHold) return;
       let active = 0;
       secs.forEach((s, i) => { if (s.getBoundingClientRect().top <= 120) active = i; });
+      // At the foot of the page the last sections can never get their top above
+      // the line, so nothing down there could ever be marked current. Once the
+      // page cannot scroll further, hand it to whatever is actually on screen.
+      const doc = document.documentElement;
+      if (window.innerHeight + window.scrollY >= doc.scrollHeight - 4) {
+        for (let i = secs.length - 1; i >= 0; i--) {
+          if (secs[i].getBoundingClientRect().top < window.innerHeight) { active = i; break; }
+        }
+      }
       links.forEach((a, i) => a.classList.toggle('on', i === active));
     };
     spy();
@@ -5157,6 +5195,14 @@ function mount(root, db, go, setState, params = {}) {
   const bar = root.querySelector('.edit-dock .fmt-bar');
   const state = root.querySelector('[data-dirty]');
   const dirty = new Set();
+
+  // editing: the section you put the caret in is the one you are on, regardless
+  // of where the page happens to be scrolled
+  bodies.forEach((host) => host.addEventListener('focusin', () => {
+    root._spyHold = Date.now() + 700;
+    root.querySelectorAll('[data-jump]').forEach((a) =>
+      a.classList.toggle('on', a.dataset.jump === host.dataset.body));
+  }));
 
   if (bar && bodies.length) {
     // one call for every surface: the toolbar is shared, so binding it per
