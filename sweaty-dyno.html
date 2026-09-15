@@ -4952,7 +4952,7 @@ function render(db, state = {}) {
   <div class="rules-bar">
     ${diff ? `<div class="pills">
       <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
-      <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
+      <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed</button>
     </div>` : ''}
     ${tab === 'changes' ? '' : admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
       icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
