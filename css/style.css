@@ -711,6 +711,13 @@ table.dt th.sticky{width:1%}
   font-size:26px;text-transform:uppercase;letter-spacing:.03em;
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
 }
+/* where this season's book stands, in one mark beside the year */
+.book-dot{
+  width:9px;height:9px;border-radius:50%;flex:none;display:block;margin-left:-4px;
+  background:var(--ink-3);box-shadow:0 0 0 3px rgba(124,139,160,.14);
+}
+.book-dot.draft{background:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.18)}
+.book-dot.live{background:var(--mint);box-shadow:0 0 0 3px rgba(61,220,151,.18)}
 
 .rules-layout{display:block}
 .toc{

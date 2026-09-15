@@ -1,4 +1,4 @@
-import { esc, icon, empty, fmtDate, openModal, toast, seasonPicker, fmt, unfmt,
+import { esc, icon, empty, openModal, toast, seasonPicker, fmt, unfmt,
   formatBar, wireRichBar } from '../util.js';
 
 const MARK = {
@@ -8,6 +8,19 @@ const MARK = {
 };
 
 /** Word-level diff so a changed line shows what actually moved. */
+
+/* Where a season's book stands, as one dot beside the year. */
+const BOOK_STATE = {
+  none:      { cls: 'none', label: 'No rulebook yet' },
+  draft:     { cls: 'draft', label: 'Draft — only you can see this' },
+  published: { cls: 'live', label: 'Published' },
+};
+const statusDot = (db, year) => {
+  const bk = db.get('rules').seasons[String(year)];
+  const st = BOOK_STATE[!bk ? 'none' : bk.status === 'published' ? 'published' : 'draft'];
+  return `<i class="book-dot ${st.cls}" role="img" title="${esc(st.label)}"
+    aria-label="${esc(st.label)}"></i>`;
+};
 
 /* Edit mode is module state, not persisted: a reload always lands you reading
    rather than editing, and it can never be on for someone without rights. */
@@ -134,7 +147,7 @@ export function render(db, state = {}) {
   // book: the picker says 2026 while the page quietly shows 2025.
   if (!seasons.includes(year)) {
     return `<div class="rules-meta"><div>
-        <h1 class="rules-title">Rulebook ${seasonPicker(db)}</h1></div></div>
+        <h1 class="rules-title">Rulebook ${seasonPicker(db)}${statusDot(db, year)}</h1></div></div>
       ${empty(`No ${year} rulebook yet`,
         db.isAdmin
           ? `Nothing has been written for ${year}. Start it from an earlier book and every rule carries over with its history.`
@@ -226,11 +239,7 @@ export function render(db, state = {}) {
 
   <div class="rules-meta">
     <div>
-      <h1 class="rules-title">Rulebook ${seasonPicker(db)}</h1>
-      <div class="s dim" style="font-size:12px">
-        ${bk.status === 'published' ? `Published ${fmtDate(bk.published, { year: true })}` : 'Not published'}
-        ${diff ? ` &middot; based on ${diff.from}` : ''}
-      </div>
+      <h1 class="rules-title">Rulebook ${seasonPicker(db)}${statusDot(db, year)}</h1>
     </div>
     ${diff && diff.count ? `<label class="toggle" style="margin-left:auto">
       <input type="checkbox" id="diffToggle" ${showDiff ? 'checked' : ''}><span class="tr"></span>
@@ -246,7 +255,6 @@ export function render(db, state = {}) {
       <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
       <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
     </div>` : ''}
-    ${bk.status !== 'published' ? '<span class="chip heat">Draft</span>' : ''}
     ${tab === 'changes' ? '' : admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
       icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
   </div>
