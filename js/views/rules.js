@@ -237,24 +237,24 @@ export function render(db, state = {}) {
       <span style="font-size:12px;color:var(--ink-2)">Mark changes</span></label>` : ''}
   </div>
 
-  ${/* One row over the body: the two tabs, the draft tag and Edit. It sits in
-       the doc column so it lines up with the text rather than the sidebar. */''}
-  ${tab === 'changes' ? changesPanel : `
-    <div class="rules-layout${editing ? ' editing' : ''}">
-      ${toc}
-      <div class="rules-main">
-        <div class="rules-bar">
-          ${diff ? `<div class="pills">
-            <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
-            <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
-          </div>` : ''}
-          ${bk.status !== 'published' ? '<span class="chip heat">Draft</span>' : ''}
-          ${admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
-            icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
-        </div>
-        <div class="rules-doc card"><div class="card-bd">${doc}</div></div>
+  ${/* The control row lives in the same place in BOTH tabs. It used to be inside
+       the rulebook branch, so opening What changed took the way back with it. */''}
+  <div class="rules-layout${editing ? ' editing' : ''}${tab === 'changes' ? ' solo' : ''}">
+    ${tab === 'changes' ? '' : toc}
+    <div class="rules-main">
+      <div class="rules-bar">
+        ${diff ? `<div class="pills">
+          <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
+          <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
+        </div>` : ''}
+        ${bk.status !== 'published' ? '<span class="chip heat">Draft</span>' : ''}
+        ${tab === 'changes' ? '' : admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
+          icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
       </div>
+      ${tab === 'changes' ? changesPanel
+        : `<div class="rules-doc card"><div class="card-bd">${doc}</div></div>`}
     </div>
+  </div>
     ${/* Outside the card on purpose: .card is overflow:hidden, which stops a
          sticky child from ever sticking. This is fixed to the viewport. */''}
     ${editing ? `<div class="edit-dock">
@@ -263,7 +263,7 @@ export function render(db, state = {}) {
         <button class="btn sm primary" data-save-all>${icon('check')} Save</button>
         <span class="dock-state" data-dirty>No changes yet</span>
       </div>
-    </div>` : ''}`}
+    </div>` : ''}
 
   ${admin ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn" data-new-book>${icon('plus')} Start next season's rulebook</button>

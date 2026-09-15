@@ -45,4 +45,27 @@ eq('2025 is untouched', db.rulebook(2025).sections.length > 0, true);
 db.season=2025;
 eq('and it renders', ru.render(db,{params:{}}).includes('rules-layout'), true);
 
+
+print('\n— the tabs are reachable from both tabs —');
+{
+  await db.update('rules',(r)=>{
+    r.seasons['2026']={status:'draft',published:null,basedOn:2025,summary:null,
+      sections:structuredClone(r.seasons['2025'].sections)};
+    r.seasons['2026'].sections[0].items[0].text='Changed for the test.';
+  });
+  db.season=2026;
+  const book   = ru.render(db,{params:{}});
+  const changes= ru.render(db,{params:{tab:'changes'}});
+  eq('rulebook view offers both tabs',
+     ['data-rtab="rules"','data-rtab="changes"'].every(x=>book.includes(x)), true);
+  // the regression: opening What changed used to hide the way back
+  eq('changes view still offers both tabs',
+     ['data-rtab="rules"','data-rtab="changes"'].every(x=>changes.includes(x)), true);
+  eq('changes view shows the change list', changes.includes('What changed'), true);
+  eq('and drops the contents rail', changes.includes('class="toc'), false);
+  eq('rulebook view keeps it', book.includes('class="toc'), true);
+  await db.update('rules',(r)=>{ delete r.seasons['2026']; });
+  db.season=2025;
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRulebook navigation passed.');

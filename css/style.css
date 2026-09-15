@@ -904,6 +904,8 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 
 @media (min-width:900px){
   .rules-layout{display:grid;grid-template-columns:246px 1fr;gap:18px;align-items:start}
+  /* the changes view has no sections to jump to, so it drops the contents rail */
+  .rules-layout.solo{grid-template-columns:1fr}
   .toc{position:sticky;top:80px;margin-bottom:0;max-height:calc(100dvh - 110px);display:flex;flex-direction:column}
   .toc ol{overflow-y:auto}
 }
