@@ -25,12 +25,18 @@ const statusDot = (db, year) => {
 /* Edit mode is module state, not persisted: a reload always lands you reading
    rather than editing, and it can never be on for someone without rights. */
 let EDITING = false;
-/* Whether change marks are on. Module state, not a URL param: as a param it was
-   dropped the moment you left the tab, so it silently switched itself back on
-   every time you came back. Survives navigation, resets on reload. */
-let MARKS = true;
+/* Whether change marks are on. Kept in storage, not in a URL param: as a param
+   it was dropped the moment you left the tab, and as module state it came back
+   on after every reload. This is a reading preference, so it should hold until
+   you say otherwise. Wrapped because localStorage throws in a private window. */
+const LS_MARKS = 'sweatydyno:rulemarks';
+const readMarks = () => { try { return localStorage.getItem(LS_MARKS) !== '0'; } catch { return true; } };
+let MARKS = readMarks();
 /** Turn change marks on or off. The toggle and the tests both go through this. */
-export const setMarks = (on) => { MARKS = Boolean(on); };
+export const setMarks = (on) => {
+  MARKS = Boolean(on);
+  try { MARKS ? localStorage.removeItem(LS_MARKS) : localStorage.setItem(LS_MARKS, '0'); } catch { /* no store */ }
+};
 
 function inlineDiff(before, after) {
   const a = before.split(/(\s+)/), b = after.split(/(\s+)/);

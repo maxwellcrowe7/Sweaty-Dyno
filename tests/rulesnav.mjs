@@ -3,7 +3,9 @@
 // overwritten instantly and the control looked dead.
 const F=['league','managers','bank','minigames','drafts','trades','stats','players','rules'];
 const store={}; for(const f of F) store[f]=JSON.parse(readFile(`data/${f}.json`));
-globalThis.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
+const _ls={};
+globalThis.localStorage={getItem:(k)=>k in _ls?_ls[k]:null,
+  setItem:(k,v)=>{_ls[k]=String(v)},removeItem:(k)=>{delete _ls[k]}};
 globalThis.structuredClone=(o)=>JSON.parse(JSON.stringify(o));
 globalThis.fetch=async(u)=>({ok:true,json:async()=>store[String(u).split('/').pop().split('.json')[0]]});
 const {db}=await import('../js/db.js'); await db.init();
@@ -87,6 +89,11 @@ print('\n— Mark changes survives leaving the tab —');
   eq('still off after coming back', marked(), false);
   ru.setMarks(true);
   eq('and back on when you say so', marked(), true);
+  // and it is written down, so a reload does not quietly turn it back on
+  ru.setMarks(false);
+  eq('off is stored', localStorage.getItem('sweatydyno:rulemarks'), '0');
+  ru.setMarks(true);
+  eq('on clears the store', localStorage.getItem('sweatydyno:rulemarks'), null);
   await db.update('rules',(r)=>{ delete r.seasons['2026']; });
   db.season=2025;
 }
