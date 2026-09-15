@@ -4732,7 +4732,10 @@ function listHtml(items, diff, showDiff) {
 
 const itemHtml = (it, mark, was, showDiff) => {
   const m = mark ? MARK[mark] : null;
-  const body = (mark === 'changed' && was && showDiff) ? inlineDiff(was, it.text) : fmt(it.text);
+  // a diff is about the words: strip the markers so no asterisks reach the page.
+  // Turning marks off shows the rule formatted again.
+  const body = (mark === 'changed' && was && showDiff)
+    ? inlineDiff(unfmt(was), unfmt(it.text)) : fmt(it.text);
   return `<li class="rule-item d${it.depth}${it.ordered ? ' ord' : ''}${
     m ? ' mk-' + mark : ''}" id="i-${esc(it.id)}">
     ${m ? `<span class="rule-flag ${m.chip}">${m.label}</span>` : ''}
@@ -4804,9 +4807,9 @@ function render(db, state = {}) {
             ${rows.map((r) => `<li>
               <a class="chg-sec" href="#i-${esc(r.id)}" data-jump-item="${esc(r.id)}">${esc(r.sectionTitle)}</a>
               <div class="chg-body">${
-                kind === 'changed' ? inlineDiff(r.was, r.text)
-                : kind === 'removed' ? `<del>${esc(r.text)}</del>`
-                : `<ins>${esc(r.text)}</ins>`}</div>
+                kind === 'changed' ? inlineDiff(unfmt(r.was), unfmt(r.text))
+                : kind === 'removed' ? `<del>${esc(unfmt(r.text))}</del>`
+                : `<ins>${esc(unfmt(r.text))}</ins>`}</div>
             </li>`).join('')}
           </ul>
         </div>`;

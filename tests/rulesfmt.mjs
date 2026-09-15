@@ -50,4 +50,29 @@ print('\n— a formatting-only edit is not a rule change —');
   eq('but changing the words does mark it', db.rulesDiff(2026).byId.get(id), 'changed');
   await db.update('rules',(r)=>{ delete r.seasons['2026']; });
 }
+
+print('\n— markers never reach a diff view —');
+{
+  const ru=await import('../js/views/rules.js');
+  await db.update('rules',(r)=>{
+    const keep=['buyin'];
+    r.seasons['2025'].sections=r.seasons['2025'].sections.filter(s=>keep.includes(s.id));
+    r.seasons['2026']={status:'draft',published:null,basedOn:2025,summary:null,
+      sections:structuredClone(r.seasons['2025'].sections)};
+  });
+  await db.update('rules',(r)=>{
+    const b=r.seasons['2026'].sections[0];
+    b.items[0].text='Buy-in is **$75** a year.';
+    b.items.push({id:'new-one',depth:0,text:'A __late fee__ of _$10_ applies.'});
+  });
+  db.season=2026;
+  const book=ru.render(db,{params:{}});
+  const panel=ru.render(db,{params:{tab:'changes'}});
+  eq('no ** in the marked-up book', /\*\*/.test(book), false);
+  eq('no ** in the change list',    /\*\*/.test(panel), false);
+  eq('no __ in the change list',    /__/.test(panel), false);
+  eq('the new rule still reads',    panel.includes('late fee'), true);
+  await db.update('rules',(r)=>{ delete r.seasons['2026']; });
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRule formatting passed.');
