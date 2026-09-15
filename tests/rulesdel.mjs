@@ -78,4 +78,32 @@ print('\n— the Mark changes toggle turns off ALL the marks —');
   eq('off: the rule text is still there',  off.includes('One, revised'), true);
 }
 
+
+print('\n— a deleted rule is shown back in its own place —');
+{
+  const ru=await import('../js/views/rules.js');
+  await db.update('rules',(r)=>{
+    r.seasons['2025'].sections=[{id:'sec',title:'Sec',items:[
+      {id:'a',depth:0,text:'First'},{id:'b',depth:0,text:'Doomed'},{id:'c',depth:0,text:'Third'},
+    ]}];
+    r.seasons['2026']={status:'draft',published:null,basedOn:2025,summary:null,
+      sections:[{id:'sec',title:'Sec',items:[
+        {id:'a',depth:0,text:'First'},{id:'c',depth:0,text:'Third'},
+      ]}]};
+  });
+  db.season=2026;
+  const on = ru.render(db,{params:{}});
+  eq('it is struck through', on.includes('<del>Doomed</del>'), true);
+  eq('and flagged removed',  /mk-removed/.test(on), true);
+  // between First and Third, where it used to be -- not appended at the end
+  const at=(t)=>on.indexOf(t);
+  eq('in its original position', at('First') < at('Doomed') && at('Doomed') < at('Third'), true);
+  // and it is not in the book at all when marks are off
+  const off = ru.render(db,{params:{marks:'0'}});
+  eq('marks off: gone entirely', off.includes('Doomed'), false);
+  eq('marks off: the rest remains', off.includes('First') && off.includes('Third'), true);
+  // never editable: edit mode shows the real rules only
+  eq('the section still has 2 rules', db.rulebook(2026).sections[0].items.length, 2);
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRule deletion passed.');

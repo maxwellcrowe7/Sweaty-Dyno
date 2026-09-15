@@ -99,14 +99,25 @@ export function serializeSection(root, old, secId) {
 
 /* Consecutive items of the same kind share one list, so a numbered run counts
    1,2,3 and a bullet after it does not reset or continue anything. */
-function listHtml(items, diff, showDiff) {
+/** The rows a section shows: its own rules, plus any deleted ones put back where
+    they were so you can see what went, struck through in place. */
+function rowsFor(sec, diff, showDiff) {
+  const rows = sec.items.map((it) => ({ it, mark: diff?.byId.get(it.id) || null }));
+  if (!showDiff || !diff) return rows;
+  const gone = diff.removed.filter((r) => r.section === sec.id)
+    .sort((a, b) => a.index - b.index);
+  for (const r of gone) rows.splice(Math.min(r.index, rows.length), 0, { it: r, mark: 'removed' });
+  return rows;
+}
+
+function listHtml(rows, showDiff, wasById) {
   const out = [];
-  for (let i = 0; i < items.length;) {
-    const ord = Boolean(items[i].ordered);
+  for (let i = 0; i < rows.length;) {
+    const ord = Boolean(rows[i].it.ordered);
     const run = [];
-    while (i < items.length && Boolean(items[i].ordered) === ord) run.push(items[i++]);
-    out.push(`<${ord ? 'ol' : 'ul'} class="rule-list">${run.map((it) =>
-      itemHtml(it, diff?.byId.get(it.id), diff?.wasById.get(it.id), showDiff)).join('')}</${ord ? 'ol' : 'ul'}>`);
+    while (i < rows.length && Boolean(rows[i].it.ordered) === ord) run.push(rows[i++]);
+    out.push(`<${ord ? 'ol' : 'ul'} class="rule-list">${run.map(({ it, mark }) =>
+      itemHtml(it, mark, wasById?.get(it.id), showDiff)).join('')}</${ord ? 'ol' : 'ul'}>`);
   }
   return out.join('');
 }
@@ -118,8 +129,9 @@ const itemHtml = (it, mark, was, showDiff) => {
   const m = (mark && showDiff) ? MARK[mark] : null;
   // a diff is about the words: strip the markers so no asterisks reach the page.
   // Turning marks off shows the rule formatted again.
-  const body = (mark === 'changed' && was && showDiff)
-    ? inlineDiff(unfmt(was), unfmt(it.text)) : fmt(it.text);
+  const body = mark === 'removed' ? `<del>${esc(unfmt(it.text))}</del>`
+    : (mark === 'changed' && was && showDiff) ? inlineDiff(unfmt(was), unfmt(it.text))
+    : fmt(it.text);
   return `<li class="rule-item d${it.depth}${it.ordered ? ' ord' : ''}${
     m ? ' mk-' + mark : ''}" id="i-${esc(it.id)}">
     ${m ? `<span class="rule-flag ${m.chip}">${m.label}</span>` : ''}
@@ -223,8 +235,8 @@ export function render(db, state = {}) {
                same classes -- it just makes it editable. */''}
           ${editing ? `<div class="sec-body" contenteditable="true" spellcheck="true"
             data-body="${esc(s.id)}" aria-label="${esc(s.title)} rules"
-            >${listHtml(s.items, null, false)}</div>`
-            : listHtml(s.items, diff, showDiff)}
+            >${listHtml(s.items.map((it) => ({ it, mark: null })), false)}</div>`
+            : listHtml(rowsFor(s, diff, showDiff), showDiff, diff?.wasById)}
         </section>`;
       }).join('')}
     </article>`;
@@ -264,10 +276,7 @@ export function render(db, state = {}) {
          sticky child from ever sticking. This is fixed to the viewport. */''}
     ${editing ? `<div class="edit-dock">
       ${formatBar()}
-      <div class="dock-ft">
-        <button class="btn sm primary" data-save-all>${icon('check')} Save</button>
-        <span class="dock-state" data-dirty>No changes yet</span>
-      </div>
+      <span class="dock-state" data-dirty>No changes yet</span>
     </div>` : ''}
 
   ${admin ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
@@ -340,7 +349,10 @@ export function mount(root, db, go, setState, params = {}) {
   }
 
   /* ---------- editing ---------- */
-  root.querySelector('[data-edit-mode]')?.addEventListener('click', () => {
+  /* Done saves. There is no separate Save button: leaving edit mode IS the
+     commit, so there is no way to edit, walk away, and lose it silently. */
+  root.querySelector('[data-edit-mode]')?.addEventListener('click', async () => {
+    if (EDITING) await saveEdits();
     EDITING = !EDITING;
     db.emit();
   });
@@ -494,8 +506,8 @@ export function mount(root, db, go, setState, params = {}) {
     });
   }
 
-  root.querySelector('[data-save-all]')?.addEventListener('click', async () => {
-    if (!dirty.size) { toast('Nothing to save'); return; }
+  async function saveEdits() {
+    if (!dirty.size) return;
     const book = db.rulebook(shownYear);
     const next = new Map();
     for (const id of dirty) {
@@ -503,6 +515,7 @@ export function mount(root, db, go, setState, params = {}) {
       const before = book.sections.find((x) => x.id === id);
       if (host && before) next.set(id, serializeSection(host, before.items, id));
     }
+    if (!next.size) return;
     await db.update('rules', (r) => {
       const secs = r.seasons[String(shownYear)].sections;
       for (const [id, items] of next) {
@@ -510,8 +523,9 @@ export function mount(root, db, go, setState, params = {}) {
         if (sec) sec.items = items;
       }
     });
+    dirty.clear();
     toast(`${next.size} section${next.size === 1 ? '' : 's'} saved`);
-  });
+  }
 
   root.querySelector('[data-delete-book]')?.addEventListener('click', (e) => {
     const y = Number(e.currentTarget.dataset.deleteBook);

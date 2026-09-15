@@ -690,10 +690,13 @@ class Store {
     const prev = this.previousRulebook(season);
     if (!cur || !prev) return null;
 
+    // `index` is where the rule sat in its section: a deleted rule has to be shown
+    // back in its own place in the book, not just listed somewhere else
     const flat = (bk) => {
       const m = new Map();
       for (const sec of bk.sections)
-        for (const it of sec.items) m.set(it.id, { ...it, section: sec.id, sectionTitle: sec.title });
+        sec.items.forEach((it, i) =>
+          m.set(it.id, { ...it, section: sec.id, sectionTitle: sec.title, index: i }));
       return m;
     };
     const A = flat(prev), B = flat(cur);
