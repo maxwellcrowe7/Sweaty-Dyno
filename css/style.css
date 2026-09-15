@@ -701,7 +701,11 @@ table.dt th.sticky{width:1%}
 @media (prefers-reduced-motion:reduce){ *{transition:none !important;animation:none !important} }
 
 /* ---------- rules ---------- */
-.rules-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+/* the tabs, the draft tag and Edit on one line, over the text body */
+.rules-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.rules-bar .pills{margin-bottom:0}
+.rules-bar .btn{margin-left:auto}
+.rules-main{min-width:0}
 .rules-meta{display:flex;align-items:flex-end;gap:12px;margin:4px 0 14px;flex-wrap:wrap}
 .rules-title{
   font-size:26px;text-transform:uppercase;letter-spacing:.03em;

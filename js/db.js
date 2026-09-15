@@ -679,6 +679,12 @@ class Store {
     });
   }
 
+  /** Drop a whole rulebook. Only ever the one season -- every other year keeps
+      its own copy, because a book is a snapshot, not a pointer to one. */
+  async removeRulebook(season) {
+    await this.update('rules', (r) => { delete r.seasons[String(season)]; });
+  }
+
   rulesDiff(season) {
     const cur = this.rulebook(season);
     const prev = this.previousRulebook(season);

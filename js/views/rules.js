@@ -228,30 +228,32 @@ export function render(db, state = {}) {
     <div>
       <h1 class="rules-title">Rulebook ${seasonPicker(db)}</h1>
       <div class="s dim" style="font-size:12px">
-        ${bk.status === 'published'
-          ? `Published ${fmtDate(bk.published, { year: true })}`
-          : '<span class="chip heat">Draft — only you can see this</span>'}
-        ${diff ? ` · based on ${diff.from}` : ''}
+        ${bk.status === 'published' ? `Published ${fmtDate(bk.published, { year: true })}` : 'Not published'}
+        ${diff ? ` &middot; based on ${diff.from}` : ''}
       </div>
     </div>
     ${diff && diff.count ? `<label class="toggle" style="margin-left:auto">
       <input type="checkbox" id="diffToggle" ${showDiff ? 'checked' : ''}><span class="tr"></span>
       <span style="font-size:12px;color:var(--ink-2)">Mark changes</span></label>` : ''}
-    ${admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode
-      style="${diff && diff.count ? '' : 'margin-left:auto'}">${icon(editing ? 'check' : 'pencil')} ${
-      editing ? 'Done' : 'Edit'}</button>` : ''}
   </div>
 
-
-  ${diff ? `<div class="pills" style="margin-bottom:12px">
-    <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
-    <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
-  </div>` : ''}
-
+  ${/* One row over the body: the two tabs, the draft tag and Edit. It sits in
+       the doc column so it lines up with the text rather than the sidebar. */''}
   ${tab === 'changes' ? changesPanel : `
     <div class="rules-layout${editing ? ' editing' : ''}">
       ${toc}
-      <div class="rules-doc card"><div class="card-bd">${doc}</div></div>
+      <div class="rules-main">
+        <div class="rules-bar">
+          ${diff ? `<div class="pills">
+            <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
+            <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed ${diff.count}</button>
+          </div>` : ''}
+          ${bk.status !== 'published' ? '<span class="chip heat">Draft</span>' : ''}
+          ${admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
+            icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
+        </div>
+        <div class="rules-doc card"><div class="card-bd">${doc}</div></div>
+      </div>
     </div>
     ${/* Outside the card on purpose: .card is overflow:hidden, which stops a
          sticky child from ever sticking. This is fixed to the viewport. */''}
@@ -266,6 +268,8 @@ export function render(db, state = {}) {
   ${admin ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn" data-new-book>${icon('plus')} Start next season's rulebook</button>
     ${bk.status !== 'published' ? `<button class="btn primary" data-publish-book="${year}">${icon('check')} Publish ${year}</button>` : ''}
+    <div class="spacer" style="margin-left:auto"></div>
+    <button class="btn danger" data-delete-book="${year}">${icon('x')} Delete ${year}</button>
   </div>` : ''}
   `;
 }
@@ -493,6 +497,27 @@ export function mount(root, db, go, setState, params = {}) {
       }
     });
     toast(`${next.size} section${next.size === 1 ? '' : 's'} saved`);
+  });
+
+  root.querySelector('[data-delete-book]')?.addEventListener('click', (e) => {
+    const y = Number(e.currentTarget.dataset.deleteBook);
+    const bk = db.rulebook(y);
+    const n = bk.sections.reduce((a, s) => a + s.items.length, 0);
+    openModal({
+      title: `Delete the ${y} rulebook?`, confirm: `Delete ${y}`, danger: true,
+      body: `<p style="margin:0 0 10px;font-size:13.5px;line-height:1.6">
+          This removes the ${y} book and all <b>${n}</b> of its rules${
+          bk.status === 'published' ? ', which the league can currently read' : ''}.</p>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--ink-3)">
+          Every other year keeps its own copy &mdash; a rulebook is a snapshot, not a
+          pointer to one. It cannot be undone.</p>`,
+      onConfirm: async () => {
+        await db.removeRulebook(y);
+        const left = db.rulebookSeasons();
+        if (left.length) db.season = left[0];
+        toast(`${y} rulebook deleted`);
+      },
+    });
   });
 
   root.querySelector('[data-publish-book]')?.addEventListener('click', async (e) => {
