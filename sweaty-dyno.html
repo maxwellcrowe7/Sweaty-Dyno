@@ -4758,8 +4758,8 @@ function render(db, state = {}) {
   if (!seasons.length)
     return empty('No rulebook yet', 'Publish a rulebook and it will appear here with a table of contents.', 'book');
 
-  // A ?year= deep link still wins for this paint -- mount then adopts it into the
-  // shared season, so the link works AND the app stays on one year afterwards.
+  // A ?year= deep link wins for this one paint; mount then adopts it into the
+  // shared season and drops the param, so it can never override a later pick.
   const urlYear = seasons.includes(Number(P.year)) ? Number(P.year) : null;
   const year = urlYear ?? db.season;
   // Falling back to another year silently is how you end up editing the wrong
@@ -4909,11 +4909,17 @@ function mount(root, db, go, setState, params = {}) {
   root._params = params;
   const P = { ...(root._params || {}) };
   const nav = (patch) => go('rules', { ...P, ...patch });
-  // the deep link is a one-shot: adopt it, then the shared season carries on
-  const urlYear = Number(P.year);
-  if (urlYear && db.seasons.includes(urlYear) && db.season !== urlYear) db.season = urlYear;
-  // the book this paint is actually showing -- render picks it the same way
   const books = db.rulebookSeasons();
+  /* ?year= is a one-shot: adopt it, then strip it from the URL. Leaving it there
+     meant it was re-applied on EVERY repaint, so picking another season was
+     immediately overwritten and the picker looked broken. */
+  const urlYear = Number(P.year);
+  if (urlYear) {
+    if (books.includes(urlYear) && db.season !== urlYear) db.season = urlYear;
+    go('rules', { ...P, year: null });
+    return;
+  }
+  // the book this paint is actually showing -- render picks it the same way
   const shownYear = books.includes(db.season) ? db.season : books[0];
   root.querySelectorAll('[data-rtab]').forEach((b) => b.addEventListener('click', () =>
     nav({ tab: b.dataset.rtab === 'rules' ? null : b.dataset.rtab })));
@@ -5185,7 +5191,10 @@ function mount(root, db, go, setState, params = {}) {
             sections: structuredClone(r.seasons[String(d.from)].sections),
           };
         });
-        go('rules', { year: y });
+        // set the shared season rather than pushing a ?year= that then has to be
+        // cleaned up on the next paint
+        db.season = Number(y);
+        go('rules', {});
         toast(`${y} draft created from ${d.from}`);
       },
     });
