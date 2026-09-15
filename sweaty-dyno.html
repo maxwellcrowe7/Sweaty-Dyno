@@ -4692,12 +4692,6 @@ function inlineDiff(before, after) {
     : `<del>${esc(t)}</del>`).join('');
 }
 
-/* Text <-> items. One rule per line, four spaces per level of nesting, and a
-   leading "1." for a numbered line. The number you type is ignored -- the list
-   counts itself -- so you never have to renumber by hand. */
-const toText = (items) => items.map((it) =>
-  '    '.repeat(it.depth) + (it.ordered ? '1. ' : '') + it.text).join('\n');
-
 /* Reading the edited document back out. A strict whitelist: bold, italic and
    underline become markers, everything else contributes only its text. That is
    what stops a paste from Word putting fonts and colours into the rulebook, and
@@ -4714,38 +4708,36 @@ function serializeNode(node) {
   return inner;
 }
 
-/** The <li>s of one edited section, back to items. */
+const slugFor = (text, secId, taken) => {
+  const base = `${secId}-${String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .split('-').filter(Boolean).slice(0, 6).join('-')}`.slice(0, 60) || `${secId}-rule`;
+  let id = base, n = 2;
+  while (taken.has(id)) id = `${base}-${n++}`;
+  return id;
+};
+
+/** The <li>s of one edited section, back to items.
+    Identity comes from each row's own id, NOT from its position. Position broke
+    the moment you deleted a line: every rule below it inherited its neighbour's
+    id, so the whole section read as rewritten. Deleting a row now takes its id
+    with it, and a row split in two keeps the id on the first half. */
 function serializeSection(root, old, secId) {
   const out = [];
-  root.querySelectorAll('li').forEach((li, i) => {
+  const taken = new Set();
+  root.querySelectorAll('li').forEach((li) => {
     const text = serializeNode(li).replace(/\s+/g, ' ').trim();
     if (!text) return;
     const m = li.className.match(/\bd(\d)\b/);
     const depth = m ? Number(m[1]) : 0;
     const ordered = li.classList.contains('ord') || li.parentElement?.tagName === 'OL';
-    const prior = old[out.length];
-    const id = prior ? prior.id
-      : `${secId}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-')
-          .filter(Boolean).slice(0, 6).join('-')}`.slice(0, 60);
+    // the rendered row carries id="i-<ruleId>"; a duplicate means the browser
+    // cloned it when the line was split, so the copy earns a fresh id
+    const own = String(li.id || '').replace(/^i-/, '');
+    const id = own && !taken.has(own) ? own : slugFor(text, secId, taken);
+    taken.add(id);
     out.push(ordered ? { id, depth, text, ordered: true } : { id, depth, text });
   });
   return out;
-}
-function toItems(body, old, secId) {
-  const lines = body.split('\n').filter((l) => l.trim());
-  return lines.map((l, i) => {
-    const depth = Math.floor((l.length - l.trimStart().length) / 4);
-    const raw = l.trim();
-    const ordered = /^\d+[.)]\s+/.test(raw);
-    const text = ordered ? raw.replace(/^\d+[.)]\s+/, '') : raw;
-    // keep the id of whatever was in this position: that is what makes an edit
-    // read as "changed" rather than as a delete plus an add
-    const prior = old[i];
-    const id = prior ? prior.id
-      : `${secId}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-')
-          .filter(Boolean).slice(0, 6).join('-')}`.slice(0, 60);
-    return ordered ? { id, depth, text, ordered: true } : { id, depth, text };
-  });
 }
 
 /* Consecutive items of the same kind share one list, so a numbered run counts
@@ -4763,7 +4755,10 @@ function listHtml(items, diff, showDiff) {
 }
 
 const itemHtml = (it, mark, was, showDiff) => {
-  const m = mark ? MARK[mark] : null;
+  // one switch for the whole thing: the flag, the highlight and the word diff.
+  // It used to gate only the word diff, so turning marks off still left every
+  // touched rule wearing a CHANGED chip and an orange bar.
+  const m = (mark && showDiff) ? MARK[mark] : null;
   // a diff is about the words: strip the markers so no asterisks reach the page.
   // Turning marks off shows the rule formatted again.
   const body = (mark === 'changed' && was && showDiff)
@@ -5224,7 +5219,7 @@ function mount(root, db, go, setState, params = {}) {
   });
 }
 
-return { toText, serializeNode, serializeSection, toItems, render, mount };
+return { serializeNode, serializeSection, render, mount };
 })();
 
 /* ===== js/views/empire.js ===== */
