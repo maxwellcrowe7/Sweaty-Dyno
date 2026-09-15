@@ -129,7 +129,19 @@ export function render(db, state = {}) {
   // A ?year= deep link still wins for this paint -- mount then adopts it into the
   // shared season, so the link works AND the app stays on one year afterwards.
   const urlYear = seasons.includes(Number(P.year)) ? Number(P.year) : null;
-  const year = urlYear ?? (seasons.includes(db.season) ? db.season : seasons[0]);
+  const year = urlYear ?? db.season;
+  // Falling back to another year silently is how you end up editing the wrong
+  // book: the picker says 2026 while the page quietly shows 2025.
+  if (!seasons.includes(year)) {
+    return `<div class="rules-meta"><div>
+        <h1 class="rules-title">Rulebook ${seasonPicker(db)}</h1></div></div>
+      ${empty(`No ${year} rulebook yet`,
+        db.isAdmin
+          ? `Nothing has been written for ${year}. Start it from an earlier book and every rule carries over with its history.`
+          : `The commissioner hasn't published a ${year} rulebook.`, 'book')}
+      ${db.isAdmin ? `<div style="text-align:center;margin-top:-14px">
+        <button class="btn primary" data-new-book>${icon('plus')} Start the ${year} rulebook</button></div>` : ''}`;
+  }
   const bk = db.rulebook(year);
   const diff = db.rulesDiff(year);
   const showDiff = P.marks !== '0';
@@ -494,7 +506,7 @@ export function mount(root, db, go, setState, params = {}) {
 
   root.querySelector('[data-new-book]')?.addEventListener('click', () => {
     const years = Object.keys(db.get('rules').seasons).map(Number);
-    const next = Math.max(...years) + 1;
+    const next = years.includes(db.season) ? Math.max(...years) + 1 : db.season;
     openModal({
       title: 'Start a new rulebook',
       confirm: 'Create draft',
