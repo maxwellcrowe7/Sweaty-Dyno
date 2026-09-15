@@ -179,7 +179,8 @@ export function render(db, state = {}) {
               title="Drag to reorder">${icon('grip')}</button>` : ''}
             <a href="#s-${esc(s.id)}" data-jump="${esc(s.id)}">
             <span class="toc-name">${esc(s.title)}</span>
-            ${d ? `<i class="toc-dot" title="${d.total} change${d.total === 1 ? '' : 's'}">${d.total}</i>` : ''}
+            ${showDiff && d ? `<i class="toc-dot" title="${d.total} change${
+              d.total === 1 ? '' : 's'}">${d.total}</i>` : ''}
           </a>
           ${editing ? `<span class="toc-tools">
             <button data-sec-rename="${esc(s.id)}" aria-label="Rename ${esc(s.title)}"
@@ -205,24 +206,34 @@ export function render(db, state = {}) {
       ${diff.count === 0 ? `<div class="card-bd" style="padding-top:0">
         <div class="banner" style="background:rgba(61,220,151,.07);border-color:rgba(61,220,151,.26)">
           ${icon('check')}<div>Identical to the ${diff.from} rulebook.</div></div></div>` : ''}
-      ${['changed', 'added', 'removed'].map((kind) => {
-        const rows = diff[kind];
-        if (!rows.length) return '';
-        return `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
-          <div class="section-title" style="margin:0 0 10px">
-            <span class="chip ${MARK[kind].chip}">${MARK[kind].label}</span>
-            <span style="color:var(--ink-3)">${rows.length}</span></div>
-          <ul class="chg">
-            ${rows.map((r) => `<li>
-              <a class="chg-sec" href="#i-${esc(r.id)}" data-jump-item="${esc(r.id)}">${esc(r.sectionTitle)}</a>
-              <div class="chg-body">${
-                kind === 'changed' ? inlineDiff(unfmt(r.was), unfmt(r.text))
-                : kind === 'removed' ? `<del>${esc(unfmt(r.text))}</del>`
-                : `<ins>${esc(unfmt(r.text))}</ins>`}</div>
-            </li>`).join('')}
-          </ul>
-        </div>`;
-      }).join('')}
+      ${/* Grouped by section, in the book's own order: the section is named once
+           and its edits sit under it, instead of being repeated per row. */''}
+      ${(() => {
+        const order = bk.sections.map((x) => x.id);
+        const groups = new Map();
+        const put = (kind, r) => {
+          if (!groups.has(r.section)) groups.set(r.section, { title: r.sectionTitle, rows: [] });
+          groups.get(r.section).rows.push({ kind, r });
+        };
+        for (const k of ['changed', 'added', 'removed']) for (const r of diff[k]) put(k, r);
+        const at = (id) => (order.indexOf(id) < 0 ? 1e6 : order.indexOf(id));
+        return [...groups.entries()].sort((a, b) => at(a[0]) - at(b[0]))
+          .map(([, g]) => `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
+            <div class="section-title" style="margin:0 0 10px">${esc(g.title)}
+              <span style="color:var(--ink-3)">${g.rows.length}</span></div>
+            <ul class="chg">
+              ${g.rows.sort((x, y) => (x.r.index ?? 0) - (y.r.index ?? 0)).map(({ kind, r }) => `<li>
+                <a class="chg-row" href="#i-${esc(r.id)}" data-jump-item="${esc(r.id)}">
+                  <span class="chip ${MARK[kind].chip}">${MARK[kind].label}</span>
+                  <span class="chg-body">${
+                    kind === 'changed' ? inlineDiff(unfmt(r.was), unfmt(r.text))
+                    : kind === 'removed' ? `<del>${esc(unfmt(r.text))}</del>`
+                    : `<ins>${esc(unfmt(r.text))}</ins>`}</span>
+                </a>
+              </li>`).join('')}
+            </ul>
+          </div>`).join('');
+      })()}
     </div>`;
 
   const doc = `
@@ -230,7 +241,7 @@ export function render(db, state = {}) {
       ${bk.sections.map((s) => {
         const d = diff?.perSection[s.id];
         return `<section class="rule-sec${editing ? ' editing' : ''}" id="s-${esc(s.id)}">
-          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}</h2>
+          <h2>${esc(s.title)}${showDiff && d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}</h2>
           ${/* Edit mode changes nothing about how the body LOOKS -- same markup,
                same classes -- it just makes it editable. */''}
           ${editing ? `<div class="sec-body" contenteditable="true" spellcheck="true"

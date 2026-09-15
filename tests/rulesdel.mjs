@@ -106,4 +106,33 @@ print('\n— a deleted rule is shown back in its own place —');
   eq('the section still has 2 rules', db.rulebook(2026).sections[0].items.length, 2);
 }
 
+
+print('\n— count badges follow the Mark changes toggle —');
+{
+  const ru=await import('../js/views/rules.js');
+  const on = ru.render(db,{params:{}}), off = ru.render(db,{params:{marks:'0'}});
+  eq('on: the rail shows a count',  /class="toc-dot"/.test(on), true);
+  eq('off: the rail is clean',      /class="toc-dot"/.test(off), false);
+  eq('off: no count beside the heading', /<h2>[^<]*<span class="chip heat"/.test(off), false);
+}
+
+print('\n— the change list groups by section —');
+{
+  const ru=await import('../js/views/rules.js');
+  await db.update('rules',(r)=>{
+    r.seasons['2025'].sections=[{id:'s1',title:'Alpha',items:[
+      {id:'a',depth:0,text:'One'},{id:'b',depth:0,text:'Two'},{id:'c',depth:0,text:'Three'}]}];
+    r.seasons['2026'].sections=[{id:'s1',title:'Alpha',items:[
+      {id:'a',depth:0,text:'One edited'},{id:'c',depth:0,text:'Three edited'},
+      {id:'d',depth:0,text:'Four is new'}]}];
+  });
+  const p = ru.render(db,{params:{tab:'changes'}});
+  // four edits in one section: the section name appears once, not four times
+  eq('the section is named once', (p.match(/Alpha/g)||[]).length, 1);
+  eq('with its own count', /Alpha\s*<span style="color:var\(--ink-3\)">4</.test(p), true);
+  eq('all four edits listed', (p.match(/class="chg-row"/g)||[]).length, 4);
+  eq('each tagged by kind',
+     ['Changed','New','Removed'].every(k=>p.includes(`>${k}<`)), true);
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRule deletion passed.');

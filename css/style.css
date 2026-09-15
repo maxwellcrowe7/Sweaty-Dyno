@@ -906,14 +906,17 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .flash{animation:flash 1.4s ease-out}
 @keyframes flash{0%,20%{background:rgba(255,107,44,.22)}100%{background:transparent}}
 
-.chg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.chg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .chg li{padding-left:12px;border-left:2px solid var(--line)}
-.chg-sec{
-  display:block;font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;
-  color:var(--ink-3);text-decoration:none;margin-bottom:4px;
+/* the section is the heading now; each row leads with what kind of edit it is */
+.chg li{border-left:none;padding-left:0}
+.chg-row{
+  display:flex;align-items:baseline;gap:9px;text-decoration:none;
+  padding:5px 8px;margin-left:-8px;border-radius:var(--r-sm);
 }
-.chg-sec:hover{color:var(--heat)}
-.chg-body{font-size:13.5px;line-height:1.6;color:var(--ink-2)}
+.chg-row:hover{background:var(--surface-2)}
+.chg-row .chip{flex:none}
+.chg-body{font-size:13.5px;line-height:1.6;color:var(--ink-2);min-width:0}
 
 @media (min-width:900px){
   .rules-layout{display:grid;grid-template-columns:246px 1fr;gap:18px;align-items:start}
