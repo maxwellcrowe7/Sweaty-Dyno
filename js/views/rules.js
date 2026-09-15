@@ -450,14 +450,15 @@ export function mount(root, db, go, setState, params = {}) {
   const dirty = new Set();
 
   if (bar && bodies.length) {
-    const touched = (host) => {
+    // one call for every surface: the toolbar is shared, so binding it per
+    // section made a single click fire once per section
+    wireRichBar(bar, bodies, (host) => {
       dirty.add(host.dataset.body);
       if (state) {
         state.textContent = `${dirty.size} section${dirty.size === 1 ? '' : 's'} edited`;
         state.classList.add('on');
       }
-    };
-    bodies.forEach((host) => wireRichBar(bar, host, () => touched(host)));
+    });
   }
 
   root.querySelector('[data-save-all]')?.addEventListener('click', async () => {

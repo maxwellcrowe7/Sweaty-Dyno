@@ -201,9 +201,24 @@ export const unfmt = (text) => String(text ?? '')
 /** A formatting toolbar bound to a textarea: wraps the selection in markers,
     or toggles the list kind on whole lines. Kept here so the rule editor and
     anything else that needs one behave identically. */
-/** Drive a contenteditable surface: real bold, not markers on screen. */
-export function wireRichBar(bar, host, onChange = () => {}) {
-  const cmd = (c) => { document.execCommand(c, false, null); host.focus(); onChange(); };
+/** Drive contenteditable surfaces: real bold, not markers on screen.
+    Takes ALL the surfaces at once -- one toolbar serves the whole document, and
+    binding it per surface would fire every command once per section. */
+export function wireRichBar(bar, hosts, onChange = () => {}) {
+  const caretHost = () => {
+    const sel = window.getSelection();
+    const n = sel?.anchorNode;
+    if (!n) return null;
+    const el = n.nodeType === 1 ? n : n.parentElement;
+    return hosts.find((h) => h.contains(el)) || null;
+  };
+  const cmd = (c) => {
+    const h = caretHost();
+    if (!h) return;
+    document.execCommand(c, false, null);
+    h.focus();
+    onChange(h);
+  };
   const lineOf = () => {
     const sel = window.getSelection();
     if (!sel || !sel.anchorNode) return null;
@@ -212,18 +227,20 @@ export function wireRichBar(bar, host, onChange = () => {}) {
   };
   const setDepth = (d) => {
     const li = lineOf();
-    if (!li) return;
+    const h = caretHost();
+    if (!li || !h) return;
     const now = Number((li.className.match(/\bd(\d)\b/) || [, 0])[1]);
     const next = Math.max(0, Math.min(3, now + d));
     li.classList.remove('d0', 'd1', 'd2', 'd3');
     li.classList.add(`d${next}`);
-    onChange();
+    onChange(h);
   };
   const setOrdered = (on) => {
     const li = lineOf();
-    if (!li) return;
+    const h = caretHost();
+    if (!li || !h) return;
     li.classList.toggle('ord', on);
-    onChange();
+    onChange(h);
   };
   bar.addEventListener('mousedown', (e) => e.preventDefault());   // keep the caret
   bar.addEventListener('click', (e) => {
@@ -238,21 +255,23 @@ export function wireRichBar(bar, host, onChange = () => {}) {
     else if (k === 'in') setDepth(1);
     else if (k === 'out') setDepth(-1);
   });
-  host.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') { e.preventDefault(); setDepth(e.shiftKey ? -1 : 1); return; }
-    if (!(e.metaKey || e.ctrlKey)) return;
-    const k = e.key.toLowerCase();
-    if (k === 'b') { e.preventDefault(); cmd('bold'); }
-    if (k === 'i') { e.preventDefault(); cmd('italic'); }
-    if (k === 'u') { e.preventDefault(); cmd('underline'); }
-  });
-  // anything pasted arrives as plain text; the serialiser only keeps b/i/u anyway
-  host.addEventListener('paste', (e) => {
-    e.preventDefault();
-    const t = (e.clipboardData || window.clipboardData).getData('text/plain');
-    document.execCommand('insertText', false, t);
-  });
-  host.addEventListener('input', onChange);
+  for (const host of hosts) {
+    host.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') { e.preventDefault(); setDepth(e.shiftKey ? -1 : 1); return; }
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === 'b') { e.preventDefault(); cmd('bold'); }
+      if (k === 'i') { e.preventDefault(); cmd('italic'); }
+      if (k === 'u') { e.preventDefault(); cmd('underline'); }
+    });
+    // anything pasted arrives as plain text; the serialiser only keeps b/i/u anyway
+    host.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, t);
+    });
+    host.addEventListener('input', () => onChange(host));
+  }
 }
 
 export function wireFormatBar(bar, ta) {
