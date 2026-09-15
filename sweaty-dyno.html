@@ -4918,7 +4918,10 @@ function render(db, state = {}) {
     </div>` : ''}
 
   ${admin ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn" data-new-book>${icon('plus')} Start next season's rulebook</button>
+    ${/* starting next year belongs with the book you are reading, not with a
+         list of this year's edits */''}
+    ${tab === 'changes' ? '' : `<button class="btn" data-new-book>${
+      icon('plus')} Start next season's rulebook</button>`}
     ${bk.status !== 'published' ? `<button class="btn primary" data-publish-book="${year}">${icon('check')} Publish ${year}</button>` : ''}
     <div class="spacer" style="margin-left:auto"></div>
     <button class="btn danger" data-delete-book="${year}">${icon('x')} Delete ${year}</button>
