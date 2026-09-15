@@ -201,6 +201,60 @@ export const unfmt = (text) => String(text ?? '')
 /** A formatting toolbar bound to a textarea: wraps the selection in markers,
     or toggles the list kind on whole lines. Kept here so the rule editor and
     anything else that needs one behave identically. */
+/** Drive a contenteditable surface: real bold, not markers on screen. */
+export function wireRichBar(bar, host, onChange = () => {}) {
+  const cmd = (c) => { document.execCommand(c, false, null); host.focus(); onChange(); };
+  const lineOf = () => {
+    const sel = window.getSelection();
+    if (!sel || !sel.anchorNode) return null;
+    const n = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+    return n?.closest('li');
+  };
+  const setDepth = (d) => {
+    const li = lineOf();
+    if (!li) return;
+    const now = Number((li.className.match(/\bd(\d)\b/) || [, 0])[1]);
+    const next = Math.max(0, Math.min(3, now + d));
+    li.classList.remove('d0', 'd1', 'd2', 'd3');
+    li.classList.add(`d${next}`);
+    onChange();
+  };
+  const setOrdered = (on) => {
+    const li = lineOf();
+    if (!li) return;
+    li.classList.toggle('ord', on);
+    onChange();
+  };
+  bar.addEventListener('mousedown', (e) => e.preventDefault());   // keep the caret
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fmt]');
+    if (!b) return;
+    const k = b.dataset.fmt;
+    if (k === 'b') cmd('bold');
+    else if (k === 'i') cmd('italic');
+    else if (k === 'u') cmd('underline');
+    else if (k === 'ul') setOrdered(false);
+    else if (k === 'ol') setOrdered(true);
+    else if (k === 'in') setDepth(1);
+    else if (k === 'out') setDepth(-1);
+  });
+  host.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') { e.preventDefault(); setDepth(e.shiftKey ? -1 : 1); return; }
+    if (!(e.metaKey || e.ctrlKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'b') { e.preventDefault(); cmd('bold'); }
+    if (k === 'i') { e.preventDefault(); cmd('italic'); }
+    if (k === 'u') { e.preventDefault(); cmd('underline'); }
+  });
+  // anything pasted arrives as plain text; the serialiser only keeps b/i/u anyway
+  host.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, t);
+  });
+  host.addEventListener('input', onChange);
+}
+
 export function wireFormatBar(bar, ta) {
   const wrap = (mark) => {
     const { selectionStart: a, selectionEnd: b, value: v } = ta;
@@ -253,6 +307,9 @@ export const formatBar = () => `<div class="fmt-bar" role="toolbar" aria-label="
   <span class="sep"></span>
   <button type="button" data-fmt="ul" title="Bulleted" aria-label="Bulleted list">${icon('list')}</button>
   <button type="button" data-fmt="ol" title="Numbered" aria-label="Numbered list">1.</button>
+  <span class="sep"></span>
+  <button type="button" data-fmt="out" title="Outdent (⇧Tab)" aria-label="Outdent">&#8592;</button>
+  <button type="button" data-fmt="in" title="Indent (Tab)" aria-label="Indent">&#8594;</button>
 </div>`;
 
 /** <option> list of teams for a select. */

@@ -788,10 +788,30 @@ table.dt th.sticky{width:1%}
 .fmt-bar button b,.fmt-bar button i,.fmt-bar button u{line-height:1;font-size:13px}
 .fmt-bar svg{width:14px;height:14px}
 .fmt-bar .sep{width:1px;height:16px;background:var(--line);margin:0 4px}
-textarea.rule-edit{
-  border-radius:0 0 var(--r-sm) var(--r-sm);font-size:13px;line-height:1.6;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+
+/* Editing changes nothing about the body: same markup, same type, same bullets.
+   The only tells are a caret, a faint focus ground, and the docked toolbar. */
+.sec-body{border-radius:var(--r-sm);margin:0 -8px;padding:2px 8px}
+.sec-body:focus{outline:none;background:rgba(255,107,44,.045);box-shadow:inset 2px 0 0 var(--heat)}
+.sec-body .rule-item{cursor:text}
+/* room so the docked bar never covers the last rule */
+.rules-layout.editing{padding-bottom:64px}
+
+/* Fixed, not sticky: the doc sits in a .card, and .card is overflow:hidden for
+   the table corners -- a sticky child of that can never stick to the viewport. */
+.edit-dock{
+  position:fixed;left:50%;transform:translateX(-50%);z-index:45;
+  bottom:calc(var(--tab-h) + env(safe-area-inset-bottom) + 14px);
+  max-width:calc(100vw - 24px);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:7px 9px;border-radius:999px;
+  background:var(--surface-3);border:1px solid var(--line);box-shadow:var(--shadow);
 }
+.edit-dock .fmt-bar{margin:0;padding:0;background:none;border:none;border-radius:0}
+.dock-ft{display:flex;align-items:center;gap:10px;margin-left:auto}
+.dock-state{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.dock-state.on{color:var(--heat);font-weight:600}
+@media (min-width:900px){ .edit-dock{bottom:22px} }
 
 /* renaming happens where the name is, not in a dialog over the page */
 .toc-rename{

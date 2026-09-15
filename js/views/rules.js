@@ -1,5 +1,5 @@
 import { esc, icon, empty, fmtDate, openModal, toast, seasonPicker, fmt, unfmt,
-  formatBar, wireFormatBar } from '../util.js';
+  formatBar, wireRichBar } from '../util.js';
 
 const MARK = {
   added:   { chip: 'mint',  label: 'New' },
@@ -34,6 +34,63 @@ function inlineDiff(before, after) {
   return out.map(([k, t]) => k === '=' ? esc(t)
     : k === '+' ? `<ins>${esc(t)}</ins>`
     : `<del>${esc(t)}</del>`).join('');
+}
+
+/* Text <-> items. One rule per line, four spaces per level of nesting, and a
+   leading "1." for a numbered line. The number you type is ignored -- the list
+   counts itself -- so you never have to renumber by hand. */
+export const toText = (items) => items.map((it) =>
+  '    '.repeat(it.depth) + (it.ordered ? '1. ' : '') + it.text).join('\n');
+
+/* Reading the edited document back out. A strict whitelist: bold, italic and
+   underline become markers, everything else contributes only its text. That is
+   what stops a paste from Word putting fonts and colours into the rulebook, and
+   it is why the stored text stays diffable. */
+export function serializeNode(node) {
+  if (node.nodeType === 3) return node.nodeValue;
+  if (node.nodeType !== 1) return '';
+  const inner = [...node.childNodes].map(serializeNode).join('');
+  if (!inner.trim()) return inner;
+  const t = node.tagName;
+  if (t === 'B' || t === 'STRONG') return `**${inner}**`;
+  if (t === 'I' || t === 'EM') return `_${inner}_`;
+  if (t === 'U') return `__${inner}__`;
+  return inner;
+}
+
+/** The <li>s of one edited section, back to items. */
+export function serializeSection(root, old, secId) {
+  const out = [];
+  root.querySelectorAll('li').forEach((li, i) => {
+    const text = serializeNode(li).replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    const m = li.className.match(/\bd(\d)\b/);
+    const depth = m ? Number(m[1]) : 0;
+    const ordered = li.classList.contains('ord') || li.parentElement?.tagName === 'OL';
+    const prior = old[out.length];
+    const id = prior ? prior.id
+      : `${secId}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-')
+          .filter(Boolean).slice(0, 6).join('-')}`.slice(0, 60);
+    out.push(ordered ? { id, depth, text, ordered: true } : { id, depth, text });
+  });
+  return out;
+}
+
+export function toItems(body, old, secId) {
+  const lines = body.split('\n').filter((l) => l.trim());
+  return lines.map((l, i) => {
+    const depth = Math.floor((l.length - l.trimStart().length) / 4);
+    const raw = l.trim();
+    const ordered = /^\d+[.)]\s+/.test(raw);
+    const text = ordered ? raw.replace(/^\d+[.)]\s+/, '') : raw;
+    // keep the id of whatever was in this position: that is what makes an edit
+    // read as "changed" rather than as a delete plus an add
+    const prior = old[i];
+    const id = prior ? prior.id
+      : `${secId}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-')
+          .filter(Boolean).slice(0, 6).join('-')}`.slice(0, 60);
+    return ordered ? { id, depth, text, ordered: true } : { id, depth, text };
+  });
 }
 
 /* Consecutive items of the same kind share one list, so a numbered run counts
@@ -138,11 +195,14 @@ export function render(db, state = {}) {
     <article class="rulebook">
       ${bk.sections.map((s) => {
         const d = diff?.perSection[s.id];
-        return `<section class="rule-sec" id="s-${esc(s.id)}">
-          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}${
-            admin ? `<button class="edit-pencil" data-edit-sec="${esc(s.id)}"
-              aria-label="Edit ${esc(s.title)}" title="Edit section">${icon('pencil')}</button>` : ''}</h2>
-          ${listHtml(s.items, diff, showDiff)}
+        return `<section class="rule-sec${editing ? ' editing' : ''}" id="s-${esc(s.id)}">
+          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}</h2>
+          ${/* Edit mode changes nothing about how the body LOOKS -- same markup,
+               same classes -- it just makes it editable. */''}
+          ${editing ? `<div class="sec-body" contenteditable="true" spellcheck="true"
+            data-body="${esc(s.id)}" aria-label="${esc(s.title)} rules"
+            >${listHtml(s.items, null, false)}</div>`
+            : listHtml(s.items, diff, showDiff)}
         </section>`;
       }).join('')}
     </article>`;
@@ -174,10 +234,19 @@ export function render(db, state = {}) {
   </div>` : ''}
 
   ${tab === 'changes' ? changesPanel : `
-    <div class="rules-layout">
+    <div class="rules-layout${editing ? ' editing' : ''}">
       ${toc}
       <div class="rules-doc card"><div class="card-bd">${doc}</div></div>
-    </div>`}
+    </div>
+    ${/* Outside the card on purpose: .card is overflow:hidden, which stops a
+         sticky child from ever sticking. This is fixed to the viewport. */''}
+    ${editing ? `<div class="edit-dock">
+      ${formatBar()}
+      <div class="dock-ft">
+        <button class="btn sm primary" data-save-all>${icon('check')} Save</button>
+        <span class="dock-state" data-dirty>No changes yet</span>
+      </div>
+    </div>` : ''}`}
 
   ${admin ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn" data-new-book>${icon('plus')} Start next season's rulebook</button>
@@ -371,48 +440,44 @@ export function mount(root, db, go, setState, params = {}) {
     });
   });
 
-  root.querySelectorAll('[data-edit-sec]').forEach((b) => b.addEventListener('click', () => {
-    const sec = db.rulebook(shownYear).sections.find((s) => s.id === b.dataset.editSec);
-    const m = openModal({
-      title: `Edit — ${sec.title}`,
-      confirm: 'Save section',
-      closeButtons: false,   // outside-click, Escape and Save all close it
-      // The nesting syntax is not guessable, so that one line stays. What this used
-      // to also explain -- that editing a line keeps its identity -- is already
-      // visible in the change marks themselves.
-      body: `<div class="s dim" style="font-size:12px;line-height:1.6;margin-bottom:12px">
-          One rule per line. Indent with four spaces to nest.</div>
-        <div class="field"><label>Rules</label>
-          ${formatBar()}
-          <textarea name="body" class="rule-edit" style="min-height:300px">${
-            esc(sec.items.map((it) =>
-              '    '.repeat(it.depth) + (it.ordered ? '1. ' : '') + it.text).join('\n'))}</textarea></div>`,
-      onConfirm: async (d) => {
-        const lines = d.body.split('\n').filter((l) => l.trim());
-        await db.update('rules', (r) => {
-          const s = r.seasons[String(shownYear)].sections.find((x) => x.id === sec.id);
-          const old = sec.items;
-          s.items = lines.map((l, i) => {
-            const depth = Math.floor((l.length - l.trimStart().length) / 4);
-            // a leading "1." is how a numbered line is written; it is not part of
-            // the rule, and the number itself is whatever the list counts to
-            const raw = l.trim();
-            const ordered = /^\d+[.)]\s+/.test(raw);
-            const text = ordered ? raw.replace(/^\d+[.)]\s+/, '') : raw;
-            // keep the id of the line that was in this position, so an edit reads
-            // as a change rather than a delete + add
-            const prior = old[i];
-            const id = prior ? prior.id
-              : `${sec.id}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-').filter(Boolean).slice(0, 6).join('-')}-${Date.now().toString(36)}${i}`;
-            return ordered ? { id, depth, text, ordered: true } : { id, depth, text };
-          });
-        });
-        toast('Section saved');
-      },
-    });
+  /* Editing happens in the document, one section at a time. Save writes that
+     section; Revert just repaints it from the data. */
+  /* The body is the same markup it is read in, just editable. One toolbar for the
+     whole document, docked so it is still there wherever you have scrolled to. */
+  const bodies = [...root.querySelectorAll('.sec-body[data-body]')];
+  const bar = root.querySelector('.edit-dock .fmt-bar');
+  const state = root.querySelector('[data-dirty]');
+  const dirty = new Set();
 
-    wireFormatBar(m.root.querySelector('.fmt-bar'), m.root.querySelector('textarea[name="body"]'));
-  }));
+  if (bar && bodies.length) {
+    const touched = (host) => {
+      dirty.add(host.dataset.body);
+      if (state) {
+        state.textContent = `${dirty.size} section${dirty.size === 1 ? '' : 's'} edited`;
+        state.classList.add('on');
+      }
+    };
+    bodies.forEach((host) => wireRichBar(bar, host, () => touched(host)));
+  }
+
+  root.querySelector('[data-save-all]')?.addEventListener('click', async () => {
+    if (!dirty.size) { toast('Nothing to save'); return; }
+    const book = db.rulebook(shownYear);
+    const next = new Map();
+    for (const id of dirty) {
+      const host = root.querySelector(`.sec-body[data-body="${CSS.escape(id)}"]`);
+      const before = book.sections.find((x) => x.id === id);
+      if (host && before) next.set(id, serializeSection(host, before.items, id));
+    }
+    await db.update('rules', (r) => {
+      const secs = r.seasons[String(shownYear)].sections;
+      for (const [id, items] of next) {
+        const sec = secs.find((x) => x.id === id);
+        if (sec) sec.items = items;
+      }
+    });
+    toast(`${next.size} section${next.size === 1 ? '' : 's'} saved`);
+  });
 
   root.querySelector('[data-publish-book]')?.addEventListener('click', async (e) => {
     const y = e.currentTarget.dataset.publishBook;

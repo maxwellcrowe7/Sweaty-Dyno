@@ -806,10 +806,30 @@ table.dt th.sticky{width:1%}
 .fmt-bar button b,.fmt-bar button i,.fmt-bar button u{line-height:1;font-size:13px}
 .fmt-bar svg{width:14px;height:14px}
 .fmt-bar .sep{width:1px;height:16px;background:var(--line);margin:0 4px}
-textarea.rule-edit{
-  border-radius:0 0 var(--r-sm) var(--r-sm);font-size:13px;line-height:1.6;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+
+/* Editing changes nothing about the body: same markup, same type, same bullets.
+   The only tells are a caret, a faint focus ground, and the docked toolbar. */
+.sec-body{border-radius:var(--r-sm);margin:0 -8px;padding:2px 8px}
+.sec-body:focus{outline:none;background:rgba(255,107,44,.045);box-shadow:inset 2px 0 0 var(--heat)}
+.sec-body .rule-item{cursor:text}
+/* room so the docked bar never covers the last rule */
+.rules-layout.editing{padding-bottom:64px}
+
+/* Fixed, not sticky: the doc sits in a .card, and .card is overflow:hidden for
+   the table corners -- a sticky child of that can never stick to the viewport. */
+.edit-dock{
+  position:fixed;left:50%;transform:translateX(-50%);z-index:45;
+  bottom:calc(var(--tab-h) + env(safe-area-inset-bottom) + 14px);
+  max-width:calc(100vw - 24px);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:7px 9px;border-radius:999px;
+  background:var(--surface-3);border:1px solid var(--line);box-shadow:var(--shadow);
 }
+.edit-dock .fmt-bar{margin:0;padding:0;background:none;border:none;border-radius:0}
+.dock-ft{display:flex;align-items:center;gap:10px;margin-left:auto}
+.dock-state{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.dock-state.on{color:var(--heat);font-weight:600}
+@media (min-width:900px){ .edit-dock{bottom:22px} }
 
 /* renaming happens where the name is, not in a dialog over the page */
 .toc-rename{
@@ -1759,6 +1779,59 @@ const unfmt = (text) => String(text ?? '')
 /** A formatting toolbar bound to a textarea: wraps the selection in markers,
     or toggles the list kind on whole lines. Kept here so the rule editor and
     anything else that needs one behave identically. */
+/** Drive a contenteditable surface: real bold, not markers on screen. */
+function wireRichBar(bar, host, onChange = () => {}) {
+  const cmd = (c) => { document.execCommand(c, false, null); host.focus(); onChange(); };
+  const lineOf = () => {
+    const sel = window.getSelection();
+    if (!sel || !sel.anchorNode) return null;
+    const n = sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement;
+    return n?.closest('li');
+  };
+  const setDepth = (d) => {
+    const li = lineOf();
+    if (!li) return;
+    const now = Number((li.className.match(/\bd(\d)\b/) || [, 0])[1]);
+    const next = Math.max(0, Math.min(3, now + d));
+    li.classList.remove('d0', 'd1', 'd2', 'd3');
+    li.classList.add(`d${next}`);
+    onChange();
+  };
+  const setOrdered = (on) => {
+    const li = lineOf();
+    if (!li) return;
+    li.classList.toggle('ord', on);
+    onChange();
+  };
+  bar.addEventListener('mousedown', (e) => e.preventDefault());   // keep the caret
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fmt]');
+    if (!b) return;
+    const k = b.dataset.fmt;
+    if (k === 'b') cmd('bold');
+    else if (k === 'i') cmd('italic');
+    else if (k === 'u') cmd('underline');
+    else if (k === 'ul') setOrdered(false);
+    else if (k === 'ol') setOrdered(true);
+    else if (k === 'in') setDepth(1);
+    else if (k === 'out') setDepth(-1);
+  });
+  host.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') { e.preventDefault(); setDepth(e.shiftKey ? -1 : 1); return; }
+    if (!(e.metaKey || e.ctrlKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'b') { e.preventDefault(); cmd('bold'); }
+    if (k === 'i') { e.preventDefault(); cmd('italic'); }
+    if (k === 'u') { e.preventDefault(); cmd('underline'); }
+  });
+  // anything pasted arrives as plain text; the serialiser only keeps b/i/u anyway
+  host.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, t);
+  });
+  host.addEventListener('input', onChange);
+}
 function wireFormatBar(bar, ta) {
   const wrap = (mark) => {
     const { selectionStart: a, selectionEnd: b, value: v } = ta;
@@ -1811,6 +1884,9 @@ const formatBar = () => `<div class="fmt-bar" role="toolbar" aria-label="Formatt
   <span class="sep"></span>
   <button type="button" data-fmt="ul" title="Bulleted" aria-label="Bulleted list">${icon('list')}</button>
   <button type="button" data-fmt="ol" title="Numbered" aria-label="Numbered list">1.</button>
+  <span class="sep"></span>
+  <button type="button" data-fmt="out" title="Outdent (⇧Tab)" aria-label="Outdent">&#8592;</button>
+  <button type="button" data-fmt="in" title="Indent (Tab)" aria-label="Indent">&#8594;</button>
 </div>`;
 
 /** <option> list of teams for a select. */
@@ -1818,7 +1894,7 @@ const teamOptions = (teams, sel = '', blank = '— none —') =>
   `<option value="">${esc(blank)}</option>` + teams.map((t) =>
     `<option value="${t.number}" ${String(sel) === String(t.number) ? 'selected' : ''}>T${t.number} · ${esc(t.manager)}</option>`).join('');
 
-return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, seasonPicker, fmt, unfmt, wireFormatBar, formatBar, teamOptions };
+return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, seasonPicker, fmt, unfmt, wireRichBar, wireFormatBar, formatBar, teamOptions };
 })();
 
 /* ===== js/db.js ===== */
@@ -4528,7 +4604,7 @@ return { render, mount };
 
 /* ===== js/views/rules.js ===== */
 __M["js/views/rules.js"] = (function () {
-const { esc, icon, empty, fmtDate, openModal, toast, seasonPicker, fmt, unfmt, formatBar, wireFormatBar } = __M["js/util.js"];
+const { esc, icon, empty, fmtDate, openModal, toast, seasonPicker, fmt, unfmt, formatBar, wireRichBar } = __M["js/util.js"];
 
 const MARK = {
   added:   { chip: 'mint',  label: 'New' },
@@ -4563,6 +4639,62 @@ function inlineDiff(before, after) {
   return out.map(([k, t]) => k === '=' ? esc(t)
     : k === '+' ? `<ins>${esc(t)}</ins>`
     : `<del>${esc(t)}</del>`).join('');
+}
+
+/* Text <-> items. One rule per line, four spaces per level of nesting, and a
+   leading "1." for a numbered line. The number you type is ignored -- the list
+   counts itself -- so you never have to renumber by hand. */
+const toText = (items) => items.map((it) =>
+  '    '.repeat(it.depth) + (it.ordered ? '1. ' : '') + it.text).join('\n');
+
+/* Reading the edited document back out. A strict whitelist: bold, italic and
+   underline become markers, everything else contributes only its text. That is
+   what stops a paste from Word putting fonts and colours into the rulebook, and
+   it is why the stored text stays diffable. */
+function serializeNode(node) {
+  if (node.nodeType === 3) return node.nodeValue;
+  if (node.nodeType !== 1) return '';
+  const inner = [...node.childNodes].map(serializeNode).join('');
+  if (!inner.trim()) return inner;
+  const t = node.tagName;
+  if (t === 'B' || t === 'STRONG') return `**${inner}**`;
+  if (t === 'I' || t === 'EM') return `_${inner}_`;
+  if (t === 'U') return `__${inner}__`;
+  return inner;
+}
+
+/** The <li>s of one edited section, back to items. */
+function serializeSection(root, old, secId) {
+  const out = [];
+  root.querySelectorAll('li').forEach((li, i) => {
+    const text = serializeNode(li).replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    const m = li.className.match(/\bd(\d)\b/);
+    const depth = m ? Number(m[1]) : 0;
+    const ordered = li.classList.contains('ord') || li.parentElement?.tagName === 'OL';
+    const prior = old[out.length];
+    const id = prior ? prior.id
+      : `${secId}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-')
+          .filter(Boolean).slice(0, 6).join('-')}`.slice(0, 60);
+    out.push(ordered ? { id, depth, text, ordered: true } : { id, depth, text });
+  });
+  return out;
+}
+function toItems(body, old, secId) {
+  const lines = body.split('\n').filter((l) => l.trim());
+  return lines.map((l, i) => {
+    const depth = Math.floor((l.length - l.trimStart().length) / 4);
+    const raw = l.trim();
+    const ordered = /^\d+[.)]\s+/.test(raw);
+    const text = ordered ? raw.replace(/^\d+[.)]\s+/, '') : raw;
+    // keep the id of whatever was in this position: that is what makes an edit
+    // read as "changed" rather than as a delete plus an add
+    const prior = old[i];
+    const id = prior ? prior.id
+      : `${secId}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-')
+          .filter(Boolean).slice(0, 6).join('-')}`.slice(0, 60);
+    return ordered ? { id, depth, text, ordered: true } : { id, depth, text };
+  });
 }
 
 /* Consecutive items of the same kind share one list, so a numbered run counts
@@ -4666,11 +4798,14 @@ function render(db, state = {}) {
     <article class="rulebook">
       ${bk.sections.map((s) => {
         const d = diff?.perSection[s.id];
-        return `<section class="rule-sec" id="s-${esc(s.id)}">
-          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}${
-            admin ? `<button class="edit-pencil" data-edit-sec="${esc(s.id)}"
-              aria-label="Edit ${esc(s.title)}" title="Edit section">${icon('pencil')}</button>` : ''}</h2>
-          ${listHtml(s.items, diff, showDiff)}
+        return `<section class="rule-sec${editing ? ' editing' : ''}" id="s-${esc(s.id)}">
+          <h2>${esc(s.title)}${d ? `<span class="chip heat" style="margin-left:9px">${d.total}</span>` : ''}</h2>
+          ${/* Edit mode changes nothing about how the body LOOKS -- same markup,
+               same classes -- it just makes it editable. */''}
+          ${editing ? `<div class="sec-body" contenteditable="true" spellcheck="true"
+            data-body="${esc(s.id)}" aria-label="${esc(s.title)} rules"
+            >${listHtml(s.items, null, false)}</div>`
+            : listHtml(s.items, diff, showDiff)}
         </section>`;
       }).join('')}
     </article>`;
@@ -4702,10 +4837,19 @@ function render(db, state = {}) {
   </div>` : ''}
 
   ${tab === 'changes' ? changesPanel : `
-    <div class="rules-layout">
+    <div class="rules-layout${editing ? ' editing' : ''}">
       ${toc}
       <div class="rules-doc card"><div class="card-bd">${doc}</div></div>
-    </div>`}
+    </div>
+    ${/* Outside the card on purpose: .card is overflow:hidden, which stops a
+         sticky child from ever sticking. This is fixed to the viewport. */''}
+    ${editing ? `<div class="edit-dock">
+      ${formatBar()}
+      <div class="dock-ft">
+        <button class="btn sm primary" data-save-all>${icon('check')} Save</button>
+        <span class="dock-state" data-dirty>No changes yet</span>
+      </div>
+    </div>` : ''}`}
 
   ${admin ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn" data-new-book>${icon('plus')} Start next season's rulebook</button>
@@ -4898,48 +5042,44 @@ function mount(root, db, go, setState, params = {}) {
     });
   });
 
-  root.querySelectorAll('[data-edit-sec]').forEach((b) => b.addEventListener('click', () => {
-    const sec = db.rulebook(shownYear).sections.find((s) => s.id === b.dataset.editSec);
-    const m = openModal({
-      title: `Edit — ${sec.title}`,
-      confirm: 'Save section',
-      closeButtons: false,   // outside-click, Escape and Save all close it
-      // The nesting syntax is not guessable, so that one line stays. What this used
-      // to also explain -- that editing a line keeps its identity -- is already
-      // visible in the change marks themselves.
-      body: `<div class="s dim" style="font-size:12px;line-height:1.6;margin-bottom:12px">
-          One rule per line. Indent with four spaces to nest.</div>
-        <div class="field"><label>Rules</label>
-          ${formatBar()}
-          <textarea name="body" class="rule-edit" style="min-height:300px">${
-            esc(sec.items.map((it) =>
-              '    '.repeat(it.depth) + (it.ordered ? '1. ' : '') + it.text).join('\n'))}</textarea></div>`,
-      onConfirm: async (d) => {
-        const lines = d.body.split('\n').filter((l) => l.trim());
-        await db.update('rules', (r) => {
-          const s = r.seasons[String(shownYear)].sections.find((x) => x.id === sec.id);
-          const old = sec.items;
-          s.items = lines.map((l, i) => {
-            const depth = Math.floor((l.length - l.trimStart().length) / 4);
-            // a leading "1." is how a numbered line is written; it is not part of
-            // the rule, and the number itself is whatever the list counts to
-            const raw = l.trim();
-            const ordered = /^\d+[.)]\s+/.test(raw);
-            const text = ordered ? raw.replace(/^\d+[.)]\s+/, '') : raw;
-            // keep the id of the line that was in this position, so an edit reads
-            // as a change rather than a delete + add
-            const prior = old[i];
-            const id = prior ? prior.id
-              : `${sec.id}-${text.toLowerCase().replace(/[^a-z0-9]+/g, '-').split('-').filter(Boolean).slice(0, 6).join('-')}-${Date.now().toString(36)}${i}`;
-            return ordered ? { id, depth, text, ordered: true } : { id, depth, text };
-          });
-        });
-        toast('Section saved');
-      },
-    });
+  /* Editing happens in the document, one section at a time. Save writes that
+     section; Revert just repaints it from the data. */
+  /* The body is the same markup it is read in, just editable. One toolbar for the
+     whole document, docked so it is still there wherever you have scrolled to. */
+  const bodies = [...root.querySelectorAll('.sec-body[data-body]')];
+  const bar = root.querySelector('.edit-dock .fmt-bar');
+  const state = root.querySelector('[data-dirty]');
+  const dirty = new Set();
 
-    wireFormatBar(m.root.querySelector('.fmt-bar'), m.root.querySelector('textarea[name="body"]'));
-  }));
+  if (bar && bodies.length) {
+    const touched = (host) => {
+      dirty.add(host.dataset.body);
+      if (state) {
+        state.textContent = `${dirty.size} section${dirty.size === 1 ? '' : 's'} edited`;
+        state.classList.add('on');
+      }
+    };
+    bodies.forEach((host) => wireRichBar(bar, host, () => touched(host)));
+  }
+
+  root.querySelector('[data-save-all]')?.addEventListener('click', async () => {
+    if (!dirty.size) { toast('Nothing to save'); return; }
+    const book = db.rulebook(shownYear);
+    const next = new Map();
+    for (const id of dirty) {
+      const host = root.querySelector(`.sec-body[data-body="${CSS.escape(id)}"]`);
+      const before = book.sections.find((x) => x.id === id);
+      if (host && before) next.set(id, serializeSection(host, before.items, id));
+    }
+    await db.update('rules', (r) => {
+      const secs = r.seasons[String(shownYear)].sections;
+      for (const [id, items] of next) {
+        const sec = secs.find((x) => x.id === id);
+        if (sec) sec.items = items;
+      }
+    });
+    toast(`${next.size} section${next.size === 1 ? '' : 's'} saved`);
+  });
 
   root.querySelector('[data-publish-book]')?.addEventListener('click', async (e) => {
     const y = e.currentTarget.dataset.publishBook;
@@ -4982,7 +5122,7 @@ function mount(root, db, go, setState, params = {}) {
   });
 }
 
-return { render, mount };
+return { toText, serializeNode, serializeSection, toItems, render, mount };
 })();
 
 /* ===== js/views/empire.js ===== */
