@@ -32,7 +32,9 @@ const d=db.rulesDiff(2026);
 eq('diff totals',[d.changed.length,d.added.length,d.removed.length],[3,1,8]);
 eq('diff baseline',d.from,2025);
 eq('unchanged items carry no mark',db.rulebook(2026).sections.find(s=>s.id==='scoring').items.every(i=>!d.byId.has(i.id)),true);
-const marksOff=R.render(db,{params:{year:'2026',marks:'0'}});
+R.setMarks(false);
+const marksOff=R.render(db,{params:{year:'2026'}});
+R.setMarks(true);
 eq('marks toggle drops the word-diff',/(<ins>|<del>)/.test(marksOff.split('What changed')[1]||''),false);
 eq('2025 has no diff (nothing before it)',db.rulesDiff(2025),null);
 // a draft must be invisible to a logged-out visitor

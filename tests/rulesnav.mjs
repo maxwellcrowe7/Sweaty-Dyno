@@ -68,4 +68,27 @@ print('\n— the tabs are reachable from both tabs —');
   db.season=2025;
 }
 
+
+print('\n— Mark changes survives leaving the tab —');
+{
+  await db.update('rules',(r)=>{
+    r.seasons['2026']={status:'draft',published:null,basedOn:2025,summary:null,
+      sections:structuredClone(r.seasons['2025'].sections)};
+    r.seasons['2026'].sections[0].items[0].text='Edited for the test.';
+  });
+  db.season=2026;
+  const marked=()=>/class="rule-flag/.test(ru.render(db,{params:{}}));
+  eq('on by default', marked(), true);
+  ru.setMarks(false);
+  eq('off once you turn it off', marked(), false);
+  // this is the bug: it used to ride on a URL param, which was dropped the
+  // moment you navigated away, so coming back silently switched it on again
+  mount({});                       // a repaint, as if returning to the tab
+  eq('still off after coming back', marked(), false);
+  ru.setMarks(true);
+  eq('and back on when you say so', marked(), true);
+  await db.update('rules',(r)=>{ delete r.seasons['2026']; });
+  db.season=2025;
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRulebook navigation passed.');

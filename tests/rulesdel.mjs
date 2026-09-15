@@ -65,8 +65,10 @@ print('\n— the Mark changes toggle turns off ALL the marks —');
   // Edit one as well so the marked-up view has something to show.
   await db.update('rules',(r)=>{ r.seasons['2026'].sections[0].items[0].text='One, revised'; });
   db.season=2026;
-  const on  = ru.render(db,{params:{}});          // marks on (the default)
-  const off = ru.render(db,{params:{marks:'0'}}); // marks off
+  const on  = ru.render(db,{params:{}});
+  ru.setMarks(false);
+  const off = ru.render(db,{params:{}});
+  ru.setMarks(true);
   eq('on: the edited rule is flagged', /class="rule-flag/.test(on), true);
   eq('on: it is highlighted',          /\bmk-changed\b/.test(on), true);
   eq('on: with a word-level diff',     /<(ins|del)>/.test(on), true);
@@ -99,7 +101,9 @@ print('\n— a deleted rule is shown back in its own place —');
   const at=(t)=>on.indexOf(t);
   eq('in its original position', at('First') < at('Doomed') && at('Doomed') < at('Third'), true);
   // and it is not in the book at all when marks are off
-  const off = ru.render(db,{params:{marks:'0'}});
+  ru.setMarks(false);
+  const off = ru.render(db,{params:{}});
+  ru.setMarks(true);
   eq('marks off: gone entirely', off.includes('Doomed'), false);
   eq('marks off: the rest remains', off.includes('First') && off.includes('Third'), true);
   // never editable: edit mode shows the real rules only
@@ -110,7 +114,10 @@ print('\n— a deleted rule is shown back in its own place —');
 print('\n— count badges follow the Mark changes toggle —');
 {
   const ru=await import('../js/views/rules.js');
-  const on = ru.render(db,{params:{}}), off = ru.render(db,{params:{marks:'0'}});
+  const on = ru.render(db,{params:{}});
+  ru.setMarks(false);
+  const off = ru.render(db,{params:{}});
+  ru.setMarks(true);
   eq('on: the rail shows a count',  /class="toc-dot"/.test(on), true);
   eq('off: the rail is clean',      /class="toc-dot"/.test(off), false);
   eq('off: no count beside the heading', /<h2>[^<]*<span class="chip heat"/.test(off), false);
@@ -149,7 +156,10 @@ print('\n— a deleted SECTION shows in the contents rail —');
       {id:'c',title:'Waivers',items:[{id:'c1',depth:0,text:'Three'}]}];
   });
   db.season=2026;
-  const on=ru.render(db,{params:{}}), off=ru.render(db,{params:{marks:'0'}});
+  const on=ru.render(db,{params:{}});
+  ru.setMarks(false);
+  const off=ru.render(db,{params:{}});
+  ru.setMarks(true);
   const toc=(h)=>h.slice(h.indexOf('<nav class="toc'), h.indexOf('</nav>'));
   eq('on: the gone section is listed', toc(on).includes('Retired Section'), true);
   eq('on: struck through',  /<del>Retired Section<\/del>/.test(toc(on)), true);

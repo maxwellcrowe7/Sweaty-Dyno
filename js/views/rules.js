@@ -25,6 +25,12 @@ const statusDot = (db, year) => {
 /* Edit mode is module state, not persisted: a reload always lands you reading
    rather than editing, and it can never be on for someone without rights. */
 let EDITING = false;
+/* Whether change marks are on. Module state, not a URL param: as a param it was
+   dropped the moment you left the tab, so it silently switched itself back on
+   every time you came back. Survives navigation, resets on reload. */
+let MARKS = true;
+/** Turn change marks on or off. The toggle and the tests both go through this. */
+export const setMarks = (on) => { MARKS = Boolean(on); };
 
 function inlineDiff(before, after) {
   const a = before.split(/(\s+)/), b = after.split(/(\s+)/);
@@ -163,7 +169,7 @@ export function render(db, state = {}) {
   }
   const bk = db.rulebook(year);
   const diff = db.rulesDiff(year);
-  const showDiff = P.marks !== '0';
+  const showDiff = MARKS;
   const tab = P.tab === 'changes' && diff ? 'changes' : 'rules';
   const admin = db.isAdmin;
 
@@ -334,8 +340,10 @@ export function mount(root, db, go, setState, params = {}) {
   const shownYear = books.includes(db.season) ? db.season : books[0];
   root.querySelectorAll('[data-rtab]').forEach((b) => b.addEventListener('click', () =>
     nav({ tab: b.dataset.rtab === 'rules' ? null : b.dataset.rtab })));
-  root.querySelector('#diffToggle')?.addEventListener('change', (e) =>
-    nav({ marks: e.target.checked ? null : '0' }));
+  root.querySelector('#diffToggle')?.addEventListener('change', (e) => {
+    setMarks(e.target.checked);
+    db.emit();
+  });
 
   const scrollTo = (el, smooth = true) => {
     if (!el) return;
