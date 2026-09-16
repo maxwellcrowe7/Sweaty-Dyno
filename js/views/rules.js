@@ -307,8 +307,14 @@ export function render(db, state = {}) {
       <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
       <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed</button>
     </div>` : ''}
-    ${tab === 'changes' ? '' : admin ? `<button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
-      icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>` : ''}
+    ${tab === 'changes' || !admin ? '' : `<span class="bar-actions">
+      <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
+        icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>
+      ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}">${
+        icon('check')} Publish</button>` : ''}
+      <button class="btn sm danger" data-delete-book="${year}" aria-label="Delete the ${year} rulebook"
+        title="Delete the ${year} rulebook">${icon('x')}</button>
+    </span>`}
   </div>
 
   <div class="rules-layout${editing ? ' editing' : ''}${tab === 'changes' ? ' solo' : ''}">
@@ -325,15 +331,6 @@ export function render(db, state = {}) {
       <span class="dock-state" data-dirty>No changes yet</span>
     </div>` : ''}
 
-  ${admin ? `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-    ${/* starting next year belongs with the book you are reading, not with a
-         list of this year's edits */''}
-    ${tab === 'changes' ? '' : `<button class="btn" data-new-book>${
-      icon('plus')} Start next season's rulebook</button>`}
-    ${bk.status !== 'published' ? `<button class="btn primary" data-publish-book="${year}">${icon('check')} Publish ${year}</button>` : ''}
-    <div class="spacer" style="margin-left:auto"></div>
-    <button class="btn danger" data-delete-book="${year}">${icon('x')} Delete ${year}</button>
-  </div>` : ''}
   `;
 }
 

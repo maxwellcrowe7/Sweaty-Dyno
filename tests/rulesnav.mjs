@@ -125,4 +125,34 @@ print('\n— a draft you cannot see is not a missing book —');
   db.season=2025;
 }
 
+
+print('\n— where the book actions live —');
+{
+  await db.update('rules',(r)=>{
+    r.seasons['2026']={status:'draft',published:null,basedOn:2025,summary:null,
+      sections:structuredClone(r.seasons['2025'].sections)};
+  });
+  const has=(h,k)=>h.includes(k);
+  db.season=2026;
+  const book=ru.render(db,{params:{}}), chg=ru.render(db,{params:{tab:'changes'}});
+  eq('draft: edit, publish and delete on the bar',
+     [has(book,'data-edit-mode'),has(book,'data-publish-book'),has(book,'data-delete-book')], [true,true,true]);
+  eq('what changed: none of them',
+     [has(chg,'data-edit-mode'),has(chg,'data-publish-book'),has(chg,'data-delete-book')], [false,false,false]);
+  eq('no Start button on a book that exists', has(book,'data-new-book'), false);
+
+  db.season=2025;
+  const pub=ru.render(db,{params:{}});
+  eq('published: no Publish, still deletable',
+     [has(pub,'data-publish-book'),has(pub,'data-delete-book')], [false,true]);
+
+  db.season=2027;
+  const none=ru.render(db,{params:{}});
+  eq('no book: Start is the only action',
+     [has(none,'data-new-book'),has(none,'data-delete-book'),has(none,'data-edit-mode')], [true,false,false]);
+
+  await db.update('rules',(r)=>{ delete r.seasons['2026']; });
+  db.season=2025;
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRulebook navigation passed.');
