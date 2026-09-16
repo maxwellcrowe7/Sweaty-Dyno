@@ -745,13 +745,41 @@ class Store {
   draftSeasons() { return Object.keys(this.get('drafts').rookie).map(Number).sort((a, b) => b - a); }
   position(player) { return this.get('players').positions[player] || null; }
 
+  /**
+   * Which season a transaction date belongs to. Sleeper files moves by the week
+   * they happened in, which says nothing about a dynasty offseason, so the
+   * commissioner sets a window per season in Admin. Falls back to the calendar
+   * year, which is what the windows default to.
+   */
+  seasonOf(date) {
+    const d = String(date || '').slice(0, 10);
+    if (!d) return null;
+    const w = this.league.seasonWindows || {};
+    // windows can overlap while a season is being moved; the newer one wins, so
+    // opening 2026 early pulls that December straight into the new season
+    let hit = null;
+    for (const [year, win] of Object.entries(w)) {
+      if (!win?.start || !win?.end) continue;
+      if (d >= win.start && d <= win.end) hit = Math.max(hit ?? 0, Number(year));
+    }
+    return hit ?? (Number(d.slice(0, 4)) || null);
+  }
+
+  /** The window a season covers, defaulting to its calendar year. */
+  seasonWindow(year) {
+    const w = (this.league.seasonWindows || {})[String(year)];
+    return { start: w?.start || `${year}-01-01`, end: w?.end || `${year}-12-31` };
+  }
+
   trades(season = null) {
     const t = this.get('trades');
-    const f = (x) => season == null || x.season === season;
+    const seasonOf = (x) => x.season ?? this.seasonOf(x.date);
+    const f = (x) => season == null || seasonOf(x) === season;
+    const byDate = (a, b) => (b.date || '').localeCompare(a.date || '');
     return {
-      trades: t.trades.filter(f).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')),
+      trades: t.trades.filter(f).slice().sort(byDate),
       conditional: t.conditionalTrades.filter(f),
-      waivers: t.waivers.filter(f).slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || b.n - a.n),
+      waivers: t.waivers.filter(f).slice().sort((a, b) => byDate(a, b) || (b.n || 0) - (a.n || 0)),
     };
   }
 

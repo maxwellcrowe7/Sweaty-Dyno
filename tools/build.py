@@ -20,7 +20,7 @@ ORDER = [
     'js/config.js', 'js/migrate.js', 'js/supabase.js', 'js/util.js', 'js/db.js',
     'js/sleeper.js', 'js/autosync.js',
     'js/views/dashboard.js', 'js/views/bank.js', 'js/views/minigames.js',
-    'js/views/drafts.js', 'js/views/trades.js', 'js/views/stats.js', 'js/views/rules.js',
+    'js/views/drafts.js', 'js/views/transactions.js', 'js/views/stats.js', 'js/views/rules.js',
     'js/views/empire.js', 'js/views/managers.js', 'js/views/admin.js',
     'js/app.js',
 ]

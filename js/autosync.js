@@ -100,3 +100,99 @@ export async function run(db, onStep = () => {}) {
     return null;   // stay quiet; the manual button reports properly
   }
 }
+
+/* ============================================================
+   TRANSACTIONS
+   Trades, waiver claims and free-agent adds, pulled per season.
+
+   Kept out of run() above on purpose: Sleeper's transaction payloads carry
+   player IDs and nothing else, so naming them means the ~5 MB player file.
+   That download happens at most once — every name and position it resolves is
+   written to players.json, so the next sync only needs it if a face is new,
+   and nobody reading the app ever downloads it at all.
+   ============================================================ */
+
+/** pid -> name, from what we already know, reaching for Sleeper only if we must. */
+async function namer(db, pids, onStep = () => {}) {
+  const known = db.get('players').sleeperNames || {};
+  const missing = [...new Set(pids)].filter((p) => !known[p]);
+  if (!missing.length) return { nameOf: (p) => known[p], learned: {}, positions: {} };
+
+  onStep('Loading the player list (~5 MB, once)…');
+  const pl = await SL.players();
+  const learned = {};
+  const positions = {};
+  for (const p of missing) {
+    const r = pl[String(p)];
+    if (!r) continue;
+    const name = r.full_name || [r.first_name, r.last_name].filter(Boolean).join(' ');
+    if (!name) continue;
+    learned[p] = name;
+    const pos = r.position || (Array.isArray(r.fantasy_positions) ? r.fantasy_positions[0] : null);
+    if (pos) positions[name] = pos;
+  }
+  return { nameOf: (p) => known[p] || learned[p] || `Player ${p}`, learned, positions };
+}
+
+/**
+ * Pull a season's transactions and merge them in. Sleeper is the source of
+ * truth: anything it knows about replaces our copy of that transaction, and
+ * anything hand-entered that Sleeper has never heard of is left alone.
+ * Returns a short summary.
+ */
+export async function pullTransactions(db, season, onStep = () => {}) {
+  const id = db.league.sleeper.leagueIds[String(season)];
+  if (!id) return 'No Sleeper league ID for that season.';
+
+  onStep('Matching rosters…');
+  const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
+  if (!Object.keys(map.rosterToTeam).length) return 'No rosters matched — check the aliases in managers.json.';
+
+  const weeks = Array.from({ length: 18 }, (_, i) => i + 1);
+  onStep('Reading transactions…');
+  // first pass names nothing; it only tells us which players we need names for
+  const raw = await SL.fetchTransactions(id, weeks, map.rosterToTeam, (pid) => String(pid));
+  const pids = [
+    ...raw.trades.flatMap((t) => t.sides.flatMap((s) => s.receives.map((r) => r.player).filter(Boolean))),
+    ...raw.moves.flatMap((m) => [m.player, m.dropped].filter(Boolean)),
+  ];
+  const { nameOf, learned, positions } = await namer(db, pids, onStep);
+
+  const name = (v) => (v == null ? null : nameOf(v));
+  const trades = raw.trades.map((t) => ({
+    id: `sl-${t.sleeperId}`, sleeperId: t.sleeperId, source: 'sleeper',
+    season: db.seasonOf(t.date), date: t.date,
+    sides: t.sides.map((s) => ({
+      team: s.team,
+      receives: s.receives.map((r) => (r.player ? { ...r, label: name(r.player) } : r)),
+    })),
+  }));
+  const moves = raw.moves.map((m) => ({
+    id: `sl-${m.sleeperId}`, sleeperId: m.sleeperId, source: 'sleeper',
+    season: db.seasonOf(m.date), date: m.date, team: m.team, type: m.type,
+    player: name(m.player), dropped: name(m.dropped), faab: m.faab,
+  }));
+
+  if (Object.keys(learned).length || Object.keys(positions).length) {
+    await db.update('players', (p) => {
+      p.sleeperNames = { ...(p.sleeperNames || {}), ...learned };
+      p.positions = { ...positions, ...p.positions };
+    });
+  }
+
+  await db.update('trades', (t) => {
+    // only this season's pulled rows are replaced — other seasons, and anything
+    // hand-entered, stay exactly where they are
+    const byDate = (a, b) => (a.date || '').localeCompare(b.date || '');
+    const merge = (rows, fresh) => {
+      const ids = new Set(fresh.map((x) => x.id));
+      const stale = (r) => r.source === 'sleeper' && (r.season === season || ids.has(r.id));
+      return [...rows.filter((r) => !stale(r)), ...fresh].sort(byDate);
+    };
+    t.trades = merge(t.trades, trades);
+    t.waivers = merge(t.waivers, moves);
+    t.lastTransactionSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  });
+
+  return `${trades.length} trade${trades.length === 1 ? '' : 's'} and ${moves.length} pickup${moves.length === 1 ? '' : 's'} from ${season}`;
+}

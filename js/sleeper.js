@@ -174,3 +174,91 @@ export async function completedWeeks(season, regularSeasonWeeks = 14) {
   const done = String(st.season) === String(season) ? Math.max(0, cur - 1) : regularSeasonWeeks;
   return Array.from({ length: Math.min(done, regularSeasonWeeks) }, (_, i) => i + 1);
 }
+
+/* ---------- transactions (trades, waivers, free agents) ---------- */
+
+export const transactions = (id, week) => get(`/league/${id}/transactions/${week}`);
+
+const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
+
+/**
+ * Every completed move in a league, normalised.
+ *
+ * Sleeper files a move under the week it happened in and describes it as a set
+ * of adds and drops keyed by roster: `adds` says who ENDED with the player and
+ * `drops` who gave him up, so a 3-team trade reads exactly as it happened
+ * rather than as a pair of mirrored lists. Draft picks and FAAB transfers each
+ * carry their own previous owner.
+ *
+ * `nameOf` turns a Sleeper player id into a name; pass the one built from the
+ * player dictionary so the names survive in the database and no reader ever has
+ * to download that 5 MB file.
+ *
+ * Skips failed waiver claims and the commissioner's roster surgery — neither is
+ * something a manager did.
+ */
+export async function fetchTransactions(leagueId, weeks, rosterToTeam, nameOf) {
+  const trades = [];
+  const moves = [];
+  const seen = new Set();
+
+  for (const wk of weeks) {
+    let batch = [];
+    try { batch = await transactions(leagueId, wk); } catch { continue; }
+    for (const t of batch) {
+      if (t.status !== 'complete' || seen.has(t.transaction_id)) continue;
+      if (t.type !== 'trade' && t.type !== 'waiver' && t.type !== 'free_agent') continue;
+      seen.add(t.transaction_id);
+      const date = dayOf(t.status_updated || t.created);
+      const team = (rid) => rosterToTeam[rid] ?? null;
+
+      if (t.type === 'trade') {
+        // one bucket per roster, holding what that roster RECEIVED and from whom
+        const by = new Map(t.roster_ids.map((r) => [r, []]));
+        const push = (to, item) => by.get(to)?.push(item);
+        for (const [pid, to] of Object.entries(t.adds || {}))
+          push(Number(to), { label: nameOf(pid), player: pid, from: team(Number((t.drops || {})[pid])) });
+        for (const p of t.draft_picks || [])
+          push(Number(p.owner_id), {
+            label: `${p.season} ${ord(p.round)}`,
+            pick: { season: Number(p.season), round: p.round, origin: team(Number(p.roster_id)) },
+            from: team(Number(p.previous_owner_id)),
+          });
+        for (const w of t.waiver_budget || [])
+          push(Number(w.receiver), { label: `$${w.amount} FAAB`, faab: w.amount, from: team(Number(w.sender)) });
+
+        const sides = [...by.entries()]
+          .map(([rid, receives]) => ({ team: team(rid), receives }))
+          .filter((s) => s.team);
+        if (sides.length >= 2) trades.push({ sleeperId: t.transaction_id, date, sides });
+        continue;
+      }
+
+      // a waiver claim or a free-agent add: one roster, one player in, maybe one out
+      const rid = t.roster_ids[0];
+      const tn = team(rid);
+      if (!tn) continue;
+      const add = Object.keys(t.adds || {})[0] || null;
+      const drop = Object.keys(t.drops || {})[0] || null;
+      if (!add) continue;   // a bare drop is not an acquisition
+      moves.push({
+        sleeperId: t.transaction_id, date, team: tn, type: t.type,
+        player: nameOf(add), dropped: drop ? nameOf(drop) : null,
+        faab: t.type === 'waiver' ? Number(t.settings?.waiver_bid || 0) : null,
+      });
+    }
+  }
+  return { trades, moves };
+}
+
+const ord = (n) => `${n}${['th', 'st', 'nd', 'rd'][n % 10 > 3 || (n % 100 >= 11 && n % 100 <= 13) ? 0 : n % 10]}`;
+
+/** pid -> name, from the player dictionary. Downloads it once per page load. */
+export async function nameLookup() {
+  const pl = await players();
+  return (pid) => {
+    const p = pl[String(pid)];
+    if (!p) return `Player ${pid}`;
+    return p.full_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || p.last_name || `Player ${pid}`;
+  };
+}

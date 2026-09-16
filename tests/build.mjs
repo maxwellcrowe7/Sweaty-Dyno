@@ -20,7 +20,7 @@ try { new Function(src); } catch (e) { err = String(e); }
 eq('the bundle parses', err, null);
 
 eq('the data went in', src.includes('window.__SD_DATA'), true);
-eq('and so did every view', ['minigames','drafts','rules','bank','empire','stats','trades']
+eq('and so did every view', ['minigames','drafts','rules','bank','empire','stats','transactions']
    .every((v) => src.includes(`js/views/${v}.js`) || src.includes(`${v}.js`)), true);
 
 print(fail?`\n${fail} FAILURE(S)`:'\nBuild output is loadable.');

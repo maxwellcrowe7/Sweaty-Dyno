@@ -1,5 +1,6 @@
 import { esc, icon, toast, openModal, money, teamTag } from '../util.js';
 import * as SL from '../sleeper.js';
+import { pullTransactions } from '../autosync.js';
 import { isConfigured } from '../config.js';
 
 const LEVEL = { warn: 'red', info: '', edit: 'heat' };
@@ -153,7 +154,8 @@ export function render(db) {
           </div>
         </div>`).join('')}
       <div class="s dim" style="font-size:12px;margin:4px 0 14px;line-height:1.6">
-        <b>Sync</b> pulls weekly scores and, once the playoffs are done, the final standings that drive
+        <b>Transactions</b> pulls every trade, waiver claim and free-agent add, filed by the season
+        windows below. <b>Sync</b> pulls weekly scores and, once the playoffs are done, the final standings that drive
         placement payouts and empire points. <b>Max PF</b> works out each team's best possible lineup;
         it downloads a large player file, so run it on wifi.<br><br>
         Open your league on sleeper.com &mdash; the ID is the long number in the URL
@@ -163,10 +165,29 @@ export function render(db) {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" data-save-ids>${icon('check')} Save IDs</button>
         <button class="btn primary" data-sync="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Sync ${S} from Sleeper</button>
+        <button class="btn" data-tx="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('swap')} Pull ${S} transactions</button>
         <button class="btn" data-maxpf="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('chart')} Compute Max PF</button>
       </div>
       <div data-syncout class="s dim" style="font-size:12px;margin-top:12px"></div>
       ${st.lastSleeperSync ? `<div class="s dimmer" style="font-size:11.5px;margin-top:6px">Last sync ${esc(st.lastSleeperSync)}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="card-hd">${icon('clock')}<h3>Season windows</h3></div>
+    <div class="card-bd">
+      <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
+        A transaction is filed under whichever window its date falls in, so an offseason
+        trade lands in the season it was made for rather than the one it interrupted.
+      </div>
+      ${db.seasons.map((y) => { const w = db.seasonWindow(y); return `
+        <div class="fgrid" style="margin-bottom:8px">
+          <div class="field"><label>${y} opens</label>
+            <input type="date" data-win="${y}" data-end="0" value="${esc(w.start)}"></div>
+          <div class="field"><label>${y} closes</label>
+            <input type="date" data-win="${y}" data-end="1" value="${esc(w.end)}"></div>
+        </div>`; }).join('')}
+      <button class="btn" data-save-windows>${icon('check')} Save windows</button>
     </div>
   </div>
 
@@ -340,6 +361,29 @@ export function mount(root, db) {
     } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
     b.disabled = false;
   }));
+
+  root.querySelector('[data-save-windows]')?.addEventListener('click', async () => {
+    await db.update('league', (L) => {
+      L.seasonWindows = L.seasonWindows || {};
+      root.querySelectorAll('[data-win]').forEach((i) => {
+        const y = i.dataset.win;
+        L.seasonWindows[y] = L.seasonWindows[y] || {};
+        L.seasonWindows[y][i.dataset.end === '1' ? 'end' : 'start'] = i.value;
+      });
+    });
+    toast('Season windows saved');
+  });
+
+  root.querySelector('[data-tx]')?.addEventListener('click', async (ev) => {
+    const S = Number(ev.currentTarget.dataset.tx);
+    ev.currentTarget.disabled = true;
+    try {
+      const out = await pullTransactions(db, S, say);
+      say(out);
+      toast('Transactions pulled');
+    } catch (e) { say(`Transaction pull failed — ${e.message}`); toast('Pull failed'); }
+    ev.currentTarget.disabled = false;
+  });
 
   root.querySelector('[data-sync]')?.addEventListener('click', async (ev) => {
     const S = Number(ev.currentTarget.dataset.sync);

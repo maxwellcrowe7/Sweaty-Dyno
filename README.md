@@ -91,7 +91,9 @@ Hit **Admin → Edit mode**. That turns on, across the app:
 - **Bank** — tap any buy-in cell to toggle paid/unpaid
 - **Games** — set each week's minigame name, rules, payouts and 1st/2nd/3rd
   (with the free-text "what won it"); chop teams from the guillotine and crown the survivor
-- **Trades** — log trades, conditional trades (open / met / expired), and waiver claims
+- **Transactions** — nothing to enter; trades, waiver claims and free-agent adds come
+  from Sleeper. The only hand-entered part is the condition on a conditional trade
+  (hover a trade's header for the pencil), which Sleeper has no concept of
 
 Edits save to your browser immediately. They are **not** live for anyone else until you
 **Admin → Download changed**, drop the files into `data/`, and commit. The Admin panel
@@ -114,7 +116,7 @@ Everything lives in `data/*.json`. Each file has a `_README` key explaining its 
 | `bank.json` | buy-ins, payout line items, empire points, season finishes |
 | `minigames.json` | weekly slate per season, results, guillotine |
 | `drafts.json` | rookie draft boards — slot owner vs. who actually picked |
-| `trades.json` | trades, conditional trades, waiver claims |
+| `trades.json` | trades, conditional trades, waiver claims and free-agent adds (pulled from Sleeper; `source: "sleeper"`) |
 | `stats.json` | weekly points, season Max PF |
 | `players.json` | player → position, for the colour chips (best-effort, safe to edit) |
 
@@ -167,6 +169,18 @@ playoffs are done, the final standings that drive placement payouts and empire p
 **Admin → Sync** does the same thing on demand. **Compute Max PF** is a separate
 button because it downloads Sleeper's ~5 MB player file to work out each team's best
 possible lineup; nothing runs that automatically.
+
+**Admin → Pull transactions** fills the Transactions page: every completed trade,
+waiver claim and free-agent add for that season. Failed claims and the commissioner's
+own roster edits are skipped. Sleeper names players by ID only, so the first pull
+reaches for that same 5 MB player file — but every name and position it resolves is
+written to `players.json`, so later pulls usually skip the download and nobody
+*reading* the app ever fetches it. It is a button rather than part of auto-sync for
+exactly that reason.
+
+**Admin → Season windows** decides which season a transaction belongs to. Each window
+defaults to its calendar year; widen 2026's start into December if the dynasty
+offseason opens early. Where two windows overlap, the later season wins.
 
 Each week stores **both** what the team actually scored and what its best possible
 lineup would have scored. Season Max PF is the sum of the latter — and it reproduces

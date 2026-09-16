@@ -1,6 +1,6 @@
 {
   "name": "Sweaty Dyno",
-  "tagline": "Dynasty · Est. 2025",
+  "tagline": "Dynasty \u00b7 Est. 2025",
   "seasons": [
     2025,
     2026,
@@ -85,5 +85,32 @@
   "minigameBudget": {
     "default": 200
   },
-  "_minigameBudgetNote": "What the rules allow for minigames and awards in a season. Add a season key to override (e.g. \"2027\": 250). The Games tab compares this against what you have actually committed."
+  "_minigameBudgetNote": "What the rules allow for minigames and awards in a season. Add a season key to override (e.g. \"2027\": 250). The Games tab compares this against what you have actually committed.",
+  "seasonWindows": {
+    "2025": {
+      "start": "2025-01-01",
+      "end": "2025-12-31"
+    },
+    "2026": {
+      "start": "2026-01-01",
+      "end": "2026-12-31"
+    },
+    "2027": {
+      "start": "2027-01-01",
+      "end": "2027-12-31"
+    },
+    "2028": {
+      "start": "2028-01-01",
+      "end": "2028-12-31"
+    },
+    "2029": {
+      "start": "2029-01-01",
+      "end": "2029-12-31"
+    },
+    "2030": {
+      "start": "2030-01-01",
+      "end": "2030-12-31"
+    }
+  },
+  "_seasonWindowsNote": "A transaction is filed under the season whose window its date falls in. Editable in Admin -> Season windows."
 }

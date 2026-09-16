@@ -1,0 +1,179 @@
+import { esc, icon, teamTag, fmtDate, empty, posChip, seasonPicker, openModal, toast } from '../util.js';
+
+/* Everything on this page comes from Sleeper. The only thing a commissioner
+   adds by hand is the condition on a conditional trade, because Sleeper has no
+   idea such a thing exists — see the pencil on a trade header. */
+
+const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
+
+/** An asset is either a plain string (hand-entered) or a pulled object. */
+const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
+
+const assetRow = (db, raw, showFrom) => {
+  const a = normalize(raw);
+  const pick = a.pick || isPickText(a.label);
+  const origin = a.pick?.origin ? db.team(a.pick.origin) : null;
+  const label = a.pick && origin ? `${a.label} (${origin.manager})` : a.label;
+  const from = showFrom && a.from ? db.team(a.from) : null;
+  return `<li>
+    ${a.faab != null ? `<span class="pos-chip pos-none">$</span>`
+      : pick ? `<span class="pos-chip pos-none">PK</span>` : posChip(db.position(a.label))}
+    <span class="${pick ? 'pk' : ''}">${esc(label)}</span>
+    ${from ? `<span class="from">from ${esc(from.manager)}</span>` : ''}
+  </li>`;
+};
+
+const side = (db, s, showFrom) => `
+  <div class="trade-side">
+    <div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
+      <span class="arrow">gets</span></div>
+    <ul>${s.receives.map((x) => assetRow(db, x, showFrom)).join('')}</ul>
+  </div>`;
+
+const tradeCard = (db, t, cond = null) => {
+  const st = cond ? db.conditionalStatus(cond) : null;
+  // Two-team deals are self-describing: what I get is what you gave. Three-way
+  // deals are not, so every asset says who it came from.
+  const showFrom = t.sides.length > 2;
+  const names = t.sides.map((s) => {
+    const team = s.team ? db.team(s.team) : null;
+    return `<b>${esc(team?.manager || s.alias || 'Unassigned')}</b>`;
+  }).join('<span class="sep">&middot;</span>');
+
+  return `<div class="trade${cond ? ' is-cond' : ''}" data-trade="${esc(t.id)}">
+    <div class="trade-hd">
+      <div class="names">${names}</div>
+      ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
+      <div style="flex:1"></div>
+      ${db.isAdmin ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
+        aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
+      <span class="d">${fmtDate(t.date, { year: true })}</span>
+    </div>
+    <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom)).join('')}</div>
+    ${cond ? `<div class="cond">
+      <div class="lbl">Condition</div>${esc(cond.condition)}
+      <div class="out">
+        ${st.key === 'open'
+          ? `${icon('clock')} Resolves by ${esc(cond.deadlineLabel || fmtDate(cond.deadline, { year: true }))}`
+          : `${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome || st.label)}`}
+      </div></div>` : ''}
+    ${t.note && !cond ? `<div class="cond note">
+      <div class="lbl">Note</div>${esc(t.note)}</div>` : ''}
+  </div>`;
+};
+
+const moveRow = (db, w) => {
+  const fa = w.type === 'free_agent';
+  return `<div class="row">
+    <div class="grow">
+      <div class="t" style="display:flex;align-items:center;gap:7px">${posChip(db.position(w.player))} ${esc(w.player)}</div>
+      <div class="s">${teamTag(w.team ? db.team(w.team) : null, { alias: w.alias, num: false })}
+        &middot; ${fmtDate(w.date, { year: true })}${w.dropped ? ` &middot; dropped ${esc(w.dropped)}` : ''}</div>
+    </div>
+    ${fa ? '<span class="chip ghost">Free agent</span>'
+      : `<div class="val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab || 0}</div>`}
+  </div>`;
+};
+
+export function render(db, state = {}) {
+  const tab = state.tradeTab === 'waivers' ? 'waivers' : 'trades';
+  const kind = state.tradeKind || 'all';          // all | standard | conditional
+  const S = db.season;
+  const { trades, conditional, waivers } = db.trades(S);
+  const condFor = (t) => (t.conditionalId ? conditional.find((c) => c.id === t.conditionalId) : null)
+    || conditional.find((c) => c.settledTradeId === t.id) || null;
+
+  const shown = trades.filter((t) => kind === 'all'
+    || (kind === 'conditional' ? condFor(t) : !condFor(t)));
+  const open = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
+  const claims = waivers.filter((w) => w.type !== 'free_agent');
+  const faab = claims.reduce((a, w) => a + (w.faab || 0), 0);
+
+  const list = tab === 'trades'
+    ? (shown.length
+      ? shown.map((t) => tradeCard(db, t, condFor(t))).join('')
+      : empty('No trades', `Nothing ${kind === 'conditional' ? 'conditional ' : ''}in ${S}. Pull transactions in Admin to bring them across.`, 'swap'))
+    : (waivers.length
+      ? `<div class="card"><div class="card-bd flush"><div class="rows">
+          ${waivers.map((w) => moveRow(db, w)).join('')}</div></div></div>`
+      : empty('No pickups', `Nothing claimed in ${S}. Pull transactions in Admin to bring them across.`, 'inbox'));
+
+  return `
+  <div class="view-hd"><h2>Transactions</h2>${seasonPicker(db)}</div>
+
+  <div class="pills">
+    <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades ${trades.length}</button>
+    <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers ${waivers.length}</button>
+  </div>
+
+  ${tab === 'trades' ? `
+    <div class="pills sub">
+      <button data-kind="all" aria-pressed="${kind === 'all'}">All</button>
+      <button data-kind="standard" aria-pressed="${kind === 'standard'}">Standard</button>
+      <button data-kind="conditional" aria-pressed="${kind === 'conditional'}">Conditional ${conditional.length}</button>
+    </div>
+    <div class="tiles" style="margin-top:8px">
+      <div class="tile"><div class="k">Trades</div><div class="v">${trades.length}</div><div class="m">in ${S}</div></div>
+      <div class="tile accent"><div class="k">Pieces moved</div><div class="v">${trades.reduce((a, t) => a + t.sides.reduce((x, s) => x + s.receives.length, 0), 0)}</div><div class="m">players + picks</div></div>
+      <div class="tile ${open.length ? 'gold' : ''}"><div class="k">Open conditions</div><div class="v">${open.length}</div><div class="m">awaiting outcome</div></div>
+    </div>` : `
+    <div class="tiles" style="margin-top:8px">
+      <div class="tile"><div class="k">Claims</div><div class="v">${claims.length}</div><div class="m">through waivers</div></div>
+      <div class="tile accent"><div class="k">Free agents</div><div class="v">${waivers.length - claims.length}</div><div class="m">straight adds</div></div>
+      <div class="tile mint"><div class="k">FAAB spent</div><div class="v">$${faab}</div><div class="m">in ${S}</div></div>
+    </div>`}
+
+  ${list}
+  `;
+}
+
+export function mount(root, db, go, setState) {
+  root.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () =>
+    setState({ tradeTab: b.dataset.tab })));
+  root.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () =>
+    setState({ tradeKind: b.dataset.kind })));
+
+  /* The one hand-entered thing on this page: the strings attached to a deal. */
+  root.querySelectorAll('[data-cond-edit]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.condEdit;
+    const { conditional } = db.trades();
+    const c = conditional.find((x) => x.settledTradeId === id || x.id === id) || null;
+    openModal({
+      title: 'Condition',
+      confirm: 'Save',
+      closeButtons: false,
+      body: `
+        <div class="field"><label>If&hellip; then&hellip;</label>
+          <textarea name="condition" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.condition || '')}</textarea></div>
+        <div class="fgrid">
+          <div class="field"><label>Deadline</label><input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
+          <div class="field"><label>Deadline label</label><input name="deadlineLabel" value="${esc(c?.deadlineLabel || '')}" placeholder="End of the playoffs"></div>
+        </div>
+        <div class="fgrid">
+          <div class="field"><label>Status</label><select name="status">
+            ${['open', 'met', 'expired'].map((s) =>
+              `<option value="${s}" ${(c?.status || 'open') === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+          <div class="field"><label>Outcome</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>
+        </div>`,
+      onConfirm: async (d) => {
+        const text = d.condition.trim();
+        await db.update('trades', (t) => {
+          const at = t.conditionalTrades.findIndex((x) => x.settledTradeId === id || x.id === id);
+          if (!text) { if (at > -1) t.conditionalTrades.splice(at, 1); return; }
+          const trade = t.trades.find((x) => x.id === id);
+          const rec = {
+            id: at > -1 ? t.conditionalTrades[at].id : `cond-${id}`,
+            season: trade?.season ?? null, date: trade?.date ?? null,
+            status: d.status, sides: trade?.sides || [],
+            condition: text, deadline: d.deadline || null,
+            deadlineLabel: d.deadlineLabel.trim() || null,
+            resolvedDate: d.status === 'open' ? null : (trade?.date ?? null),
+            outcome: d.outcome.trim() || null, settledTradeId: id,
+          };
+          if (at > -1) t.conditionalTrades[at] = rec; else t.conditionalTrades.push(rec);
+        });
+        toast(text ? 'Condition saved' : 'Condition removed');
+      },
+    });
+  }));
+}

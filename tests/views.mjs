@@ -28,12 +28,12 @@ await db.init();
 
 const views = {
   dashboard:'../js/views/dashboard.js', bank:'../js/views/bank.js', minigames:'../js/views/minigames.js',
-  drafts:'../js/views/drafts.js', trades:'../js/views/trades.js', stats:'../js/views/stats.js',
+  drafts:'../js/views/drafts.js', trades:'../js/views/transactions.js', stats:'../js/views/stats.js',
   empire:'../js/views/empire.js', rules:'../js/views/rules.js', managers:'../js/views/managers.js', admin:'../js/views/admin.js' };
 
 let fails = 0;
 const seasons = [2025, 2026];
-const variants = { rules:[{},{params:{year:'2026'}},{params:{year:'2026',tab:'changes'}},{params:{year:'2026',marks:'0'}},{params:{year:'2025'}}], stats:[{},{metric:'ceiling'},{focusTeam:3}], trades:[{tradeTab:'trades'},{tradeTab:'conditional'},{tradeTab:'waivers'}],
+const variants = { rules:[{},{params:{year:'2026'}},{params:{year:'2026',tab:'changes'}},{params:{year:'2026',marks:'0'}},{params:{year:'2025'}}], stats:[{},{metric:'ceiling'},{focusTeam:3}], trades:[{tradeTab:'trades'},{tradeTab:'trades',tradeKind:'conditional'},{tradeTab:'waivers'}],
                    drafts:[{draftYear:2025},{draftYear:2026}], stats:[{},{focusTeam:3}] };
 
 for (const S of seasons) {

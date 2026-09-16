@@ -6,7 +6,7 @@ import * as Dashboard from './views/dashboard.js';
 import * as Bank      from './views/bank.js';
 import * as Minigames from './views/minigames.js';
 import * as Drafts    from './views/drafts.js';
-import * as Trades    from './views/trades.js';
+import * as Trades    from './views/transactions.js';
 import * as Rules     from './views/rules.js';
 import * as Stats     from './views/stats.js';
 import * as Empire    from './views/empire.js';
@@ -18,7 +18,7 @@ const VIEWS = {
   bank:      { label: 'Bank',      icon: 'wallet', mod: Bank,      primary: true },
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
   drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts,    primary: true },
-  trades:    { label: 'Trades',    icon: 'swap',   mod: Trades },
+  trades:    { label: 'Transactions', icon: 'swap', mod: Trades },
   rules:     { label: 'Rules',     icon: 'book',  mod: Rules },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
   empire:    { label: 'Empire',    icon: 'crown',  mod: Empire },
