@@ -33,6 +33,9 @@ let EDITING = false;
 const LS_MARKS = 'sweatydyno:rulemarks';
 const readMarks = () => { try { return localStorage.getItem(LS_MARKS) !== '0'; } catch { return true; } };
 let MARKS = readMarks();
+/* The contents rail is a whole screen of links on a phone, so it starts closed
+   there. On desktop the CSS keeps it open and hides the control entirely. */
+let TOC_SHUT = true;
 /** Turn change marks on or off. The toggle and the tests both go through this. */
 export const setMarks = (on) => {
   MARKS = Boolean(on);
@@ -190,8 +193,12 @@ export function render(db, state = {}) {
 
   const editing = admin && EDITING;
   const toc = `
-    <nav class="toc${editing ? ' editing' : ''}" aria-label="Contents">
-      <div class="toc-hd">${icon('list')} Contents</div>
+    <nav class="toc${editing ? ' editing' : ''}${TOC_SHUT ? ' shut' : ''}" aria-label="Contents">
+      <button class="toc-hd" data-toc-toggle aria-expanded="${!TOC_SHUT}">
+        ${icon('list')} <span class="grow">Contents</span>
+        <span class="toc-n">${bk.sections.length}</span>
+        ${icon('chev', 'acc-caret')}
+      </button>
       <ol>
         ${/* deleted sections go back in their own place, struck through */''}
         ${(() => {
@@ -369,6 +376,11 @@ export function mount(root, db, go, setState, params = {}) {
     el.classList.add('flash');
     setTimeout(() => el.classList.remove('flash'), 1400);
   };
+  root.querySelector('[data-toc-toggle]')?.addEventListener('click', () => {
+    TOC_SHUT = !TOC_SHUT;
+    db.emit();
+  });
+
   root.querySelectorAll('[data-jump]').forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault();
     // mark it straight away and hold off the spy: the section you clicked may not
@@ -376,6 +388,11 @@ export function mount(root, db, go, setState, params = {}) {
     // highlight to whatever is up there instead
     root.querySelectorAll('[data-jump]').forEach((x) => x.classList.toggle('on', x === a));
     root._spyHold = Date.now() + 700;
+    // on a phone the rail covers the page; close it behind you
+    if (!window.matchMedia('(min-width:900px)').matches) {
+      TOC_SHUT = true;
+      root.querySelector('.toc')?.classList.add('shut');
+    }
     scrollTo(root.querySelector(`#s-${CSS.escape(a.dataset.jump)}`));
   }));
   // arriving from a link: ?sec= or ?item=

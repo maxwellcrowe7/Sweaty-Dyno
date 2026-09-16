@@ -722,7 +722,9 @@ table.dt th.sticky{width:1%}
 /* the tabs, the draft tag and Edit on one line, over the text body */
 .rules-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .rules-bar .pills{margin-bottom:0}
-.bar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.bar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
+/* a label that wraps inside its own button makes the whole row lumpy */
+.bar-actions .btn{white-space:nowrap}
 /* keeps a destructive button from butting up against the view control */
 .bar-sep{width:1px;height:20px;background:var(--line);margin:0 2px}
 .rules-main{min-width:0}
@@ -746,11 +748,21 @@ table.dt th.sticky{width:1%}
   margin-bottom:14px;overflow:hidden;
 }
 .toc-hd{
-  display:flex;align-items:center;gap:8px;padding:11px 14px;
+  display:flex;align-items:center;gap:8px;padding:11px 14px;width:100%;text-align:left;
   font-family:var(--f-display);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
   color:var(--ink-3);border-bottom:1px solid var(--line-soft);
   background:linear-gradient(180deg,rgba(255,255,255,.035),transparent);
 }
+.toc-hd .grow{flex:1;min-width:0}
+.toc-hd .toc-n{
+  font-size:11px;letter-spacing:.06em;color:var(--ink-3);
+  background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 7px;
+}
+.toc-hd .acc-caret{transition:transform .18s;color:var(--ink-3)}
+.toc:not(.shut) .toc-hd .acc-caret{transform:rotate(90deg)}
+/* closed on a phone: the rail is a screenful of links before any rules */
+.toc.shut ol,.toc.shut .toc-add{display:none}
+.toc.shut .toc-hd{border-bottom:none}
 .toc-hd svg{width:15px;height:15px}
 .toc ol{list-style:none;margin:0;padding:6px;counter-reset:toc;max-height:none;overflow:visible}
 .toc li{counter-increment:toc}
@@ -943,7 +955,47 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .chg-row .chip{flex:none}
 .chg-body{font-size:13.5px;line-height:1.6;color:var(--ink-2);min-width:0}
 
+/* ---------- rules on a phone ---------- */
+@media (max-width:620px){
+  /* tabs on their own line, controls under them: five things on one row was
+     a scrum at this width */
+  .rules-bar{gap:8px}
+  .bar-actions{margin-left:0;width:100%;justify-content:flex-end}
+  /* trimmed so Edit / Publish / delete / Mark changes make one line, not two */
+  .bar-actions .btn{padding:5px 9px;font-size:11.5px;gap:5px}
+  .bar-actions .btn svg{width:13px;height:13px}
+  .bar-sep{height:16px;margin:0}
+  .rules-title{font-size:21px;gap:9px}
+  .rules-meta{margin-bottom:11px;gap:9px}
+  .season-pick select{font-size:13px;padding:3px 7px}
+
+  /* the rulebook itself reads narrower */
+  .rules-doc .card-bd{padding:13px}
+  .rule-sec h2{font-size:17px}
+  .rule-sec + .rule-sec{margin-top:22px;padding-top:20px}
+  .rule-item{font-size:13.5px}
+  /* four levels of 20px indent leaves no room for the words */
+  .rule-item.d1{padding-left:28px} .rule-item.d1::before{left:15px}
+  .rule-item.d2{padding-left:42px} .rule-item.d2::before{left:29px}
+  .rule-item.d3{padding-left:56px} .rule-item.d3::before{left:43px}
+  .rule-item.ord.d1{padding-left:36px} .rule-item.ord.d1::before{left:12px}
+  .rule-item.ord.d2{padding-left:50px} .rule-item.ord.d2::before{left:26px}
+  .rule-item.ord.d3{padding-left:64px} .rule-item.ord.d3::before{left:40px}
+
+  /* the dock is the only way to format, so it must not run off the screen */
+  .edit-dock{gap:6px;padding:6px 8px}
+  .fmt-bar{gap:1px}
+  .fmt-bar button{min-width:26px;height:24px}
+  .dock-state{display:none}
+}
+
 @media (min-width:900px){
+  /* with room for it the rail is simply always open, and its control is noise */
+  .toc.shut ol,.toc.shut .toc-add{display:block}
+  .toc.shut .toc-hd{border-bottom:1px solid var(--line-soft)}
+  .toc-hd{pointer-events:none}
+  .toc-hd .acc-caret,.toc-hd .toc-n{display:none}
+
   .rules-layout{display:grid;grid-template-columns:246px 1fr;gap:18px;align-items:start}
   /* the changes view has no sections to jump to, so it drops the contents rail */
   .rules-layout.solo{grid-template-columns:1fr}
@@ -4699,6 +4751,9 @@ let EDITING = false;
 const LS_MARKS = 'sweatydyno:rulemarks';
 const readMarks = () => { try { return localStorage.getItem(LS_MARKS) !== '0'; } catch { return true; } };
 let MARKS = readMarks();
+/* The contents rail is a whole screen of links on a phone, so it starts closed
+   there. On desktop the CSS keeps it open and hides the control entirely. */
+let TOC_SHUT = true;
 /** Turn change marks on or off. The toggle and the tests both go through this. */
 const setMarks = (on) => {
   MARKS = Boolean(on);
@@ -4855,8 +4910,12 @@ function render(db, state = {}) {
 
   const editing = admin && EDITING;
   const toc = `
-    <nav class="toc${editing ? ' editing' : ''}" aria-label="Contents">
-      <div class="toc-hd">${icon('list')} Contents</div>
+    <nav class="toc${editing ? ' editing' : ''}${TOC_SHUT ? ' shut' : ''}" aria-label="Contents">
+      <button class="toc-hd" data-toc-toggle aria-expanded="${!TOC_SHUT}">
+        ${icon('list')} <span class="grow">Contents</span>
+        <span class="toc-n">${bk.sections.length}</span>
+        ${icon('chev', 'acc-caret')}
+      </button>
       <ol>
         ${/* deleted sections go back in their own place, struck through */''}
         ${(() => {
@@ -5033,6 +5092,11 @@ function mount(root, db, go, setState, params = {}) {
     el.classList.add('flash');
     setTimeout(() => el.classList.remove('flash'), 1400);
   };
+  root.querySelector('[data-toc-toggle]')?.addEventListener('click', () => {
+    TOC_SHUT = !TOC_SHUT;
+    db.emit();
+  });
+
   root.querySelectorAll('[data-jump]').forEach((a) => a.addEventListener('click', (e) => {
     e.preventDefault();
     // mark it straight away and hold off the spy: the section you clicked may not
@@ -5040,6 +5104,11 @@ function mount(root, db, go, setState, params = {}) {
     // highlight to whatever is up there instead
     root.querySelectorAll('[data-jump]').forEach((x) => x.classList.toggle('on', x === a));
     root._spyHold = Date.now() + 700;
+    // on a phone the rail covers the page; close it behind you
+    if (!window.matchMedia('(min-width:900px)').matches) {
+      TOC_SHUT = true;
+      root.querySelector('.toc')?.classList.add('shut');
+    }
     scrollTo(root.querySelector(`#s-${CSS.escape(a.dataset.jump)}`));
   }));
   // arriving from a link: ?sec= or ?item=
