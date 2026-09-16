@@ -315,10 +315,13 @@ export function render(db, state = {}) {
          sees no book actions, and this is the only control they get. */''}
     ${tab === 'changes' ? '' : `<span class="bar-actions">
       ${!admin ? '' : `
-      <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
-        icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>
-      ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}">${
-        icon('check')} Publish</button>` : ''}
+      <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode
+        aria-label="${editing ? 'Done editing' : 'Edit the rulebook'}"
+        title="${editing ? 'Done editing' : 'Edit the rulebook'}">${
+        icon(editing ? 'check' : 'pencil')} <span class="btn-t">${editing ? 'Done' : 'Edit'}</span></button>
+      ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}"
+        aria-label="Publish the ${year} rulebook" title="Publish the ${year} rulebook">${
+        icon('check')} <span class="btn-t">Publish</span></button>` : ''}
       <button class="btn sm danger" data-delete-book="${year}" aria-label="Delete the ${year} rulebook"
         title="Delete the ${year} rulebook">${icon('x')}</button>
       <span class="bar-sep"></span>`}
