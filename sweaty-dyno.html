@@ -725,25 +725,20 @@ table.dt th.sticky{width:1%}
 .bar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
 /* a label that wraps inside its own button makes the whole row lumpy */
 .bar-actions .btn{white-space:nowrap}
-/* square icon buttons: the whole action row is glyphs, phone and desktop alike */
+/* a square icon button: padding even on all four sides, no room for a label */
 .btn.sm.ico{padding:6px;gap:0}
 .btn.sm.ico svg{width:15px;height:15px}
-/* Edit / Publish / Delete nest behind one button instead of crowding the bar */
-.menu-wrap{position:relative;display:inline-flex}
-.menu{
-  position:absolute;top:calc(100% + 6px);right:0;z-index:40;min-width:168px;
-  display:flex;flex-direction:column;padding:5px;gap:2px;
-  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
-  box-shadow:0 12px 30px rgba(0,0,0,.45);
-}
-.menu button{
-  display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;
-  border-radius:7px;font-size:13px;text-align:left;color:var(--ink);cursor:pointer;
-}
-.menu button svg{width:15px;height:15px;flex:none;opacity:.8}
-.menu button:hover{background:var(--line)}
-.menu button.danger{color:var(--red)}
-.menu button.danger:hover{background:color-mix(in oklab,var(--red) 18%,transparent)}
+/* Desktop: the "menu" is just the action row. The wrap collapses, the ... button
+   is hidden, and [hidden] on the list means nothing until the phone rules below
+   turn it back into a popover. */
+.menu-wrap{position:relative;display:inline-flex;gap:8px;align-items:center}
+.menu,.menu[hidden]{display:flex;align-items:center;gap:8px}
+[data-book-menu]{display:none}
+/* the delete button stays a bare X while it has room to sit on the bar */
+.menu [data-delete-book] .btn-t{display:none}
+.menu [data-delete-book]{padding:6px;gap:0}
+.i-wide{display:inline-flex}
+.i-narrow{display:none}
 .rules-main{min-width:0}
 .rules-meta{display:flex;align-items:flex-end;gap:12px;margin:4px 0 14px;flex-wrap:wrap}
 .rules-title{
@@ -981,7 +976,30 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
   /* trimmed so Edit / Publish / delete / Mark changes make one line, not two */
   .bar-actions .btn{padding:5px 9px;font-size:11.5px;gap:5px}
   .bar-actions .btn svg{width:14px;height:14px}
-  .bar-actions .btn-t{display:none}
+  /* Phone: the three book actions fold into a popover off the ... button, and
+     Mark changes squares up beside it as an eye. */
+  [data-book-menu]{display:inline-flex}
+  .menu-wrap{gap:0}
+  .menu{
+    position:absolute;top:calc(100% + 6px);right:0;z-index:40;min-width:168px;
+    flex-direction:column;align-items:stretch;padding:5px;gap:2px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 12px 30px rgba(0,0,0,.45);
+  }
+  .menu[hidden]{display:none}
+  .menu .btn{
+    width:100%;justify-content:flex-start;padding:8px 9px;font-size:13px;
+    background:transparent;border-color:transparent;color:var(--ink);
+  }
+  .menu .btn:hover{background:var(--line)}
+  .menu .btn.danger{color:var(--red)}
+  .menu [data-delete-book]{padding:8px 9px;gap:5px}
+  .menu [data-delete-book] .btn-t{display:inline}
+  /* Mark changes is the only control a manager sees; it loses its label, not its
+     meaning — the eye says "show me" where a plus-minus glyph would not. */
+  [data-marks]{padding:6px;gap:0}
+  [data-marks] .btn-t,[data-marks] .i-wide{display:none}
+  [data-marks] .i-narrow{display:inline-flex}
   .rules-title{font-size:21px;gap:9px}
   .rules-meta{margin-bottom:11px;gap:9px}
   .season-pick select{font-size:13px;padding:3px 7px}
@@ -5049,18 +5067,27 @@ function render(db, state = {}) {
     ${/* Mark changes sits LAST so it is in the same place for everyone: a manager
          sees no book actions, and this is the only control they get. */''}
     ${tab === 'changes' ? '' : `<span class="bar-actions">
+      ${/* One set of buttons. On a desktop they sit on the bar; under 620px the
+           same nodes become a dropdown off the ... button. */''}
       ${!admin ? '' : `<span class="menu-wrap">
-        <button class="btn sm ico${editing ? ' primary' : ''}" data-book-menu aria-haspopup="true"
+        <button class="btn sm ico" data-book-menu aria-haspopup="true"
           aria-expanded="false" aria-label="Rulebook actions" title="Rulebook actions">${icon('more')}</button>
         <div class="menu" data-book-menu-list hidden>
-          <button data-edit-mode>${icon(editing ? 'check' : 'pencil')} ${editing ? 'Done editing' : 'Edit'}</button>
-          ${bk.status !== 'published' ? `<button data-publish-book="${year}">${
-            icon('check')} Publish</button>` : ''}
-          <button class="danger" data-delete-book="${year}">${icon('x')} Delete</button>
+          <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
+            icon(editing ? 'check' : 'pencil')} <span class="btn-t">${
+            editing ? 'Done editing' : 'Edit'}</span></button>
+          ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}">${
+            icon('check')} <span class="btn-t">Publish</span></button>` : ''}
+          <button class="btn sm danger" data-delete-book="${year}"
+            aria-label="Delete the ${year} rulebook" title="Delete the ${year} rulebook">${
+            icon('x')} <span class="btn-t">Delete</span></button>
         </div></span>`}
-      ${diff && diff.count ? `<button class="btn sm ico${showDiff ? ' primary' : ''}"
-        data-marks aria-pressed="${showDiff}" aria-label="Mark changes"
-        title="Mark changes">${icon('eye')}</button>` : ''}
+      ${/* the diff glyph reads as "changes" beside its label; on a phone, where
+           the label is gone, an eye reads as "show me" better than a plus-minus */''}
+      ${diff && diff.count ? `<button class="btn sm${showDiff ? ' primary' : ''}"
+        data-marks aria-pressed="${showDiff}" aria-label="Mark changes" title="Mark changes"
+        ><span class="i-wide">${icon('diff')}</span><span class="i-narrow">${icon('eye')}</span
+        ><span class="btn-t">Mark changes</span></button>` : ''}
     </span>`}
   </div>
 

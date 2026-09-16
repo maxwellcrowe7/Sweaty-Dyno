@@ -314,18 +314,27 @@ export function render(db, state = {}) {
     ${/* Mark changes sits LAST so it is in the same place for everyone: a manager
          sees no book actions, and this is the only control they get. */''}
     ${tab === 'changes' ? '' : `<span class="bar-actions">
+      ${/* One set of buttons. On a desktop they sit on the bar; under 620px the
+           same nodes become a dropdown off the ... button. */''}
       ${!admin ? '' : `<span class="menu-wrap">
-        <button class="btn sm ico${editing ? ' primary' : ''}" data-book-menu aria-haspopup="true"
+        <button class="btn sm ico" data-book-menu aria-haspopup="true"
           aria-expanded="false" aria-label="Rulebook actions" title="Rulebook actions">${icon('more')}</button>
         <div class="menu" data-book-menu-list hidden>
-          <button data-edit-mode>${icon(editing ? 'check' : 'pencil')} ${editing ? 'Done editing' : 'Edit'}</button>
-          ${bk.status !== 'published' ? `<button data-publish-book="${year}">${
-            icon('check')} Publish</button>` : ''}
-          <button class="danger" data-delete-book="${year}">${icon('x')} Delete</button>
+          <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
+            icon(editing ? 'check' : 'pencil')} <span class="btn-t">${
+            editing ? 'Done editing' : 'Edit'}</span></button>
+          ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}">${
+            icon('check')} <span class="btn-t">Publish</span></button>` : ''}
+          <button class="btn sm danger" data-delete-book="${year}"
+            aria-label="Delete the ${year} rulebook" title="Delete the ${year} rulebook">${
+            icon('x')} <span class="btn-t">Delete</span></button>
         </div></span>`}
-      ${diff && diff.count ? `<button class="btn sm ico${showDiff ? ' primary' : ''}"
-        data-marks aria-pressed="${showDiff}" aria-label="Mark changes"
-        title="Mark changes">${icon('eye')}</button>` : ''}
+      ${/* the diff glyph reads as "changes" beside its label; on a phone, where
+           the label is gone, an eye reads as "show me" better than a plus-minus */''}
+      ${diff && diff.count ? `<button class="btn sm${showDiff ? ' primary' : ''}"
+        data-marks aria-pressed="${showDiff}" aria-label="Mark changes" title="Mark changes"
+        ><span class="i-wide">${icon('diff')}</span><span class="i-narrow">${icon('eye')}</span
+        ><span class="btn-t">Mark changes</span></button>` : ''}
     </span>`}
   </div>
 

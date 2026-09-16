@@ -183,6 +183,9 @@ print('\n— the Mark changes control —');
   db.cloud={signedIn:true};
   // pointless on the changes view, which always shows the diff
   eq('not on What changed', ru.render(db,{params:{tab:'changes'}}).includes('data-marks'), false);
+  // the actions menu must ship shut: CSS shows it inline on a desktop, and the
+  // phone rules key the popover off this attribute
+  eq('actions menu starts hidden', /data-book-menu-list hidden/.test(on), true);
   await db.update('rules',(r)=>{ delete r.seasons['2026']; });
   db.season=2025;
 }
