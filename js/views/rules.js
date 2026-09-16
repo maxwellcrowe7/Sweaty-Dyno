@@ -156,7 +156,7 @@ export function render(db, state = {}) {
   const P = state.params || {};
   const seasons = db.rulebookSeasons();
   if (!seasons.length)
-    return empty('No rulebook yet', 'Publish a rulebook and it will appear here with a table of contents.', 'book');
+    return empty('No rulebook yet', 'Publish a rulebook and it will appear here with a table of contents.', 'gavel');
 
   // A ?year= deep link wins for this one paint; mount then adopts it into the
   // shared season and drops the param, so it can never override a later pick.
@@ -178,7 +178,7 @@ export function render(db, state = {}) {
         : empty(`No ${year} rulebook yet`,
             db.isAdmin
               ? `Nothing has been written for ${year}. Start it from an earlier book and every rule carries over with its history.`
-              : `The commissioner hasn't published a ${year} rulebook.`, 'book')}
+              : `The commissioner hasn't published a ${year} rulebook.`, 'gavel')}
       ${!hidden && db.isAdmin ? `<div style="text-align:center;margin-top:-14px">
         <button class="btn primary" data-new-book>${icon('plus')} Start the ${year} rulebook</button></div>` : ''}`;
   }

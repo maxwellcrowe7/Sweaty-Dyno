@@ -19,7 +19,7 @@ const VIEWS = {
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
   drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts,    primary: true },
   trades:    { label: 'Trades',    icon: 'swap',   mod: Trades },
-  rules:     { label: 'Rules',     icon: 'book',   mod: Rules },
+  rules:     { label: 'Rules',     icon: 'gavel',  mod: Rules },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
   empire:    { label: 'Empire',    icon: 'crown',  mod: Empire },
   managers:  { label: 'Managers',  icon: 'users',  mod: Managers },

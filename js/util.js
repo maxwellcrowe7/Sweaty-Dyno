@@ -88,7 +88,8 @@ const I = {
   x:'M18 6 6 18M6 6l12 12',
   lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   clock:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2',
-  book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z',
+  // spans 3.5-20.5 on both axes so it sits centred in any button it lands in
+  gavel:'m13.5 3.5 7 7-3 3-7-7zM10 7l-5.5 5.5 3 3 5.5-5.5M3.5 20.5h10M15 14 20.5 19.5',
   list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   diff:'M12 3v6M9 6h6M12 15v6M9 18h6M5 12h14',
   chev:'m9 18 6-6-6-6',
