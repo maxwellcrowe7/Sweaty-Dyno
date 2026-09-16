@@ -175,6 +175,9 @@ print('\n— the Mark changes control —');
   db.cloud={signedIn:false};
   const mgr=ru.render(db,{params:{}});
   eq('managers get it too', mgr.includes('data-marks'), true);
+  // and it is the last control either way, so it sits in the same place for both
+  const last=(h)=>h.slice(0,h.indexOf('</span>', h.indexOf('bar-actions'))).lastIndexOf('data-marks') > -1;
+  eq('it is the last control for a manager', last(mgr), true);
   eq('but none of the book actions',
      ['data-edit-mode','data-publish-book','data-delete-book'].some(k=>mgr.includes(k)), false);
   db.cloud={signedIn:true};

@@ -304,16 +304,19 @@ export function render(db, state = {}) {
       <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
       <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed</button>
     </div>` : ''}
+    ${/* Mark changes sits LAST so it is in the same place for everyone: a manager
+         sees no book actions, and this is the only control they get. */''}
     ${tab === 'changes' ? '' : `<span class="bar-actions">
-      ${diff && diff.count ? `<button class="btn sm${showDiff ? ' primary' : ''}"
-        data-marks aria-pressed="${showDiff}">${icon('diff')} Mark changes</button>` : ''}
       ${!admin ? '' : `
       <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
         icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>
       ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}">${
         icon('check')} Publish</button>` : ''}
       <button class="btn sm danger" data-delete-book="${year}" aria-label="Delete the ${year} rulebook"
-        title="Delete the ${year} rulebook">${icon('x')}</button>`}
+        title="Delete the ${year} rulebook">${icon('x')}</button>
+      <span class="bar-sep"></span>`}
+      ${diff && diff.count ? `<button class="btn sm${showDiff ? ' primary' : ''}"
+        data-marks aria-pressed="${showDiff}">${icon('diff')} Mark changes</button>` : ''}
     </span>`}
   </div>
 
