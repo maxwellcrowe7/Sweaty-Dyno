@@ -725,8 +725,25 @@ table.dt th.sticky{width:1%}
 .bar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap}
 /* a label that wraps inside its own button makes the whole row lumpy */
 .bar-actions .btn{white-space:nowrap}
-/* keeps a destructive button from butting up against the view control */
-.bar-sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+/* square icon buttons: the whole action row is glyphs, phone and desktop alike */
+.btn.sm.ico{padding:6px;gap:0}
+.btn.sm.ico svg{width:15px;height:15px}
+/* Edit / Publish / Delete nest behind one button instead of crowding the bar */
+.menu-wrap{position:relative;display:inline-flex}
+.menu{
+  position:absolute;top:calc(100% + 6px);right:0;z-index:40;min-width:168px;
+  display:flex;flex-direction:column;padding:5px;gap:2px;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,.45);
+}
+.menu button{
+  display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;
+  border-radius:7px;font-size:13px;text-align:left;color:var(--ink);cursor:pointer;
+}
+.menu button svg{width:15px;height:15px;flex:none;opacity:.8}
+.menu button:hover{background:var(--line)}
+.menu button.danger{color:var(--red)}
+.menu button.danger:hover{background:color-mix(in oklab,var(--red) 18%,transparent)}
 .rules-main{min-width:0}
 .rules-meta{display:flex;align-items:flex-end;gap:12px;margin:4px 0 14px;flex-wrap:wrap}
 .rules-title{
@@ -965,9 +982,6 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
   .bar-actions .btn{padding:5px 9px;font-size:11.5px;gap:5px}
   .bar-actions .btn svg{width:14px;height:14px}
   .bar-actions .btn-t{display:none}
-  .bar-actions [data-edit-mode],.bar-actions [data-publish-book],
-  .bar-actions [data-delete-book]{padding:6px;gap:0}
-  .bar-sep{height:16px;margin:0}
   .rules-title{font-size:21px;gap:9px}
   .rules-meta{margin-bottom:11px;gap:9px}
   .season-pick select{font-size:13px;padding:3px 7px}
@@ -1756,6 +1770,7 @@ const I = {
   gavel:'m13.5 3.5 7 7-3 3-7-7zM10 7l-5.5 5.5 3 3 5.5-5.5M3.5 20.5h10M15 14 20.5 19.5',
   list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   diff:'M12 3v6M9 6h6M12 15v6M9 18h6M5 12h14',
+  eye:'M1.8 12S5.4 5.5 12 5.5 22.2 12 22.2 12 18.6 18.5 12 18.5 1.8 12 1.8 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   chev:'m9 18 6-6-6-6',
   // two bars, not the usual six dots: at 14px the dots are sub-pixel and
   // disappear entirely
@@ -5029,24 +5044,23 @@ function render(db, state = {}) {
   <div class="rules-bar">
     ${diff ? `<div class="pills">
       <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
-      <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed</button>
+      <button data-rtab="changes" aria-pressed="${tab === 'changes'}">Changes</button>
     </div>` : ''}
     ${/* Mark changes sits LAST so it is in the same place for everyone: a manager
          sees no book actions, and this is the only control they get. */''}
     ${tab === 'changes' ? '' : `<span class="bar-actions">
-      ${!admin ? '' : `
-      <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode
-        aria-label="${editing ? 'Done editing' : 'Edit the rulebook'}"
-        title="${editing ? 'Done editing' : 'Edit the rulebook'}">${
-        icon(editing ? 'check' : 'pencil')} <span class="btn-t">${editing ? 'Done' : 'Edit'}</span></button>
-      ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}"
-        aria-label="Publish the ${year} rulebook" title="Publish the ${year} rulebook">${
-        icon('check')} <span class="btn-t">Publish</span></button>` : ''}
-      <button class="btn sm danger" data-delete-book="${year}" aria-label="Delete the ${year} rulebook"
-        title="Delete the ${year} rulebook">${icon('x')}</button>
-      <span class="bar-sep"></span>`}
-      ${diff && diff.count ? `<button class="btn sm${showDiff ? ' primary' : ''}"
-        data-marks aria-pressed="${showDiff}">${icon('diff')} Mark changes</button>` : ''}
+      ${!admin ? '' : `<span class="menu-wrap">
+        <button class="btn sm ico${editing ? ' primary' : ''}" data-book-menu aria-haspopup="true"
+          aria-expanded="false" aria-label="Rulebook actions" title="Rulebook actions">${icon('more')}</button>
+        <div class="menu" data-book-menu-list hidden>
+          <button data-edit-mode>${icon(editing ? 'check' : 'pencil')} ${editing ? 'Done editing' : 'Edit'}</button>
+          ${bk.status !== 'published' ? `<button data-publish-book="${year}">${
+            icon('check')} Publish</button>` : ''}
+          <button class="danger" data-delete-book="${year}">${icon('x')} Delete</button>
+        </div></span>`}
+      ${diff && diff.count ? `<button class="btn sm ico${showDiff ? ' primary' : ''}"
+        data-marks aria-pressed="${showDiff}" aria-label="Mark changes"
+        title="Mark changes">${icon('eye')}</button>` : ''}
     </span>`}
   </div>
 
@@ -5149,6 +5163,30 @@ function mount(root, db, go, setState, params = {}) {
     spy();
     window.addEventListener('scroll', spy, { passive: true });
     root._spy = spy;
+  }
+
+  /* ---------- the actions menu ---------- */
+  /* Edit / Publish / Delete nest behind one button so the bar reads the same on
+     a phone as it does on a desktop. Anything inside closes it on the way out. */
+  const menu = root.querySelector('[data-book-menu-list]');
+  const menuBtn = root.querySelector('[data-book-menu]');
+  const shutMenu = () => {
+    if (!menu || menu.hidden) return;
+    menu.hidden = true;
+    menuBtn?.setAttribute('aria-expanded', 'false');
+  };
+  menuBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+    menuBtn.setAttribute('aria-expanded', String(!menu.hidden));
+  });
+  menu?.addEventListener('click', shutMenu);
+  if (menu) {
+    // app.js drops these on the next repaint, the same way it drops the spy.
+    root._menuShut = shutMenu;
+    root._menuKey = (e) => { if (e.key === 'Escape') shutMenu(); };
+    document.addEventListener('click', root._menuShut);
+    document.addEventListener('keydown', root._menuKey);
   }
 
   /* ---------- editing ---------- */
@@ -6291,6 +6329,8 @@ function paint() {
   const main = $('#main');
   if (!main) return;
   if (main._spy) { window.removeEventListener('scroll', main._spy); main._spy = null; }
+  if (main._menuShut) { document.removeEventListener('click', main._menuShut); main._menuShut = null; }
+  if (main._menuKey) { document.removeEventListener('keydown', main._menuKey); main._menuKey = null; }
   closeInfo();
   try {
     main.innerHTML = v.mod.render(db, state);

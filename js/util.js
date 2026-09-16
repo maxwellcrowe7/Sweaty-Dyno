@@ -92,6 +92,7 @@ const I = {
   gavel:'m13.5 3.5 7 7-3 3-7-7zM10 7l-5.5 5.5 3 3 5.5-5.5M3.5 20.5h10M15 14 20.5 19.5',
   list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   diff:'M12 3v6M9 6h6M12 15v6M9 18h6M5 12h14',
+  eye:'M1.8 12S5.4 5.5 12 5.5 22.2 12 22.2 12 18.6 18.5 12 18.5 1.8 12 1.8 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   chev:'m9 18 6-6-6-6',
   // two bars, not the usual six dots: at 14px the dots are sub-pixel and
   // disappear entirely

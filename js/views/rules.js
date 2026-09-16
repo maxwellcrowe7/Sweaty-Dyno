@@ -309,24 +309,23 @@ export function render(db, state = {}) {
   <div class="rules-bar">
     ${diff ? `<div class="pills">
       <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
-      <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed</button>
+      <button data-rtab="changes" aria-pressed="${tab === 'changes'}">Changes</button>
     </div>` : ''}
     ${/* Mark changes sits LAST so it is in the same place for everyone: a manager
          sees no book actions, and this is the only control they get. */''}
     ${tab === 'changes' ? '' : `<span class="bar-actions">
-      ${!admin ? '' : `
-      <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode
-        aria-label="${editing ? 'Done editing' : 'Edit the rulebook'}"
-        title="${editing ? 'Done editing' : 'Edit the rulebook'}">${
-        icon(editing ? 'check' : 'pencil')} <span class="btn-t">${editing ? 'Done' : 'Edit'}</span></button>
-      ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}"
-        aria-label="Publish the ${year} rulebook" title="Publish the ${year} rulebook">${
-        icon('check')} <span class="btn-t">Publish</span></button>` : ''}
-      <button class="btn sm danger" data-delete-book="${year}" aria-label="Delete the ${year} rulebook"
-        title="Delete the ${year} rulebook">${icon('x')}</button>
-      <span class="bar-sep"></span>`}
-      ${diff && diff.count ? `<button class="btn sm${showDiff ? ' primary' : ''}"
-        data-marks aria-pressed="${showDiff}">${icon('diff')} Mark changes</button>` : ''}
+      ${!admin ? '' : `<span class="menu-wrap">
+        <button class="btn sm ico${editing ? ' primary' : ''}" data-book-menu aria-haspopup="true"
+          aria-expanded="false" aria-label="Rulebook actions" title="Rulebook actions">${icon('more')}</button>
+        <div class="menu" data-book-menu-list hidden>
+          <button data-edit-mode>${icon(editing ? 'check' : 'pencil')} ${editing ? 'Done editing' : 'Edit'}</button>
+          ${bk.status !== 'published' ? `<button data-publish-book="${year}">${
+            icon('check')} Publish</button>` : ''}
+          <button class="danger" data-delete-book="${year}">${icon('x')} Delete</button>
+        </div></span>`}
+      ${diff && diff.count ? `<button class="btn sm ico${showDiff ? ' primary' : ''}"
+        data-marks aria-pressed="${showDiff}" aria-label="Mark changes"
+        title="Mark changes">${icon('eye')}</button>` : ''}
     </span>`}
   </div>
 
@@ -430,6 +429,30 @@ export function mount(root, db, go, setState, params = {}) {
     spy();
     window.addEventListener('scroll', spy, { passive: true });
     root._spy = spy;
+  }
+
+  /* ---------- the actions menu ---------- */
+  /* Edit / Publish / Delete nest behind one button so the bar reads the same on
+     a phone as it does on a desktop. Anything inside closes it on the way out. */
+  const menu = root.querySelector('[data-book-menu-list]');
+  const menuBtn = root.querySelector('[data-book-menu]');
+  const shutMenu = () => {
+    if (!menu || menu.hidden) return;
+    menu.hidden = true;
+    menuBtn?.setAttribute('aria-expanded', 'false');
+  };
+  menuBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.hidden = !menu.hidden;
+    menuBtn.setAttribute('aria-expanded', String(!menu.hidden));
+  });
+  menu?.addEventListener('click', shutMenu);
+  if (menu) {
+    // app.js drops these on the next repaint, the same way it drops the spy.
+    root._menuShut = shutMenu;
+    root._menuKey = (e) => { if (e.key === 'Escape') shutMenu(); };
+    document.addEventListener('click', root._menuShut);
+    document.addEventListener('keydown', root._menuKey);
   }
 
   /* ---------- editing ---------- */

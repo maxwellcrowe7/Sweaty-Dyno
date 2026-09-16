@@ -240,6 +240,8 @@ function paint() {
   const main = $('#main');
   if (!main) return;
   if (main._spy) { window.removeEventListener('scroll', main._spy); main._spy = null; }
+  if (main._menuShut) { document.removeEventListener('click', main._menuShut); main._menuShut = null; }
+  if (main._menuKey) { document.removeEventListener('keydown', main._menuKey); main._menuKey = null; }
   closeInfo();
   try {
     main.innerHTML = v.mod.render(db, state);
