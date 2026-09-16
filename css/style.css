@@ -953,9 +953,11 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 @media (max-width:620px){
   /* tabs on their own line, controls under them: five things on one row was
      a scrum at this width */
-  .rules-bar{gap:8px}
-  .bar-actions{margin-left:0;width:100%;justify-content:flex-end}
-  /* trimmed so Edit / Publish / delete / Mark changes make one line, not two */
+  .rules-bar{gap:8px;flex-wrap:nowrap}
+  /* the two glyphs ride along with the tabs rather than claiming a row */
+  .rules-bar .pills{min-width:0}
+  .bar-actions{flex:none;flex-wrap:nowrap}
+  /* trimmed so the tabs and the two glyphs share one line */
   .bar-actions .btn{padding:5px 9px;font-size:11.5px;gap:5px}
   .bar-actions .btn svg{width:14px;height:14px}
   /* Phone: the three book actions fold into a popover off the ... button, and

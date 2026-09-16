@@ -971,9 +971,11 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 @media (max-width:620px){
   /* tabs on their own line, controls under them: five things on one row was
      a scrum at this width */
-  .rules-bar{gap:8px}
-  .bar-actions{margin-left:0;width:100%;justify-content:flex-end}
-  /* trimmed so Edit / Publish / delete / Mark changes make one line, not two */
+  .rules-bar{gap:8px;flex-wrap:nowrap}
+  /* the two glyphs ride along with the tabs rather than claiming a row */
+  .rules-bar .pills{min-width:0}
+  .bar-actions{flex:none;flex-wrap:nowrap}
+  /* trimmed so the tabs and the two glyphs share one line */
   .bar-actions .btn{padding:5px 9px;font-size:11.5px;gap:5px}
   .bar-actions .btn svg{width:14px;height:14px}
   /* Phone: the three book actions fold into a popover off the ... button, and
@@ -1785,7 +1787,7 @@ const I = {
   lock:'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   clock:'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2',
   // spans 3.5-20.5 on both axes so it sits centred in any button it lands in
-  gavel:'m13.5 3.5 7 7-3 3-7-7zM10 7l-5.5 5.5 3 3 5.5-5.5M3.5 20.5h10M15 14 20.5 19.5',
+  book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2ZM8.5 7h7M8.5 11h7',
   list:'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
   diff:'M12 3v6M9 6h6M12 15v6M9 18h6M5 12h14',
   eye:'M1.8 12S5.4 5.5 12 5.5 22.2 12 22.2 12 18.6 18.5 12 18.5 1.8 12 1.8 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
@@ -4912,7 +4914,7 @@ function render(db, state = {}) {
   const P = state.params || {};
   const seasons = db.rulebookSeasons();
   if (!seasons.length)
-    return empty('No rulebook yet', 'Publish a rulebook and it will appear here with a table of contents.', 'gavel');
+    return empty('No rulebook yet', 'Publish a rulebook and it will appear here with a table of contents.', 'book');
 
   // A ?year= deep link wins for this one paint; mount then adopts it into the
   // shared season and drops the param, so it can never override a later pick.
@@ -4934,7 +4936,7 @@ function render(db, state = {}) {
         : empty(`No ${year} rulebook yet`,
             db.isAdmin
               ? `Nothing has been written for ${year}. Start it from an earlier book and every rule carries over with its history.`
-              : `The commissioner hasn't published a ${year} rulebook.`, 'gavel')}
+              : `The commissioner hasn't published a ${year} rulebook.`, 'book')}
       ${!hidden && db.isAdmin ? `<div style="text-align:center;margin-top:-14px">
         <button class="btn primary" data-new-book>${icon('plus')} Start the ${year} rulebook</button></div>` : ''}`;
   }
@@ -6135,7 +6137,7 @@ const VIEWS = {
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
   drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts,    primary: true },
   trades:    { label: 'Trades',    icon: 'swap',   mod: Trades },
-  rules:     { label: 'Rules',     icon: 'gavel',  mod: Rules },
+  rules:     { label: 'Rules',     icon: 'book',  mod: Rules },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
   empire:    { label: 'Empire',    icon: 'crown',  mod: Empire },
   managers:  { label: 'Managers',  icon: 'users',  mod: Managers },
