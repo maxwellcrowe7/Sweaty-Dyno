@@ -155,4 +155,33 @@ print('\n— where the book actions live —');
   db.season=2025;
 }
 
+
+print('\n— the Mark changes control —');
+{
+  await db.update('rules',(r)=>{
+    r.seasons['2026']={status:'published',published:'2026-09-01',basedOn:2025,summary:null,
+      sections:structuredClone(r.seasons['2025'].sections)};
+    r.seasons['2026'].sections[0].items[0].text='Edited.';
+  });
+  db.season=2026;
+  const on=ru.render(db,{params:{}});
+  eq('it is a button, not a switch', on.includes('data-marks'), true);
+  eq('no slide toggle left on the page', on.includes('id="diffToggle"'), false);
+  eq('active when marks are on', /data-marks aria-pressed="true"/.test(on), true);
+  ru.setMarks(false);
+  eq('inactive when off', /data-marks aria-pressed="false"/.test(ru.render(db,{params:{}})), true);
+  ru.setMarks(true);
+  // a manager sees no Edit/Publish/Delete, so the row would be empty without it
+  db.cloud={signedIn:false};
+  const mgr=ru.render(db,{params:{}});
+  eq('managers get it too', mgr.includes('data-marks'), true);
+  eq('but none of the book actions',
+     ['data-edit-mode','data-publish-book','data-delete-book'].some(k=>mgr.includes(k)), false);
+  db.cloud={signedIn:true};
+  // pointless on the changes view, which always shows the diff
+  eq('not on What changed', ru.render(db,{params:{tab:'changes'}}).includes('data-marks'), false);
+  await db.update('rules',(r)=>{ delete r.seasons['2026']; });
+  db.season=2025;
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRulebook navigation passed.');

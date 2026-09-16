@@ -4955,9 +4955,6 @@ function render(db, state = {}) {
     <div>
       <h1 class="rules-title">Rulebook ${seasonPicker(db)}${statusDot(db, year)}</h1>
     </div>
-    ${diff && diff.count ? `<label class="toggle" style="margin-left:auto">
-      <input type="checkbox" id="diffToggle" ${showDiff ? 'checked' : ''}><span class="tr"></span>
-      <span style="font-size:12px;color:var(--ink-2)">Mark changes</span></label>` : ''}
   </div>
 
   ${/* The control row lives in the same place in BOTH tabs. It used to be inside
@@ -4969,13 +4966,16 @@ function render(db, state = {}) {
       <button data-rtab="rules" aria-pressed="${tab === 'rules'}">Rulebook</button>
       <button data-rtab="changes" aria-pressed="${tab === 'changes'}">What changed</button>
     </div>` : ''}
-    ${tab === 'changes' || !admin ? '' : `<span class="bar-actions">
+    ${tab === 'changes' ? '' : `<span class="bar-actions">
+      ${diff && diff.count ? `<button class="btn sm${showDiff ? ' primary' : ''}"
+        data-marks aria-pressed="${showDiff}">${icon('diff')} Mark changes</button>` : ''}
+      ${!admin ? '' : `
       <button class="btn sm${editing ? ' primary' : ''}" data-edit-mode>${
         icon(editing ? 'check' : 'pencil')} ${editing ? 'Done' : 'Edit'}</button>
       ${bk.status !== 'published' ? `<button class="btn sm primary" data-publish-book="${year}">${
         icon('check')} Publish</button>` : ''}
       <button class="btn sm danger" data-delete-book="${year}" aria-label="Delete the ${year} rulebook"
-        title="Delete the ${year} rulebook">${icon('x')}</button>
+        title="Delete the ${year} rulebook">${icon('x')}</button>`}
     </span>`}
   </div>
 
@@ -5013,8 +5013,8 @@ function mount(root, db, go, setState, params = {}) {
   const shownYear = books.includes(db.season) ? db.season : books[0];
   root.querySelectorAll('[data-rtab]').forEach((b) => b.addEventListener('click', () =>
     nav({ tab: b.dataset.rtab === 'rules' ? null : b.dataset.rtab })));
-  root.querySelector('#diffToggle')?.addEventListener('change', (e) => {
-    setMarks(e.target.checked);
+  root.querySelector('[data-marks]')?.addEventListener('click', () => {
+    setMarks(!MARKS);
     db.emit();
   });
 
