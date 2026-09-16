@@ -98,4 +98,31 @@ print('\n— Mark changes survives leaving the tab —');
   db.season=2025;
 }
 
+
+print('\n— a draft you cannot see is not a missing book —');
+{
+  await db.update('rules',(r)=>{
+    r.seasons['2026']={status:'draft',published:null,basedOn:2025,summary:null,
+      sections:structuredClone(r.seasons['2025'].sections)};
+  });
+  db.season=2026;
+  const asAdmin = ru.render(db,{params:{}});
+  eq('signed in: the book renders', asAdmin.includes('rules-layout'), true);
+
+  // signed out, or previewing as a guest: the draft is filtered out of view
+  db.cloud={signedIn:false};
+  const asGuest = ru.render(db,{params:{}});
+  eq('the data is still there',  Boolean(db.get('rules').seasons['2026']), true);
+  eq('but the book is hidden',   db.rulebook(2026), null);
+  // the bug: this used to say "No 2026 rulebook yet", which reads as deleted
+  eq('it says it is a draft',    asGuest.includes('2026 is still a draft'), true);
+  eq('not that it is missing',   asGuest.includes('No 2026 rulebook yet'), false);
+  eq('and offers no Start button', asGuest.includes('data-new-book'), false);
+  eq('the dot still shows draft',  /book-dot draft/.test(asGuest), true);
+
+  db.cloud={signedIn:true};
+  await db.update('rules',(r)=>{ delete r.seasons['2026']; });
+  db.season=2025;
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRulebook navigation passed.');

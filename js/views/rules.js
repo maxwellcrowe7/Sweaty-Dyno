@@ -16,7 +16,8 @@ const BOOK_STATE = {
   published: { cls: 'live', label: 'Published' },
 };
 const statusDot = (db, year) => {
-  const bk = db.get('rules').seasons[String(year)];
+  // reads the raw book, not rulebook(): a draft you cannot see is still a draft
+  const bk = db.get('rules')?.seasons?.[String(year)];
   const st = BOOK_STATE[!bk ? 'none' : bk.status === 'published' ? 'published' : 'draft'];
   return `<i class="book-dot ${st.cls}" role="img" title="${esc(st.label)}"
     aria-label="${esc(st.label)}"></i>`;
@@ -164,13 +165,21 @@ export function render(db, state = {}) {
   // Falling back to another year silently is how you end up editing the wrong
   // book: the picker says 2026 while the page quietly shows 2025.
   if (!seasons.includes(year)) {
+    // A draft is hidden from anyone not signed in. Saying "no rulebook yet" in
+    // that case reads as though the book were gone -- it is not, it is a draft.
+    const raw = db.get('rules')?.seasons?.[String(year)];
+    const hidden = Boolean(raw) && raw.status !== 'published' && !db.isAdmin;
     return `<div class="rules-meta"><div>
         <h1 class="rules-title">Rulebook ${seasonPicker(db)}${statusDot(db, year)}</h1></div></div>
-      ${empty(`No ${year} rulebook yet`,
-        db.isAdmin
-          ? `Nothing has been written for ${year}. Start it from an earlier book and every rule carries over with its history.`
-          : `The commissioner hasn't published a ${year} rulebook.`, 'book')}
-      ${db.isAdmin ? `<div style="text-align:center;margin-top:-14px">
+      ${hidden
+        ? empty(`${year} is still a draft`,
+            `It exists, but only the commissioner can see it until it is published.${
+              db.hasAdminRights ? ' You are previewing the app as a guest.' : ''}`, 'lock')
+        : empty(`No ${year} rulebook yet`,
+            db.isAdmin
+              ? `Nothing has been written for ${year}. Start it from an earlier book and every rule carries over with its history.`
+              : `The commissioner hasn't published a ${year} rulebook.`, 'book')}
+      ${!hidden && db.isAdmin ? `<div style="text-align:center;margin-top:-14px">
         <button class="btn primary" data-new-book>${icon('plus')} Start the ${year} rulebook</button></div>` : ''}`;
   }
   const bk = db.rulebook(year);
