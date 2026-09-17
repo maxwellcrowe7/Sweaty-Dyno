@@ -2838,7 +2838,9 @@ class Store {
 
   trades(season = null) {
     const t = this.get('trades');
-    const seasonOf = (x) => x.season ?? this.seasonOf(x.date);
+    // the date is what files a transaction, not the season stamped on it at pull
+    // time -- so moving a window in Admin re-files everything immediately
+    const seasonOf = (x) => (x.date ? this.seasonOf(x.date) : x.season ?? null);
     const f = (x) => season == null || seasonOf(x) === season;
     const byDate = (a, b) => (b.date || '').localeCompare(a.date || '');
     return {

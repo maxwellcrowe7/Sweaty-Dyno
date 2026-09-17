@@ -100,4 +100,11 @@ await db.update('league', (L) => { L.seasonWindows['2026'] = { start: '2025-12-1
 eq('a moved window moves the transaction with it', db.seasonOf('2025-12-20'), 2026);
 eq('the rest of 2025 stays put', db.seasonOf('2025-08-15'), 2025);
 
+// a window is not a label applied once at pull time: move it and the rows move
+await db.update('trades', (t) => {
+  t.trades = [{ id: 'x', source: 'sleeper', season: 2025, date: '2025-12-20', sides: [] }];
+});
+eq('a pulled row follows the window, not its old stamp', db.trades(2026).trades.length, 1);
+eq('and is gone from the season it used to sit in', db.trades(2025).trades.length, 0);
+
 print(fail ? `\n${fail} FAILURE(S)` : '\nTransactions passed.');
