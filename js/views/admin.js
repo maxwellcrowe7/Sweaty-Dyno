@@ -1,9 +1,13 @@
-import { esc, icon, toast, openModal, money, teamTag } from '../util.js';
+import { esc, icon, toast, openModal, money, teamTag, fmtDate } from '../util.js';
 import * as SL from '../sleeper.js';
 import { pullTransactions } from '../autosync.js';
 import { isConfigured } from '../config.js';
 
 const LEVEL = { warn: 'red', info: '', edit: 'heat' };
+
+/* Which season windows are open. Survives a repaint, so saving one year does
+   not slam every other year shut. */
+const WIN_OPEN = new Set();
 
 export function render(db) {
   const admin = db.isAdmin;
@@ -182,9 +186,16 @@ export function render(db) {
         FAAB is a separate $100 either side of the preseason close, so the season
         opens the morning after it &mdash; that date is shown, not set.
       </div>
-      ${db.seasons.map((y) => { const w = db.seasonWindow(y); return `
-        <div class="win-row">
-          <div class="win-y">${y}</div>
+      ${/* one year at a time: six seasons of four dates is a wall of boxes, and
+           you only ever come here to move one boundary. */''}
+      ${db.seasons.map((y) => { const w = db.seasonWindow(y); const open = WIN_OPEN.has(y); return `
+        <div class="win-row${open ? ' open' : ''}">
+          <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
+            ${icon('chev', 'acc-caret')}
+            <span class="win-y">${y}</span>
+            <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
+          </button>
+          <div class="win-bd">
           <div class="fgrid four">
             <div class="field"><label>Preseason opens</label>
               <input type="date" data-win="${y}" data-part="start" value="${esc(w.start)}"></div>
@@ -197,7 +208,7 @@ export function render(db) {
                 title="The day after the preseason closes"></div>
             <div class="field"><label>Season closes</label>
               <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
-          </div>
+          </div></div>
         </div>`; }).join('')}
       <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
     </div>
@@ -372,6 +383,17 @@ export function mount(root, db) {
       toast('Sleeper reachable');
     } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
     b.disabled = false;
+  }));
+
+  /* toggled in place rather than through a repaint: a half-typed date in another
+     year would not survive one */
+  root.querySelectorAll('[data-winyear]').forEach((b) => b.addEventListener('click', () => {
+    const y = Number(b.dataset.winyear);
+    const row = b.closest('.win-row');
+    const open = !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    b.setAttribute('aria-expanded', String(open));
+    if (open) WIN_OPEN.add(y); else WIN_OPEN.delete(y);
   }));
 
   /* the derived date follows the close as you change it, so you never save a

@@ -587,10 +587,17 @@ table.dt th.sticky{width:1%}
 /* a second, quieter row of pills for filtering inside a tab */
 /* the spend against that budget, said next to the heading it belongs to */
 .section-title .sub-n{margin-left:9px;color:var(--mint);letter-spacing:.04em}
-/* a season's three dates, grouped so the year is said once */
-.win-row{padding:10px 0;border-top:1px solid var(--line-soft)}
-.win-row:first-of-type{border-top:0;padding-top:0}
-.win-y{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2);margin-bottom:7px}
+/* a season's dates, grouped so the year is said once and shown one at a time */
+.win-row{border-top:1px solid var(--line-soft)}
+.win-row:first-of-type{border-top:0}
+.win-hd{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 0}
+.win-y{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+.win-sum{margin-left:auto;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.win-hd .acc-caret{width:15px;height:15px}
+.win-row.open .win-hd .acc-caret{transform:rotate(90deg)}
+.win-bd{display:none;padding:2px 0 12px}
+.win-row.open .win-bd{display:block}
+[data-save-windows]{margin-top:12px}
 .fgrid.four{grid-template-columns:1fr 1fr}
 @media (min-width:760px){ .fgrid.four{grid-template-columns:repeat(4,1fr)} }
 /* a date you are shown rather than asked for */

@@ -605,10 +605,17 @@ table.dt th.sticky{width:1%}
 /* a second, quieter row of pills for filtering inside a tab */
 /* the spend against that budget, said next to the heading it belongs to */
 .section-title .sub-n{margin-left:9px;color:var(--mint);letter-spacing:.04em}
-/* a season's three dates, grouped so the year is said once */
-.win-row{padding:10px 0;border-top:1px solid var(--line-soft)}
-.win-row:first-of-type{border-top:0;padding-top:0}
-.win-y{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2);margin-bottom:7px}
+/* a season's dates, grouped so the year is said once and shown one at a time */
+.win-row{border-top:1px solid var(--line-soft)}
+.win-row:first-of-type{border-top:0}
+.win-hd{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:10px 0}
+.win-y{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+.win-sum{margin-left:auto;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.win-hd .acc-caret{width:15px;height:15px}
+.win-row.open .win-hd .acc-caret{transform:rotate(90deg)}
+.win-bd{display:none;padding:2px 0 12px}
+.win-row.open .win-bd{display:block}
+[data-save-windows]{margin-top:12px}
 .fgrid.four{grid-template-columns:1fr 1fr}
 @media (min-width:760px){ .fgrid.four{grid-template-columns:repeat(4,1fr)} }
 /* a date you are shown rather than asked for */
@@ -5957,12 +5964,16 @@ return { render };
 
 /* ===== js/views/admin.js ===== */
 __M["js/views/admin.js"] = (function () {
-const { esc, icon, toast, openModal, money, teamTag } = __M["js/util.js"];
+const { esc, icon, toast, openModal, money, teamTag, fmtDate } = __M["js/util.js"];
 const SL = __M["js/sleeper.js"];
 const { pullTransactions } = __M["js/autosync.js"];
 const { isConfigured } = __M["js/config.js"];
 
 const LEVEL = { warn: 'red', info: '', edit: 'heat' };
+
+/* Which season windows are open. Survives a repaint, so saving one year does
+   not slam every other year shut. */
+const WIN_OPEN = new Set();
 function render(db) {
   const admin = db.isAdmin;
   const issues = db.issues();
@@ -6140,9 +6151,16 @@ function render(db) {
         FAAB is a separate $100 either side of the preseason close, so the season
         opens the morning after it &mdash; that date is shown, not set.
       </div>
-      ${db.seasons.map((y) => { const w = db.seasonWindow(y); return `
-        <div class="win-row">
-          <div class="win-y">${y}</div>
+      ${/* one year at a time: six seasons of four dates is a wall of boxes, and
+           you only ever come here to move one boundary. */''}
+      ${db.seasons.map((y) => { const w = db.seasonWindow(y); const open = WIN_OPEN.has(y); return `
+        <div class="win-row${open ? ' open' : ''}">
+          <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
+            ${icon('chev', 'acc-caret')}
+            <span class="win-y">${y}</span>
+            <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
+          </button>
+          <div class="win-bd">
           <div class="fgrid four">
             <div class="field"><label>Preseason opens</label>
               <input type="date" data-win="${y}" data-part="start" value="${esc(w.start)}"></div>
@@ -6155,7 +6173,7 @@ function render(db) {
                 title="The day after the preseason closes"></div>
             <div class="field"><label>Season closes</label>
               <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
-          </div>
+          </div></div>
         </div>`; }).join('')}
       <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
     </div>
@@ -6329,6 +6347,17 @@ function mount(root, db) {
       toast('Sleeper reachable');
     } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
     b.disabled = false;
+  }));
+
+  /* toggled in place rather than through a repaint: a half-typed date in another
+     year would not survive one */
+  root.querySelectorAll('[data-winyear]').forEach((b) => b.addEventListener('click', () => {
+    const y = Number(b.dataset.winyear);
+    const row = b.closest('.win-row');
+    const open = !row.classList.contains('open');
+    row.classList.toggle('open', open);
+    b.setAttribute('aria-expanded', String(open));
+    if (open) WIN_OPEN.add(y); else WIN_OPEN.delete(y);
   }));
 
   /* the derived date follows the close as you change it, so you never save a
