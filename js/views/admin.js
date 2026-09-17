@@ -5,10 +5,9 @@ import { isConfigured } from '../config.js';
 
 const LEVEL = { warn: 'red', info: '', edit: 'heat' };
 
-/* Which season windows are open, and whether the card itself is. Survives a
-   repaint, so saving one year does not slam everything shut. */
+/* Which season windows are open. Survives a repaint, so saving one year does
+   not slam every other year shut. */
 const WIN_OPEN = new Set();
-let WIN_CARD = false;
 
 export function render(db) {
   const admin = db.isAdmin;
@@ -178,11 +177,11 @@ export function render(db) {
     </div>
   </div>
 
-  <div class="card acc${WIN_CARD ? ' open' : ''}" style="margin-top:12px">
-    <button class="acc-hd" data-win-card aria-expanded="${WIN_CARD}">
-      ${icon('chev', 'acc-caret')}<h3>Season windows</h3>
-    </button>
-    <div class="acc-bd"><div class="card-bd">
+  ${/* its own top-level section, so app.js gives it the same +/- as every other
+       one on the tab rather than folding it into Sleeper's */''}
+  <div class="section-title">Season windows</div>
+  <div class="card">
+    <div class="card-bd">
       <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
         A transaction is filed under whichever window its date falls in, so an offseason
         trade lands in the season it was made for rather than the one it interrupted.
@@ -214,7 +213,7 @@ export function render(db) {
           </div></div>
         </div>`; }).join('')}
       <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
-    </div></div>
+    </div>
   </div>
 
   <div class="section-title">${live ? 'Backup' : 'Save your work'}</div>
@@ -387,13 +386,6 @@ export function mount(root, db) {
     } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
     b.disabled = false;
   }));
-
-  root.querySelector('[data-win-card]')?.addEventListener('click', (e) => {
-    const card = e.currentTarget.closest('.card');
-    WIN_CARD = !card.classList.contains('open');
-    card.classList.toggle('open', WIN_CARD);
-    e.currentTarget.setAttribute('aria-expanded', String(WIN_CARD));
-  });
 
   /* toggled in place rather than through a repaint: a half-typed date in another
      year would not survive one */
