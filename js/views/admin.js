@@ -179,21 +179,25 @@ export function render(db) {
       <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
         A transaction is filed under whichever window its date falls in, so an offseason
         trade lands in the season it was made for rather than the one it interrupted.
-        FAAB is a separate $100 either side of the preseason close, so in-season
-        begins the morning after it &mdash; there is no third date to set.
+        FAAB is a separate $100 either side of the preseason close, so the season
+        opens the morning after it &mdash; that date is shown, not set.
       </div>
       ${db.seasons.map((y) => { const w = db.seasonWindow(y); return `
         <div class="win-row">
           <div class="win-y">${y}</div>
-          <div class="fgrid three">
+          <div class="fgrid four">
             <div class="field"><label>Preseason opens</label>
               <input type="date" data-win="${y}" data-part="start" value="${esc(w.start)}"></div>
             <div class="field"><label>Preseason closes</label>
               <input type="date" data-win="${y}" data-part="preseasonEnd" value="${esc(w.preseasonEnd)}"></div>
+            ${/* shown, not asked for: it is always the morning after the close,
+                 and seeing it beats being told the rule */''}
+            <div class="field"><label>Season opens</label>
+              <input type="date" data-derived="${y}" value="${esc(db.inSeasonStart(y))}" disabled
+                title="The day after the preseason closes"></div>
             <div class="field"><label>Season closes</label>
               <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
           </div>
-          <div class="s dimmer" style="font-size:11.5px">In-season runs ${esc(db.inSeasonStart(y))} to ${esc(w.end)}</div>
         </div>`; }).join('')}
       <button class="btn" data-save-windows>${icon('check')} Save windows</button>
     </div>
@@ -368,6 +372,16 @@ export function mount(root, db) {
       toast('Sleeper reachable');
     } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
     b.disabled = false;
+  }));
+
+  /* the derived date follows the close as you change it, so you never save a
+     window and only then find out where the season actually starts */
+  root.querySelectorAll('[data-part="preseasonEnd"]').forEach((i) => i.addEventListener('input', () => {
+    const out = root.querySelector(`[data-derived="${i.dataset.win}"]`);
+    if (!out || !i.value) return;
+    const d = new Date(`${i.value}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    out.value = d.toISOString().slice(0, 10);
   }));
 
   root.querySelector('[data-save-windows]')?.addEventListener('click', async () => {
