@@ -100,6 +100,19 @@ await db.update('league', (L) => { L.seasonWindows['2026'] = { start: '2025-12-1
 eq('a moved window moves the transaction with it', db.seasonOf('2025-12-20'), 2026);
 eq('the rest of 2025 stays put', db.seasonOf('2025-08-15'), 2025);
 
+/* ---- two FAAB budgets, split by the preseason close ---- */
+// leave 2026's opening where the test above moved it; this is about the close
+await db.update('league', (L) => {
+  L.seasonWindows['2025'] = { start: '2025-01-01', preseasonEnd: '2025-09-01', end: '2025-12-31' };
+});
+eq('a July claim spends the offseason budget', db.faabPhase('2025-07-12'), 'pre');
+eq('the last preseason day still counts as preseason', db.faabPhase('2025-09-01'), 'pre');
+eq('and the next morning is in-season', db.faabPhase('2025-09-02'), 'in');
+eq('in-season starts the day after, with no gap', db.inSeasonStart(2025), '2025-09-02');
+await db.update('league', (L) => { L.seasonWindows['2025'].preseasonEnd = '2025-09-10'; });
+eq('a claim before the moved close is preseason again', db.faabPhase('2025-09-05'), 'pre');
+eq('and in-season now starts later', db.inSeasonStart(2025), '2025-09-11');
+
 // a window is not a label applied once at pull time: move it and the rows move
 await db.update('trades', (t) => {
   t.trades = [{ id: 'x', source: 'sleeper', season: 2025, date: '2025-12-20', sides: [] }];

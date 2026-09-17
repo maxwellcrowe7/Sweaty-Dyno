@@ -1,4 +1,4 @@
-import { esc, icon, teamTag, fmtDate, empty, posChip, seasonPicker, openModal, toast } from '../util.js';
+import { esc, icon, teamTag, fmtDate, empty, posChip, seasonPicker, openModal, toast, money } from '../util.js';
 
 /* Everything on this page comes from Sleeper. The only thing a commissioner
    adds by hand is the condition on a conditional trade, because Sleeper has no
@@ -93,15 +93,26 @@ export function render(db, state = {}) {
     || (kind === 'conditional' ? condFor(t) : !condFor(t)));
   const open = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
   const claims = waivers.filter((w) => w.type !== 'free_agent');
-  const faab = claims.reduce((a, w) => a + (w.faab || 0), 0);
+  // two budgets, not one: every manager gets $100 for the offseason and another
+  // $100 once the season starts, so a single total would be meaningless
+  const spent = (phase) => claims.filter((w) => db.faabPhase(w.date) === phase)
+    .reduce((a, w) => a + (w.faab || 0), 0);
+  const pot = db.teams(S).length * 100;
+  const phases = [
+    { key: 'pre', title: 'Preseason', rows: waivers.filter((w) => db.faabPhase(w.date) === 'pre') },
+    { key: 'in', title: 'In-season', rows: waivers.filter((w) => db.faabPhase(w.date) !== 'pre') },
+  ].filter((p) => p.rows.length);
 
   const list = tab === 'trades'
     ? (shown.length
       ? shown.map((t) => tradeCard(db, t, condFor(t))).join('')
       : empty('No trades', `Nothing ${kind === 'conditional' ? 'conditional ' : ''}in ${S}. Pull transactions in Admin to bring them across.`, 'swap'))
     : (waivers.length
-      ? `<div class="card"><div class="card-bd flush"><div class="rows">
-          ${waivers.map((w) => moveRow(db, w)).join('')}</div></div></div>`
+      ? phases.map((p) => `
+        <div class="section-title">${p.title}
+          <span class="sub-n">${money(spent(p.key))} of ${money(pot)}</span></div>
+        <div class="card"><div class="card-bd flush"><div class="rows">
+          ${p.rows.map((w) => moveRow(db, w)).join('')}</div></div></div>`).join('')
       : empty('No pickups', `Nothing claimed in ${S}. Pull transactions in Admin to bring them across.`, 'inbox'));
 
   return `
@@ -126,7 +137,9 @@ export function render(db, state = {}) {
     <div class="tiles" style="margin-top:8px">
       <div class="tile"><div class="k">Claims</div><div class="v">${claims.length}</div><div class="m">through waivers</div></div>
       <div class="tile accent"><div class="k">Free agents</div><div class="v">${waivers.length - claims.length}</div><div class="m">straight adds</div></div>
-      <div class="tile mint"><div class="k">FAAB spent</div><div class="v">$${faab}</div><div class="m">in ${S}</div></div>
+      <div class="tile mint"><div class="k">FAAB spent</div>
+        <div class="v">${money(spent('pre') + spent('in'))}</div>
+        <div class="m">${money(spent('pre'))} pre &middot; ${money(spent('in'))} in-season</div></div>
     </div>`}
 
   ${list}

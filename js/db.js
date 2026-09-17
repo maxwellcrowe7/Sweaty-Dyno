@@ -765,10 +765,37 @@ class Store {
     return hit ?? (Number(d.slice(0, 4)) || null);
   }
 
-  /** The window a season covers, defaulting to its calendar year. */
+  /**
+   * The window a season covers, defaulting to its calendar year.
+   * `preseasonEnd` is the last offseason day: FAAB budgets are separate either
+   * side of it, so in-season simply begins the morning after.
+   */
   seasonWindow(year) {
     const w = (this.league.seasonWindows || {})[String(year)];
-    return { start: w?.start || `${year}-01-01`, end: w?.end || `${year}-12-31` };
+    return {
+      start: w?.start || `${year}-01-01`,
+      preseasonEnd: w?.preseasonEnd || `${year}-09-01`,
+      end: w?.end || `${year}-12-31`,
+    };
+  }
+
+  /** The day in-season begins: there is no gap, it is the day after preseason. */
+  inSeasonStart(year) {
+    const d = new Date(`${this.seasonWindow(year).preseasonEnd}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  /**
+   * Which FAAB budget a date spends from. Every manager gets $100 for the
+   * offseason and another $100 once the season starts, so a claim has to know
+   * which side of the line it fell on.
+   */
+  faabPhase(date) {
+    const d = String(date || '').slice(0, 10);
+    const year = this.seasonOf(d);
+    if (!year) return null;
+    return d <= this.seasonWindow(year).preseasonEnd ? 'pre' : 'in';
   }
 
   trades(season = null) {

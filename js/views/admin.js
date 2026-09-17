@@ -179,13 +179,21 @@ export function render(db) {
       <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
         A transaction is filed under whichever window its date falls in, so an offseason
         trade lands in the season it was made for rather than the one it interrupted.
+        FAAB is a separate $100 either side of the preseason close, so in-season
+        begins the morning after it &mdash; there is no third date to set.
       </div>
       ${db.seasons.map((y) => { const w = db.seasonWindow(y); return `
-        <div class="fgrid" style="margin-bottom:8px">
-          <div class="field"><label>${y} opens</label>
-            <input type="date" data-win="${y}" data-end="0" value="${esc(w.start)}"></div>
-          <div class="field"><label>${y} closes</label>
-            <input type="date" data-win="${y}" data-end="1" value="${esc(w.end)}"></div>
+        <div class="win-row">
+          <div class="win-y">${y}</div>
+          <div class="fgrid three">
+            <div class="field"><label>Preseason opens</label>
+              <input type="date" data-win="${y}" data-part="start" value="${esc(w.start)}"></div>
+            <div class="field"><label>Preseason closes</label>
+              <input type="date" data-win="${y}" data-part="preseasonEnd" value="${esc(w.preseasonEnd)}"></div>
+            <div class="field"><label>Season closes</label>
+              <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
+          </div>
+          <div class="s dimmer" style="font-size:11.5px">In-season runs ${esc(db.inSeasonStart(y))} to ${esc(w.end)}</div>
         </div>`; }).join('')}
       <button class="btn" data-save-windows>${icon('check')} Save windows</button>
     </div>
@@ -368,7 +376,7 @@ export function mount(root, db) {
       root.querySelectorAll('[data-win]').forEach((i) => {
         const y = i.dataset.win;
         L.seasonWindows[y] = L.seasonWindows[y] || {};
-        L.seasonWindows[y][i.dataset.end === '1' ? 'end' : 'start'] = i.value;
+        L.seasonWindows[y][i.dataset.part] = i.value;
       });
     });
     toast('Season windows saved');
