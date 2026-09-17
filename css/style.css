@@ -587,6 +587,9 @@ table.dt th.sticky{width:1%}
 /* a second, quieter row of pills for filtering inside a tab */
 /* the spend against that budget, said next to the heading it belongs to */
 .section-title .sub-n{margin-left:9px;color:var(--mint);letter-spacing:.04em}
+.section-title .sub-n.dim{color:var(--ink-3)}
+/* season and manager narrow the same page, so they travel together */
+.hd-picks{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
 /* a season's dates, grouped so the year is said once and shown one at a time */
 .win-row{border-top:1px solid var(--line-soft)}
 .win-row:first-of-type{border-top:0}

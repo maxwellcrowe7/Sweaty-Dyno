@@ -81,62 +81,97 @@ const moveRow = (db, w) => {
   </div>`;
 };
 
+/* Four things you might want to narrow by, and only two of them earn a tab.
+   Trades and pickups are different objects -- a two-column card and a one-line
+   row -- so that is the split. Conditional and free-agent are sub-kinds of
+   those, on a quieter second row. Preseason and in-season are a GROUPING, not a
+   filter: the FAAB budgets are separate, so you want both subtotals at once.
+   And manager cuts across all of it, so it sits up with the season. */
+const KINDS = {
+  trades: [['all', 'All'], ['standard', 'Standard'], ['conditional', 'Conditional']],
+  waivers: [['all', 'All'], ['claims', 'Claims'], ['fa', 'Free agents']],
+};
+
+const mgrPicker = (db, S, sel) => `<div class="season-pick">
+  <span>Manager</span>
+  <select data-mgr aria-label="Manager">
+    <option value="">All</option>
+    ${db.teams(S).slice().sort((a, b) => a.manager.localeCompare(b.manager)).map((t) =>
+      `<option value="${t.number}" ${String(t.number) === String(sel) ? 'selected' : ''}>${esc(t.manager)}</option>`).join('')}
+  </select>
+</div>`;
+
 export function render(db, state = {}) {
   const tab = state.tradeTab === 'waivers' ? 'waivers' : 'trades';
-  const kind = state.tradeKind || 'all';          // all | standard | conditional
+  const kind = state.tradeKind || 'all';
+  const mgr = state.tradeMgr ? Number(state.tradeMgr) : null;
   const S = db.season;
   const { trades, conditional, waivers } = db.trades(S);
   const condFor = (t) => (t.conditionalId ? conditional.find((c) => c.id === t.conditionalId) : null)
     || conditional.find((c) => c.settledTradeId === t.id) || null;
 
-  const shown = trades.filter((t) => kind === 'all'
+  // a manager filter narrows WHOSE transactions you see; a trade he was in is
+  // still shown whole, because a one-sided trade card would be a lie
+  const mine = (t) => !mgr || t.sides.some((x) => x.team === mgr);
+  const myMove = (w) => !mgr || w.team === mgr;
+
+  const tradeRows = trades.filter(mine).filter((t) => kind === 'all'
     || (kind === 'conditional' ? condFor(t) : !condFor(t)));
+  const moveRows = waivers.filter(myMove).filter((w) => kind === 'all'
+    || (kind === 'fa' ? w.type === 'free_agent' : w.type !== 'free_agent'));
+
   const open = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
-  const claims = waivers.filter((w) => w.type !== 'free_agent');
-  // two budgets, not one: every manager gets $100 for the offseason and another
-  // $100 once the season starts, so a single total would be meaningless
+  const claims = moveRows.filter((w) => w.type !== 'free_agent');
   const spent = (phase) => claims.filter((w) => db.faabPhase(w.date) === phase)
     .reduce((a, w) => a + (w.faab || 0), 0);
-  const pot = db.teams(S).length * 100;
-  const phases = [
-    { key: 'pre', title: 'Preseason', rows: waivers.filter((w) => db.faabPhase(w.date) === 'pre') },
-    { key: 'in', title: 'In-season', rows: waivers.filter((w) => db.faabPhase(w.date) !== 'pre') },
-  ].filter((p) => p.rows.length);
+  const pot = (mgr ? 1 : db.teams(S).length) * 100;
 
-  const list = tab === 'trades'
-    ? (shown.length
-      ? shown.map((t) => tradeCard(db, t, condFor(t))).join('')
-      : empty('No trades', `Nothing ${kind === 'conditional' ? 'conditional ' : ''}in ${S}. Pull transactions in Admin to bring them across.`, 'swap'))
-    : (waivers.length
-      ? phases.map((p) => `
-        <div class="section-title">${p.title}
-          <span class="sub-n">${money(spent(p.key))} of ${money(pot)}</span></div>
-        <div class="card"><div class="card-bd flush"><div class="rows">
-          ${p.rows.map((w) => moveRow(db, w)).join('')}</div></div></div>`).join('')
-      : empty('No pickups', `Nothing claimed in ${S}. Pull transactions in Admin to bring them across.`, 'inbox'));
+  const inPhase = (rows, phase) => rows.filter((x) =>
+    (db.faabPhase(x.date) === 'pre') === (phase === 'pre'));
+  const rows = tab === 'trades' ? tradeRows : moveRows;
+  const phases = [{ key: 'pre', title: 'Preseason' }, { key: 'in', title: 'In-season' }]
+    .map((p) => ({ ...p, rows: inPhase(rows, p.key) }))
+    .filter((p) => p.rows.length);
+
+  const who = mgr ? ` for ${db.team(mgr)?.manager || `T${mgr}`}` : '';
+  const group = (p) => tab === 'trades'
+    ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
+       ${p.rows.map((t) => tradeCard(db, t, condFor(t))).join('')}`
+    : `<div class="section-title">${p.title}
+         <span class="sub-n">${money(spent(p.key))} of ${money(pot)}</span></div>
+       <div class="card"><div class="card-bd flush"><div class="rows">
+         ${p.rows.map((w) => moveRow(db, w)).join('')}</div></div></div>`;
+
+  const list = phases.length ? phases.map(group).join('')
+    : (tab === 'trades'
+      ? empty('No trades', `Nothing${who} in ${S}. Pull transactions in Admin to bring them across.`, 'swap')
+      : empty('No pickups', `Nothing${who} in ${S}. Pull transactions in Admin to bring them across.`, 'inbox'));
 
   return `
-  <div class="view-hd"><h2>Transactions</h2>${seasonPicker(db)}</div>
+  <div class="view-hd"><h2>Transactions</h2>
+    <div class="hd-picks">${mgrPicker(db, S, state.tradeMgr || '')}${seasonPicker(db)}</div></div>
 
   <div class="pills">
-    <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades ${trades.length}</button>
-    <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers ${waivers.length}</button>
+    <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades ${trades.filter(mine).length}</button>
+    <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers ${waivers.filter(myMove).length}</button>
+  </div>
+
+  <div class="pills sub">
+    ${KINDS[tab].map(([k, label]) =>
+      `<button data-kind="${k}" aria-pressed="${kind === k}">${label}</button>`).join('')}
   </div>
 
   ${tab === 'trades' ? `
-    <div class="pills sub">
-      <button data-kind="all" aria-pressed="${kind === 'all'}">All</button>
-      <button data-kind="standard" aria-pressed="${kind === 'standard'}">Standard</button>
-      <button data-kind="conditional" aria-pressed="${kind === 'conditional'}">Conditional ${conditional.length}</button>
-    </div>
     <div class="tiles" style="margin-top:8px">
-      <div class="tile"><div class="k">Trades</div><div class="v">${trades.length}</div><div class="m">in ${S}</div></div>
-      <div class="tile accent"><div class="k">Pieces moved</div><div class="v">${trades.reduce((a, t) => a + t.sides.reduce((x, s) => x + s.receives.length, 0), 0)}</div><div class="m">players + picks</div></div>
+      <div class="tile"><div class="k">Trades</div><div class="v">${tradeRows.length}</div><div class="m">in ${S}</div></div>
+      <div class="tile accent"><div class="k">Pieces moved</div><div class="v">${tradeRows.reduce((a, t) =>
+        a + t.sides.filter((x) => !mgr || x.team === mgr).reduce((n, x) => n + x.receives.length, 0), 0)}</div>
+        <div class="m">${mgr ? 'received' : 'players + picks'}</div></div>
       <div class="tile ${open.length ? 'gold' : ''}"><div class="k">Open conditions</div><div class="v">${open.length}</div><div class="m">awaiting outcome</div></div>
     </div>` : `
     <div class="tiles" style="margin-top:8px">
       <div class="tile"><div class="k">Claims</div><div class="v">${claims.length}</div><div class="m">through waivers</div></div>
-      <div class="tile accent"><div class="k">Free agents</div><div class="v">${waivers.length - claims.length}</div><div class="m">straight adds</div></div>
+      <div class="tile accent"><div class="k">Free agents</div><div class="v">${moveRows.length - claims.length}</div><div class="m">straight adds</div></div>
       <div class="tile mint"><div class="k">FAAB spent</div>
         <div class="v">${money(spent('pre') + spent('in'))}</div>
         <div class="m">${money(spent('pre'))} pre &middot; ${money(spent('in'))} in-season</div></div>
@@ -147,10 +182,14 @@ export function render(db, state = {}) {
 }
 
 export function mount(root, db, go, setState) {
+  // the sub-filter means something different on each tab, so switching tabs
+  // drops back to All rather than carrying a filter that no longer exists
   root.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () =>
-    setState({ tradeTab: b.dataset.tab })));
+    setState({ tradeTab: b.dataset.tab, tradeKind: 'all' })));
   root.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () =>
     setState({ tradeKind: b.dataset.kind })));
+  root.querySelector('[data-mgr]')?.addEventListener('change', (e) =>
+    setState({ tradeMgr: e.target.value }));
 
   /* The one hand-entered thing on this page: the strings attached to a deal. */
   root.querySelectorAll('[data-cond-edit]').forEach((b) => b.addEventListener('click', () => {

@@ -120,4 +120,30 @@ await db.update('trades', (t) => {
 eq('a pulled row follows the window, not its old stamp', db.trades(2026).trades.length, 1);
 eq('and is gone from the season it used to sit in', db.trades(2025).trades.length, 0);
 
+/* ---- the page narrows on four axes ---- */
+await db.update('league', (L) => { L.seasonWindows['2026'] = { start: '2026-01-01', preseasonEnd: '2026-09-01', end: '2026-12-31' }; });
+await db.update('trades', (t) => {
+  t.conditionalTrades = [];
+  t.trades = [
+    { id: 'a', date: '2025-07-20', sides: [{ team: 1, receives: [{ label: 'P1' }] }, { team: 5, receives: [{ label: 'P2' }] }] },
+    { id: 'b', date: '2025-10-20', sides: [{ team: 1, receives: [{ label: 'P3' }] }, { team: 6, receives: [{ label: 'P4' }] }] },
+  ];
+  t.waivers = [
+    { id: 'w1', date: '2025-07-12', team: 1, type: 'waiver', player: 'A', faab: 10 },
+    { id: 'w2', date: '2025-10-12', team: 5, type: 'free_agent', player: 'B', faab: null },
+  ];
+});
+db.season = 2025;
+const V = await import('../js/views/transactions.js');
+const has = (h, s) => h.includes(s);
+const all = V.render(db, { tradeTab: 'trades' });
+eq('both phases head their own group', [has(all, '>Preseason'), has(all, '>In-season')], [true, true]);
+eq('every trade is listed', [has(all, 'P1'), has(all, 'P3')], [true, true]);
+const mine = V.render(db, { tradeTab: 'trades', tradeMgr: '6' });
+eq('a manager filter drops the deals he was not in', has(mine, 'P1'), false);
+eq('but keeps the whole card of the one he was', [has(mine, 'P3'), has(mine, 'P4')], [true, true]);
+eq('and the tab counts follow him', has(mine, 'Trades 1'), true);
+const fa = V.render(db, { tradeTab: 'waivers', tradeKind: 'fa' });
+eq('free agents only means free agents only', [has(fa, 'Free agent'), has(fa, '$10')], [true, false]);
+
 print(fail ? `\n${fail} FAILURE(S)` : '\nTransactions passed.');
