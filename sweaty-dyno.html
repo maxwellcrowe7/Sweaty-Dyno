@@ -574,19 +574,19 @@ table.dt th.sticky{width:1%}
 /* ---------- trades ---------- */
 .trade{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
 .trade + .trade{margin-top:10px}
-.trade-hd{display:flex;align-items:center;gap:9px;padding:7px 13px;border-bottom:1px solid var(--line-soft)}
+.trade-hd{background:var(--surface-2);border-bottom:1px solid var(--line-soft)}
+.trade-meta{display:flex;align-items:center;gap:9px;padding:7px 13px 0}
+/* one name per column, mirroring the body grid so each sits over its own haul */
+.trade-names{display:grid;grid-template-columns:1fr;gap:1px}
 .trade-hd .d{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
 .trade-body{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line-soft)}
-.trade-side{background:var(--surface);padding:0 0 11px}
-/* the name band heads its own column: each manager sits over the haul that is
-   his, so nothing below has to say whose it is */
-.trade-side .who{
-  display:flex;align-items:center;gap:8px;margin-bottom:9px;
-  padding:9px 13px;background:var(--surface-2);border-bottom:1px solid var(--line-soft);
-}
+.trade-side{background:var(--surface);padding:11px 0}
+.who{display:flex;align-items:center;gap:8px;padding:7px 13px 9px}
+/* the fallback for a three-way deal, where the name cannot live in the header */
+.trade-side .who{padding:0 13px 7px}
 .trade-side ul{padding:0 13px}
-.trade-side .who b{font-size:13.5px}
-.trade-side .who .arrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.who b{font-size:13.5px}
+.who .arrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .trade-side ul{margin:0;list-style:none;display:flex;flex-direction:column;gap:5px}
 .trade-side li{display:flex;align-items:center;gap:7px;font-size:13px}
 .trade-side li .pk{color:var(--ink-2);font-style:italic}
@@ -722,7 +722,7 @@ table.dt th.sticky{width:1%}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
   .sidenav .brand small{white-space:nowrap;letter-spacing:.11em;font-size:9.5px}
   .sidenav .brand h1{font-size:19px}
-  .trade-body{grid-template-columns:1fr 1fr}
+  .trade-body,.trade-names{grid-template-columns:1fr 1fr}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
   .two .card + .card{margin-top:0}
   .modal-bd{align-items:center}
@@ -4599,10 +4599,13 @@ const assetRow = (db, raw, showFrom) => {
 
 /* The manager heads his own column, so the name sits over the haul it belongs to
    and is never repeated underneath it. */
-const side = (db, s, showFrom) => `
+/* The manager is named once, over the column that is his. A three-way deal
+   breaks that alignment -- the sides wrap onto a second row, so a header name
+   would no longer sit above the right haul -- and there, only there, the name
+   rides on the side itself. */
+const side = (db, s, showFrom, banded, who) => `
   <div class="trade-side">
-    <div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
-      <span class="arrow">gets</span></div>
+    ${banded ? who(s) : ''}
     <ul>${s.receives.map((x) => assetRow(db, x, showFrom)).join('')}</ul>
   </div>`;
 
@@ -4611,15 +4614,22 @@ const tradeCard = (db, t, cond = null) => {
   // Two-team deals are self-describing: what I get is what you gave. Three-way
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
+  const banded = t.sides.length > 2;
+  const who = (s) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
+    <span class="arrow">gets</span></div>`;
+
   return `<div class="trade${cond ? ' is-cond' : ''}" data-trade="${esc(t.id)}">
     <div class="trade-hd">
-      ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
-      <div style="flex:1"></div>
-      ${db.isAdmin ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
-        aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
-      <span class="d">${fmtDate(t.date, { year: true })}</span>
+      <div class="trade-meta">
+        ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
+        <div style="flex:1"></div>
+        ${db.isAdmin ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
+          aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
+        <span class="d">${fmtDate(t.date, { year: true })}</span>
+      </div>
+      ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
     </div>
-    <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom)).join('')}</div>
+    <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom, banded, who)).join('')}</div>
     ${cond ? `<div class="cond">
       <div class="lbl">Condition</div>${esc(cond.condition)}
       <div class="out">

@@ -25,10 +25,13 @@ const assetRow = (db, raw, showFrom) => {
 
 /* The manager heads his own column, so the name sits over the haul it belongs to
    and is never repeated underneath it. */
-const side = (db, s, showFrom) => `
+/* The manager is named once, over the column that is his. A three-way deal
+   breaks that alignment -- the sides wrap onto a second row, so a header name
+   would no longer sit above the right haul -- and there, only there, the name
+   rides on the side itself. */
+const side = (db, s, showFrom, banded, who) => `
   <div class="trade-side">
-    <div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
-      <span class="arrow">gets</span></div>
+    ${banded ? who(s) : ''}
     <ul>${s.receives.map((x) => assetRow(db, x, showFrom)).join('')}</ul>
   </div>`;
 
@@ -37,15 +40,22 @@ const tradeCard = (db, t, cond = null) => {
   // Two-team deals are self-describing: what I get is what you gave. Three-way
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
+  const banded = t.sides.length > 2;
+  const who = (s) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
+    <span class="arrow">gets</span></div>`;
+
   return `<div class="trade${cond ? ' is-cond' : ''}" data-trade="${esc(t.id)}">
     <div class="trade-hd">
-      ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
-      <div style="flex:1"></div>
-      ${db.isAdmin ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
-        aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
-      <span class="d">${fmtDate(t.date, { year: true })}</span>
+      <div class="trade-meta">
+        ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
+        <div style="flex:1"></div>
+        ${db.isAdmin ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
+          aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
+        <span class="d">${fmtDate(t.date, { year: true })}</span>
+      </div>
+      ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
     </div>
-    <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom)).join('')}</div>
+    <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom, banded, who)).join('')}</div>
     ${cond ? `<div class="cond">
       <div class="lbl">Condition</div>${esc(cond.condition)}
       <div class="out">
