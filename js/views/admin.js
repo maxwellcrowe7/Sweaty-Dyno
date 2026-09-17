@@ -199,7 +199,7 @@ export function render(db) {
               <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
           </div>
         </div>`; }).join('')}
-      <button class="btn" data-save-windows>${icon('check')} Save windows</button>
+      <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
     </div>
   </div>
 
