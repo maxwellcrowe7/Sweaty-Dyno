@@ -23,6 +23,8 @@ const assetRow = (db, raw, showFrom) => {
   </li>`;
 };
 
+/* The manager heads his own column, so the name sits over the haul it belongs to
+   and is never repeated underneath it. */
 const side = (db, s, showFrom) => `
   <div class="trade-side">
     <div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
@@ -35,14 +37,8 @@ const tradeCard = (db, t, cond = null) => {
   // Two-team deals are self-describing: what I get is what you gave. Three-way
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
-  const names = t.sides.map((s) => {
-    const team = s.team ? db.team(s.team) : null;
-    return `<b>${esc(team?.manager || s.alias || 'Unassigned')}</b>`;
-  }).join('<span class="sep">&middot;</span>');
-
   return `<div class="trade${cond ? ' is-cond' : ''}" data-trade="${esc(t.id)}">
     <div class="trade-hd">
-      <div class="names">${names}</div>
       ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
       <div style="flex:1"></div>
       ${db.isAdmin ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
