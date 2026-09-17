@@ -5971,9 +5971,10 @@ const { isConfigured } = __M["js/config.js"];
 
 const LEVEL = { warn: 'red', info: '', edit: 'heat' };
 
-/* Which season windows are open. Survives a repaint, so saving one year does
-   not slam every other year shut. */
+/* Which season windows are open, and whether the card itself is. Survives a
+   repaint, so saving one year does not slam everything shut. */
 const WIN_OPEN = new Set();
+let WIN_CARD = false;
 function render(db) {
   const admin = db.isAdmin;
   const issues = db.issues();
@@ -6142,9 +6143,11 @@ function render(db) {
     </div>
   </div>
 
-  <div class="card" style="margin-top:12px">
-    <div class="card-hd">${icon('clock')}<h3>Season windows</h3></div>
-    <div class="card-bd">
+  <div class="card acc${WIN_CARD ? ' open' : ''}" style="margin-top:12px">
+    <button class="acc-hd" data-win-card aria-expanded="${WIN_CARD}">
+      ${icon('chev', 'acc-caret')}<h3>Season windows</h3>
+    </button>
+    <div class="acc-bd"><div class="card-bd">
       <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
         A transaction is filed under whichever window its date falls in, so an offseason
         trade lands in the season it was made for rather than the one it interrupted.
@@ -6176,7 +6179,7 @@ function render(db) {
           </div></div>
         </div>`; }).join('')}
       <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
-    </div>
+    </div></div>
   </div>
 
   <div class="section-title">${live ? 'Backup' : 'Save your work'}</div>
@@ -6348,6 +6351,13 @@ function mount(root, db) {
     } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
     b.disabled = false;
   }));
+
+  root.querySelector('[data-win-card]')?.addEventListener('click', (e) => {
+    const card = e.currentTarget.closest('.card');
+    WIN_CARD = !card.classList.contains('open');
+    card.classList.toggle('open', WIN_CARD);
+    e.currentTarget.setAttribute('aria-expanded', String(WIN_CARD));
+  });
 
   /* toggled in place rather than through a repaint: a half-typed date in another
      year would not survive one */
