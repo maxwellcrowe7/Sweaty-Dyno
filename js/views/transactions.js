@@ -25,13 +25,13 @@ const assetRow = (db, raw, showFrom) => {
 
 /* The manager heads his own column, so the name sits over the haul it belongs to
    and is never repeated underneath it. */
-/* The manager is named once, over the column that is his. A three-way deal
-   breaks that alignment -- the sides wrap onto a second row, so a header name
-   would no longer sit above the right haul -- and there, only there, the name
-   rides on the side itself. */
+/* The name is written twice and CSS keeps one: in the header, on the date's own
+   row, where it sits over the column that is his -- and on the side itself for
+   the two cases where that alignment cannot hold, a stacked phone layout and a
+   three-way deal that wraps onto a second row. */
 const side = (db, s, showFrom, banded, who) => `
   <div class="trade-side">
-    ${banded ? who(s) : ''}
+    ${who(s)}
     <ul>${s.receives.map((x) => assetRow(db, x, showFrom)).join('')}</ul>
   </div>`;
 
@@ -44,7 +44,7 @@ const tradeCard = (db, t, cond = null) => {
   const who = (s) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
     <span class="arrow">gets</span></div>`;
 
-  return `<div class="trade${cond ? ' is-cond' : ''}" data-trade="${esc(t.id)}">
+  return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}" data-trade="${esc(t.id)}">
     <div class="trade-hd">
       <div class="trade-meta">
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}

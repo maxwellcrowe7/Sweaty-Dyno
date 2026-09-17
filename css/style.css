@@ -556,15 +556,22 @@ table.dt th.sticky{width:1%}
 /* ---------- trades ---------- */
 .trade{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
 .trade + .trade{margin-top:10px}
-.trade-hd{background:var(--surface-2);border-bottom:1px solid var(--line-soft)}
-.trade-meta{display:flex;align-items:center;gap:9px;padding:7px 13px 0}
+.trade-hd{
+  position:relative;display:flex;align-items:center;min-height:36px;
+  background:var(--surface-2);border-bottom:1px solid var(--line-soft);
+}
+/* the date rides on top of the name row rather than under it: one header row,
+   whatever is in it */
+.trade-meta{
+  position:absolute;right:13px;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:9px;
+}
 /* one name per column, mirroring the body grid so each sits over its own haul */
-.trade-names{display:grid;grid-template-columns:1fr;gap:1px}
+.trade-names{display:none;flex:1;grid-template-columns:1fr;gap:1px}
 .trade-hd .d{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
 .trade-body{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line-soft)}
 .trade-side{background:var(--surface);padding:11px 0}
-.who{display:flex;align-items:center;gap:8px;padding:7px 13px 9px}
-/* the fallback for a three-way deal, where the name cannot live in the header */
+.who{display:flex;align-items:center;gap:8px;padding:7px 13px}
 .trade-side .who{padding:0 13px 7px}
 .trade-side ul{padding:0 13px}
 .who b{font-size:13.5px}
@@ -704,7 +711,11 @@ table.dt th.sticky{width:1%}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
   .sidenav .brand small{white-space:nowrap;letter-spacing:.11em;font-size:9.5px}
   .sidenav .brand h1{font-size:19px}
-  .trade-body,.trade-names{grid-template-columns:1fr 1fr}
+  .trade-body{grid-template-columns:1fr 1fr}
+  /* wide enough for the names to line up with their columns, so the copy on
+     each side comes out */
+  .trade:not(.banded) .trade-names{display:grid;grid-template-columns:1fr 1fr}
+  .trade:not(.banded) .trade-side .who{display:none}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
   .two .card + .card{margin-top:0}
   .modal-bd{align-items:center}
