@@ -603,6 +603,29 @@ table.dt th.sticky{width:1%}
 .trade-side li .from{font-size:11px;color:var(--ink-3);white-space:nowrap}
 .trade.is-cond{border-color:color-mix(in oklab,var(--violet) 45%,var(--line))}
 /* a second, quieter row of pills for filtering inside a tab */
+/* A waiver line: manager, who came in, who went out, what it cost. In and out
+   are the same size and shape so the drop is read, not skimmed past. */
+.row.wv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.wv-who{grid-column:1;min-width:0}
+.wv-who b{font-size:13px}
+.wv-who span{font-size:11.5px;color:var(--ink-3);margin-left:7px}
+.wv-in,.wv-out{display:flex;align-items:center;gap:7px;min-width:0;font-size:13.5px}
+.wv-in .nm,.wv-out .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wv-out{color:var(--ink-3)}
+.wv-out .nm{text-decoration:line-through;text-decoration-color:var(--ink-3)}
+.wv-out .pos-chip{opacity:.62}
+.wv-mark{font-style:normal;font-weight:700;font-size:13px;width:11px;flex:none;text-align:center}
+.wv-mark.in{color:var(--mint)}
+.wv-mark.out{color:var(--red)}
+.wv-none{font-size:12px;color:var(--ink-3);opacity:.7;font-style:italic}
+.wv-val{grid-column:2;grid-row:1;justify-self:end}
+@media (min-width:760px){
+  .row.wv{grid-template-columns:132px minmax(0,1fr) minmax(0,1fr) 84px;gap:12px}
+  .wv-who b{display:block}
+  .wv-who span{margin-left:0;display:block;margin-top:2px}
+  .wv-val{grid-column:4;justify-self:end}
+}
+
 /* the spend against that budget, said next to the heading it belongs to */
 .section-title .sub-n{margin-left:9px;color:var(--mint);letter-spacing:.04em}
 .section-title .sub-n.dim{color:var(--ink-3)}
@@ -4702,16 +4725,25 @@ const tradeCard = (db, t, cond = null) => {
   </div>`;
 };
 
+/* A pickup is four facts: who, in, out, what it cost. The drop used to be a
+   clause at the end of a subtitle, which buried the half of the move that
+   costs you a roster spot -- it now sits beside the add as its equal, one
+   column each, marked + and -. */
 const moveRow = (db, w) => {
   const fa = w.type === 'free_agent';
-  return `<div class="row">
-    <div class="grow">
-      <div class="t" style="display:flex;align-items:center;gap:7px">${posChip(db.position(w.player))} ${esc(w.player)}</div>
-      <div class="s">${teamTag(w.team ? db.team(w.team) : null, { alias: w.alias, num: false })}
-        &middot; ${fmtDate(w.date, { year: true })}${w.dropped ? ` &middot; dropped ${esc(w.dropped)}` : ''}</div>
+  const team = w.team ? db.team(w.team) : null;
+  const man = (name) => `${posChip(db.position(name))}<span class="nm">${esc(name)}</span>`;
+  return `<div class="row wv">
+    <div class="wv-who">
+      <b>${esc(team?.manager || w.alias || 'Unassigned')}</b>
+      <span>${fmtDate(w.date, { year: true })}</span>
     </div>
-    ${fa ? '<span class="chip ghost">Free agent</span>'
-      : `<div class="val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab || 0}</div>`}
+    <div class="wv-in"><i class="wv-mark in">+</i>${man(w.player)}</div>
+    <div class="wv-out">${w.dropped
+      ? `<i class="wv-mark out">&minus;</i>${man(w.dropped)}`
+      : '<span class="wv-none">nobody dropped</span>'}</div>
+    ${fa ? '<span class="chip ghost wv-val">Free agent</span>'
+      : `<div class="val wv-val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab || 0}</div>`}
   </div>`;
 };
 
