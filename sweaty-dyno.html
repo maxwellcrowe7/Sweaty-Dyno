@@ -644,13 +644,16 @@ table.dt th.sticky{width:1%}
      each row would size them to its own content and nothing would line up */
   /* the drop leans toward the add rather than splitting the width evenly, so
      the two read as one swap instead of two columns */
-  .row.wv{grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr) 156px 64px;gap:14px}
+  /* a flexible spacer before the money: it soaks up the slack that used to sit
+     inside the name columns, which pulls the drop and the manager leftward
+     while the value stays on its rail */
+  .row.wv{grid-template-columns:minmax(0,.9fr) minmax(0,1fr) 150px minmax(0,.22fr) 64px;gap:12px}
   .wv-in{grid-column:1}
   .wv-out{grid-column:2}
   .wv-who{grid-column:3}
   /* centred in the track rather than pinned right, so the tag sits on the same
      visual line as the figures instead of hanging off their edge */
-  .wv-val{grid-column:4;justify-self:center;margin-right:6px}
+  .wv-val{grid-column:5;justify-self:center;margin-right:6px}
 }
 
 /* the spend against that budget, said next to the heading it belongs to */
