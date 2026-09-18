@@ -629,7 +629,7 @@ table.dt th.sticky{width:1%}
   /* a flexible spacer before the money: it soaks up the slack that used to sit
      inside the name columns, which pulls the drop and the manager leftward
      while the value stays on its rail */
-  .row.wv{grid-template-columns:minmax(0,.9fr) minmax(0,1fr) 150px minmax(0,.22fr) 64px;gap:12px}
+  .row.wv{grid-template-columns:minmax(0,.9fr) minmax(0,1.14fr) 150px minmax(0,.08fr) 64px;gap:12px}
   .wv-in{grid-column:1}
   .wv-out{grid-column:2}
   .wv-who{grid-column:3}
