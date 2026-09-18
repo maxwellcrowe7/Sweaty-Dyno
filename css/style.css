@@ -659,7 +659,7 @@ table.dt th.sticky{width:1%}
 /* a date you are shown rather than asked for */
 .fgrid.four input:disabled{opacity:.62;cursor:default}
 /* the quieter pills share the tabs' line, at the other end of it */
-.pill-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pill-bar{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 /* the pills carry bottom padding for their own scrollbar; inside the bar it
    only pushes them off the rule's centre */
 .pill-bar .pills{margin-bottom:0;padding-bottom:0}
