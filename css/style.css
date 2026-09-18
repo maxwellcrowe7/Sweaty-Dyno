@@ -612,7 +612,7 @@ table.dt th.sticky{width:1%}
 /* Same size as the name, so the two read as one phrase; the grey alone is
    enough to keep the player ahead of his club. */
 .nfl{font-size:12px;font-weight:500;letter-spacing:0;color:var(--ink-3);flex:none;margin-left:-2px}
-.wv-mark{font-style:normal;font-weight:700;font-size:13px;width:11px;flex:none;text-align:center}
+.wv-mark{font-style:normal;font-weight:700;font-size:16px;width:13px;flex:none;text-align:center}
 .wv-mark.in{color:var(--mint)}
 .wv-mark.out{color:var(--red)}
 /* off the rail: the money and the FA tag sit a touch in from the card edge */
