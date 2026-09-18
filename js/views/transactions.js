@@ -101,6 +101,8 @@ const moveRow = (db, w) => {
    those, on a quieter second row. Preseason and in-season are a GROUPING, not a
    filter: the FAAB budgets are separate, so you want both subtotals at once.
    And manager cuts across all of it, so it sits up with the season. */
+const PHASES = [['pre', 'Preseason'], ['in', 'In-season']];
+
 const KINDS = {
   trades: [['all', 'All'], ['standard', 'Standard'], ['conditional', 'Conditional']],
   waivers: [['all', 'All'], ['claims', 'Claims'], ['fa', 'Free agents']],
@@ -196,12 +198,28 @@ export function render(db, state = {}) {
         <div class="m">${open.length ? `${open.length} still open` : 'all settled'}</div></div>
     </div>` : `
     <div class="tiles two" style="margin-top:8px">
-      <div class="tile mint"><div class="k">FAAB spent</div>
-        <div class="v">${money(spent('pre') + spent('in'))}</div>
-        <div class="m">${claims.length} claim${claims.length === 1 ? '' : 's'}${
-          topBid ? ` &middot; top bid ${money(topBid)}` : ''}</div></div>
-      <div class="tile accent"><div class="k">Free agents</div><div class="v">${fa.length}</div>
-        <div class="m">${moveRows.length ? `${Math.round((fa.length / moveRows.length) * 100)}% of pickups` : 'straight adds'}</div></div>
+      ${/* each tile splits the way the list below it does, so the tiles answer
+           "how much of this happened before the season, and how much during" --
+           rather than setting waivers against FAAB, which are not opposites */''}
+      <div class="tile">
+        <div class="k">Waivers</div>
+        <div class="tsplit">
+          ${PHASES.map(([key, title]) => `<div>
+            <span class="ph">${title}</span>
+            <b>${claims.filter((w) => db.faabPhase(w.date) === key).length}</b>
+            <i>${money(spent(key))}</i>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="tile accent">
+        <div class="k">Free agents</div>
+        <div class="tsplit">
+          ${PHASES.map(([key, title]) => `<div>
+            <span class="ph">${title}</span>
+            <b>${fa.filter((w) => db.faabPhase(w.date) === key).length}</b>
+          </div>`).join('')}
+        </div>
+      </div>
     </div>`}
 
   ${list}

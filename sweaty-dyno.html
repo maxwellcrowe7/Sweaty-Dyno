@@ -331,6 +331,14 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .tile .k{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .tile .v{font-family:var(--f-display);font-size:30px;font-weight:700;line-height:1.05;margin-top:5px;letter-spacing:.005em}
 .tile .m{font-size:11px;color:var(--ink-3);margin-top:3px}
+/* A tile that answers the same question twice: once for the offseason, once
+   for the season. The rule between them is the same line the list below uses to
+   separate its two groups. */
+.tsplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:7px}
+.tsplit > div + div{border-left:1px solid var(--line);padding-left:12px}
+.tsplit .ph{display:block;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
+.tsplit b{display:block;font-family:var(--f-display);font-size:23px;font-weight:700;line-height:1.05;letter-spacing:.01em}
+.tsplit i{font-style:normal;font-size:12px;font-weight:600;color:var(--mint)}
 .tile.accent .v{color:var(--heat)} .tile.mint .v{color:var(--mint)}
 .tile.gold .v{color:var(--gold)} .tile.violet .v{color:var(--violet)}
 .tile.red .v{color:var(--red)}
@@ -818,6 +826,7 @@ table.dt th.sticky{width:1%}
   .tiles{grid-template-columns:repeat(4,1fr);gap:12px}
   /* a two-up row stays two-up instead of shrinking into a quarter of the width */
   .tiles.two{grid-template-columns:repeat(2,1fr)}
+  .tsplit b{font-size:26px}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
   .hero .tiles{grid-template-columns:repeat(2,1fr)}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
@@ -4823,6 +4832,8 @@ const moveRow = (db, w) => {
    those, on a quieter second row. Preseason and in-season are a GROUPING, not a
    filter: the FAAB budgets are separate, so you want both subtotals at once.
    And manager cuts across all of it, so it sits up with the season. */
+const PHASES = [['pre', 'Preseason'], ['in', 'In-season']];
+
 const KINDS = {
   trades: [['all', 'All'], ['standard', 'Standard'], ['conditional', 'Conditional']],
   waivers: [['all', 'All'], ['claims', 'Claims'], ['fa', 'Free agents']],
@@ -4917,12 +4928,28 @@ function render(db, state = {}) {
         <div class="m">${open.length ? `${open.length} still open` : 'all settled'}</div></div>
     </div>` : `
     <div class="tiles two" style="margin-top:8px">
-      <div class="tile mint"><div class="k">FAAB spent</div>
-        <div class="v">${money(spent('pre') + spent('in'))}</div>
-        <div class="m">${claims.length} claim${claims.length === 1 ? '' : 's'}${
-          topBid ? ` &middot; top bid ${money(topBid)}` : ''}</div></div>
-      <div class="tile accent"><div class="k">Free agents</div><div class="v">${fa.length}</div>
-        <div class="m">${moveRows.length ? `${Math.round((fa.length / moveRows.length) * 100)}% of pickups` : 'straight adds'}</div></div>
+      ${/* each tile splits the way the list below it does, so the tiles answer
+           "how much of this happened before the season, and how much during" --
+           rather than setting waivers against FAAB, which are not opposites */''}
+      <div class="tile">
+        <div class="k">Waivers</div>
+        <div class="tsplit">
+          ${PHASES.map(([key, title]) => `<div>
+            <span class="ph">${title}</span>
+            <b>${claims.filter((w) => db.faabPhase(w.date) === key).length}</b>
+            <i>${money(spent(key))}</i>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div class="tile accent">
+        <div class="k">Free agents</div>
+        <div class="tsplit">
+          ${PHASES.map(([key, title]) => `<div>
+            <span class="ph">${title}</span>
+            <b>${fa.filter((w) => db.faabPhase(w.date) === key).length}</b>
+          </div>`).join('')}
+        </div>
+      </div>
     </div>`}
 
   ${list}
