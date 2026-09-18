@@ -798,6 +798,8 @@ table.dt th.sticky{width:1%}
   main{padding-top:30px}
   main{padding:22px 28px 60px}
   .tiles{grid-template-columns:repeat(4,1fr);gap:12px}
+  /* a two-up row stays two-up instead of shrinking into a quarter of the width */
+  .tiles.two{grid-template-columns:repeat(2,1fr)}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
   .hero .tiles{grid-template-columns:repeat(2,1fr)}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}

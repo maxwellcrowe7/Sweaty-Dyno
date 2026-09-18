@@ -816,6 +816,8 @@ table.dt th.sticky{width:1%}
   main{padding-top:30px}
   main{padding:22px 28px 60px}
   .tiles{grid-template-columns:repeat(4,1fr);gap:12px}
+  /* a two-up row stays two-up instead of shrinking into a quarter of the width */
+  .tiles.two{grid-template-columns:repeat(2,1fr)}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
   .hero .tiles{grid-template-columns:repeat(2,1fr)}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
@@ -4865,6 +4867,12 @@ function render(db, state = {}) {
     .map((p) => ({ ...p, rows: inPhase(rows, p.key) }))
     .filter((p) => p.rows.length);
 
+  const fa = moveRows.filter((w) => w.type === 'free_agent');
+  const topBid = claims.reduce((n, w) => Math.max(n, w.faab || 0), 0);
+  const withCond = tradeRows.filter((t) => condFor(t));
+  const pieces = tradeRows.reduce((a, t) =>
+    a + t.sides.filter((x) => !mgr || x.team === mgr).reduce((n, x) => n + x.receives.length, 0), 0);
+
   const who = mgr ? ` for ${db.team(mgr)?.manager || `T${mgr}`}` : '';
   const group = (p) => tab === 'trades'
     ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
@@ -4897,20 +4905,24 @@ function render(db, state = {}) {
     </div>
   </div>
 
+  ${/* Two tiles, not three or four: side by side they still read on a phone,
+       and each says the headline figure with the rest of its story underneath.
+       The counts the pills already carry do not need a tile of their own. */''}
   ${tab === 'trades' ? `
-    <div class="tiles" style="margin-top:8px">
-      <div class="tile"><div class="k">Trades</div><div class="v">${tradeRows.length}</div><div class="m">in ${S}</div></div>
-      <div class="tile accent"><div class="k">Pieces moved</div><div class="v">${tradeRows.reduce((a, t) =>
-        a + t.sides.filter((x) => !mgr || x.team === mgr).reduce((n, x) => n + x.receives.length, 0), 0)}</div>
-        <div class="m">${mgr ? 'received' : 'players + picks'}</div></div>
-      <div class="tile ${open.length ? 'gold' : ''}"><div class="k">Open conditions</div><div class="v">${open.length}</div><div class="m">awaiting outcome</div></div>
+    <div class="tiles two" style="margin-top:8px">
+      <div class="tile"><div class="k">Trades</div><div class="v">${tradeRows.length}</div>
+        <div class="m">${pieces} ${mgr ? 'received' : 'players + picks'}</div></div>
+      <div class="tile ${open.length ? 'gold' : 'accent'}"><div class="k">Conditional</div>
+        <div class="v">${withCond.length}</div>
+        <div class="m">${open.length ? `${open.length} still open` : 'all settled'}</div></div>
     </div>` : `
-    <div class="tiles" style="margin-top:8px">
-      <div class="tile"><div class="k">Claims</div><div class="v">${claims.length}</div><div class="m">through waivers</div></div>
-      <div class="tile accent"><div class="k">Free agents</div><div class="v">${moveRows.length - claims.length}</div><div class="m">straight adds</div></div>
+    <div class="tiles two" style="margin-top:8px">
       <div class="tile mint"><div class="k">FAAB spent</div>
         <div class="v">${money(spent('pre') + spent('in'))}</div>
-        <div class="m">${money(spent('pre'))} pre &middot; ${money(spent('in'))} in-season</div></div>
+        <div class="m">${claims.length} claim${claims.length === 1 ? '' : 's'}${
+          topBid ? ` &middot; top bid ${money(topBid)}` : ''}</div></div>
+      <div class="tile accent"><div class="k">Free agents</div><div class="v">${fa.length}</div>
+        <div class="m">${moveRows.length ? `${Math.round((fa.length / moveRows.length) * 100)}% of pickups` : 'straight adds'}</div></div>
     </div>`}
 
   ${list}
