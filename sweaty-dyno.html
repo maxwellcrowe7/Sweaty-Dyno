@@ -702,6 +702,11 @@ table.dt th.sticky{width:1%}
 .pill-sep{width:1px;height:20px;background:var(--line);flex:none}
 .pills.sub button{font-size:11.5px;padding:4px 10px}
 @media (max-width:620px){
+  /* "IN-SEASON" wraps inside a half-tile at phone width; the tracking is what
+     costs it the room, not the type size */
+  .tsplit{gap:9px}
+  .tsplit > div + div{padding-left:9px}
+  .tsplit .ph{letter-spacing:.06em}
   /* wrapped onto its own line, the rule above it means nothing */
   .pill-sep{display:none}
 }
