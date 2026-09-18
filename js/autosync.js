@@ -115,8 +115,14 @@ export async function run(db, onStep = () => {}) {
 /** pid -> name, from what we already know, reaching for Sleeper only if we must. */
 async function namer(db, pids, onStep = () => {}) {
   const known = db.get('players').sleeperNames || {};
-  const missing = [...new Set(pids)].filter((p) => !known[p]);
-  if (!missing.length) return { nameOf: (p) => known[p], learned: {}, positions: {} };
+  const clubs = db.get('players').nflTeams || {};
+  // A player we can already name still needs looking up if we have never
+  // learned his club -- otherwise a cache built before clubs existed would keep
+  // the fast path forever and the column would stay empty for good.
+  const missing = [...new Set(pids)].filter((p) => !known[p] || !clubs[known[p]]);
+  if (!missing.length) {
+    return { nameOf: (p) => known[p], learned: {}, positions: {}, nflTeams: {} };
+  }
 
   onStep('Loading the player list (~5 MB, once)…');
   const pl = await SL.players();
@@ -129,9 +135,11 @@ async function namer(db, pids, onStep = () => {}) {
     const name = r.full_name || [r.first_name, r.last_name].filter(Boolean).join(' ');
     if (!name) continue;
     learned[p] = name;
+    // a retired or practice-squad player has no club; remember that we asked,
+    // so he does not drag the big file down on every pull from now on
+    nflTeams[name] = r.team || clubs[name] || '--';
     const pos = r.position || (Array.isArray(r.fantasy_positions) ? r.fantasy_positions[0] : null);
     if (pos) positions[name] = pos;
-    if (r.team) nflTeams[name] = r.team;
   }
   return { nameOf: (p) => known[p] || learned[p] || `Player ${p}`, learned, positions, nflTeams };
 }
