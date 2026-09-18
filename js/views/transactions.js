@@ -186,41 +186,25 @@ export function render(db, state = {}) {
     </div>
   </div>
 
-  ${/* Two tiles, not three or four: side by side they still read on a phone,
-       and each says the headline figure with the rest of its story underneath.
-       The counts the pills already carry do not need a tile of their own. */''}
-  ${tab === 'trades' ? `
-    <div class="tiles two" style="margin-top:8px">
-      <div class="tile"><div class="k">Trades</div><div class="v">${tradeRows.length}</div>
-        <div class="m">${pieces} ${mgr ? 'received' : 'players + picks'}</div></div>
-      <div class="tile ${open.length ? 'gold' : 'accent'}"><div class="k">Conditional</div>
-        <div class="v">${withCond.length}</div>
-        <div class="m">${open.length ? `${open.length} still open` : 'all settled'}</div></div>
-    </div>` : `
-    <div class="tiles two" style="margin-top:8px">
-      ${/* each tile splits the way the list below it does, so the tiles answer
-           "how much of this happened before the season, and how much during" --
-           rather than setting waivers against FAAB, which are not opposites */''}
-      <div class="tile">
-        <div class="k">Waivers</div>
-        <div class="tsplit">
-          ${PHASES.map(([key, title]) => `<div>
-            <span class="ph">${title}</span>
-            <b>${claims.filter((w) => db.faabPhase(w.date) === key).length}</b>
-            <i>${money(spent(key))}</i>
-          </div>`).join('')}
-        </div>
-      </div>
-      <div class="tile accent">
-        <div class="k">Free agents</div>
-        <div class="tsplit">
-          ${PHASES.map(([key, title]) => `<div>
-            <span class="ph">${title}</span>
-            <b>${fa.filter((w) => db.faabPhase(w.date) === key).length}</b>
-          </div>`).join('')}
-        </div>
-      </div>
-    </div>`}
+  ${/* One matrix, not two tiles. The phases were printed twice, once per tile,
+       which is the tell that this is a table: say them once across the top and
+       let each row answer them. Counts lead, money annotates the row where it
+       means something, and the whole thing costs one card instead of two. */''}
+  <div class="card sum">
+    <div class="sum-row hd"><span></span>${PHASES.map(([, t]) => `<span>${t}</span>`).join('')}</div>
+    ${(tab === 'trades' ? [
+      { label: 'Trades', cells: PHASES.map(([k]) => ({ n: inPhase(tradeRows, k).length })) },
+      { label: 'Conditional', cells: PHASES.map(([k]) => ({ n: inPhase(withCond, k).length })) },
+    ] : [
+      { label: 'Waivers', cells: PHASES.map(([k]) => ({
+        n: claims.filter((w) => db.faabPhase(w.date) === k).length, sub: money(spent(k)) })) },
+      { label: 'Free agents', cells: PHASES.map(([k]) => ({ n: fa.filter((w) => db.faabPhase(w.date) === k).length })) },
+    ]).map((r) => `<div class="sum-row">
+      <b>${r.label}</b>
+      ${r.cells.map((c) => `<div><em${c.n ? '' : ' class="none"'}>${c.n}</em>${
+        c.sub ? `<i>${c.sub}</i>` : ''}</div>`).join('')}
+    </div>`).join('')}
+  </div>
 
   ${list}
   `;

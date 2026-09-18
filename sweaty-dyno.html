@@ -331,14 +331,22 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .tile .k{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .tile .v{font-family:var(--f-display);font-size:30px;font-weight:700;line-height:1.05;margin-top:5px;letter-spacing:.005em}
 .tile .m{font-size:11px;color:var(--ink-3);margin-top:3px}
-/* A tile that answers the same question twice: once for the offseason, once
-   for the season. The rule between them is the same line the list below uses to
-   separate its two groups. */
-.tsplit{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:7px}
-.tsplit > div + div{border-left:1px solid var(--line);padding-left:12px}
-.tsplit .ph{display:block;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
-.tsplit b{display:block;font-family:var(--f-display);font-size:23px;font-weight:700;line-height:1.05;letter-spacing:.01em}
-.tsplit i{font-style:normal;font-size:12px;font-weight:600;color:var(--mint)}
+/* The season's shape in one card: kinds down the side, phases across the top,
+   each said once. The counts carry the weight; everything that labels them is
+   deliberately quieter. */
+.sum{margin-top:8px}
+.sum-row{display:grid;grid-template-columns:minmax(96px,168px) 1fr 1fr;align-items:center;
+  gap:12px;padding:11px 16px;border-top:1px solid var(--line-soft)}
+/* the phases share what is left rather than hugging the right edge, so a wide
+   card has no dead middle */
+.sum-row > div,.sum-row.hd span + span{text-align:center}
+.sum-row.hd{padding:9px 16px 5px;border-top:0}
+.sum-row.hd span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.sum-row b{font-size:13px;font-weight:600;color:var(--ink-2)}
+.sum-row em{display:block;font-style:normal;font-family:var(--f-display);
+  font-size:24px;font-weight:700;line-height:1.05;letter-spacing:.01em}
+.sum-row em.none{color:var(--ink-3);opacity:.5}
+.sum-row i{font-style:normal;font-size:12px;font-weight:600;color:var(--mint)}
 .tile.accent .v{color:var(--heat)} .tile.mint .v{color:var(--mint)}
 .tile.gold .v{color:var(--gold)} .tile.violet .v{color:var(--violet)}
 .tile.red .v{color:var(--red)}
@@ -702,11 +710,11 @@ table.dt th.sticky{width:1%}
 .pill-sep{width:1px;height:20px;background:var(--line);flex:none}
 .pills.sub button{font-size:11.5px;padding:4px 10px}
 @media (max-width:620px){
-  /* "IN-SEASON" wraps inside a half-tile at phone width; the tracking is what
-     costs it the room, not the type size */
-  .tsplit{gap:9px}
-  .tsplit > div + div{padding-left:9px}
-  .tsplit .ph{letter-spacing:.06em}
+  /* the phase columns shrink before the labels do */
+  .sum-row{grid-template-columns:1fr 74px 74px;gap:8px;padding:10px 13px}
+  .sum-row.hd{padding:9px 13px 4px}
+  .sum-row.hd span{letter-spacing:.06em}
+  .sum-row em{font-size:21px}
   /* wrapped onto its own line, the rule above it means nothing */
   .pill-sep{display:none}
 }
@@ -831,7 +839,6 @@ table.dt th.sticky{width:1%}
   .tiles{grid-template-columns:repeat(4,1fr);gap:12px}
   /* a two-up row stays two-up instead of shrinking into a quarter of the width */
   .tiles.two{grid-template-columns:repeat(2,1fr)}
-  .tsplit b{font-size:26px}
   .hero{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:14px;align-items:stretch}
   .hero .tiles{grid-template-columns:repeat(2,1fr)}
   .hero .gauge-card{display:flex;flex-direction:column;justify-content:center}
@@ -4921,41 +4928,25 @@ function render(db, state = {}) {
     </div>
   </div>
 
-  ${/* Two tiles, not three or four: side by side they still read on a phone,
-       and each says the headline figure with the rest of its story underneath.
-       The counts the pills already carry do not need a tile of their own. */''}
-  ${tab === 'trades' ? `
-    <div class="tiles two" style="margin-top:8px">
-      <div class="tile"><div class="k">Trades</div><div class="v">${tradeRows.length}</div>
-        <div class="m">${pieces} ${mgr ? 'received' : 'players + picks'}</div></div>
-      <div class="tile ${open.length ? 'gold' : 'accent'}"><div class="k">Conditional</div>
-        <div class="v">${withCond.length}</div>
-        <div class="m">${open.length ? `${open.length} still open` : 'all settled'}</div></div>
-    </div>` : `
-    <div class="tiles two" style="margin-top:8px">
-      ${/* each tile splits the way the list below it does, so the tiles answer
-           "how much of this happened before the season, and how much during" --
-           rather than setting waivers against FAAB, which are not opposites */''}
-      <div class="tile">
-        <div class="k">Waivers</div>
-        <div class="tsplit">
-          ${PHASES.map(([key, title]) => `<div>
-            <span class="ph">${title}</span>
-            <b>${claims.filter((w) => db.faabPhase(w.date) === key).length}</b>
-            <i>${money(spent(key))}</i>
-          </div>`).join('')}
-        </div>
-      </div>
-      <div class="tile accent">
-        <div class="k">Free agents</div>
-        <div class="tsplit">
-          ${PHASES.map(([key, title]) => `<div>
-            <span class="ph">${title}</span>
-            <b>${fa.filter((w) => db.faabPhase(w.date) === key).length}</b>
-          </div>`).join('')}
-        </div>
-      </div>
-    </div>`}
+  ${/* One matrix, not two tiles. The phases were printed twice, once per tile,
+       which is the tell that this is a table: say them once across the top and
+       let each row answer them. Counts lead, money annotates the row where it
+       means something, and the whole thing costs one card instead of two. */''}
+  <div class="card sum">
+    <div class="sum-row hd"><span></span>${PHASES.map(([, t]) => `<span>${t}</span>`).join('')}</div>
+    ${(tab === 'trades' ? [
+      { label: 'Trades', cells: PHASES.map(([k]) => ({ n: inPhase(tradeRows, k).length })) },
+      { label: 'Conditional', cells: PHASES.map(([k]) => ({ n: inPhase(withCond, k).length })) },
+    ] : [
+      { label: 'Waivers', cells: PHASES.map(([k]) => ({
+        n: claims.filter((w) => db.faabPhase(w.date) === k).length, sub: money(spent(k)) })) },
+      { label: 'Free agents', cells: PHASES.map(([k]) => ({ n: fa.filter((w) => db.faabPhase(w.date) === k).length })) },
+    ]).map((r) => `<div class="sum-row">
+      <b>${r.label}</b>
+      ${r.cells.map((c) => `<div><em${c.n ? '' : ' class="none"'}>${c.n}</em>${
+        c.sub ? `<i>${c.sub}</i>` : ''}</div>`).join('')}
+    </div>`).join('')}
+  </div>
 
   ${list}
   `;
