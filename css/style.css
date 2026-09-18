@@ -107,11 +107,41 @@ table{border-collapse:collapse; width:100%}
 /* Sits inside a page now, not the chrome -- and the select is already a pill,
    so it does not need a second one wrapped around it and the label. */
 .season-pick{display:flex; align-items:center; gap:8px; flex:none}
-.season-pick span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+/* the caption beside the control -- not every span inside it, which caught the
+   button's own value and shouted it in 10px caps */
+.season-pick > span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
 .season-pick select{
   background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
   padding:3px 8px; font-family:var(--f-display); font-weight:700; font-size:14px; letter-spacing:.03em;
 }
+/* the real control, kept for its value and its change event and nothing else */
+.pick{position:relative;display:inline-flex}
+.pick-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;padding:0;border:0}
+.pick-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:999px;
+  padding:3px 9px;font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.03em;
+  color:var(--ink);cursor:pointer;
+}
+.pick-btn:hover{border-color:var(--surface-3)}
+.pick-caret{width:13px;height:13px;color:var(--ink-3);transform:rotate(90deg);flex:none}
+.pick-btn[aria-expanded="true"] .pick-caret{transform:rotate(-90deg)}
+/* anchored under the button, always -- which is the whole point of not using a
+   native select, whose popup the OS parks over the control */
+.pick-menu{
+  position:absolute;top:100%;margin-top:6px;right:0;z-index:60;min-width:100%;
+  max-height:320px;overflow-y:auto;
+  display:flex;flex-direction:column;padding:5px;gap:2px;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,.45);
+}
+.pick-menu[hidden]{display:none}
+.pick-menu button{
+  text-align:left;white-space:nowrap;padding:7px 11px;border-radius:7px;
+  font-size:13px;color:var(--ink-2);cursor:pointer;
+}
+.pick-menu button:hover{background:var(--line);color:var(--ink)}
+.pick-menu button[aria-selected="true"]{color:var(--heat);font-weight:700}
 
 /* A page that owns a season control puts it on a header line with the title. */
 .view-hd{display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap}

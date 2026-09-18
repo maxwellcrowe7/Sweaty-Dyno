@@ -171,12 +171,46 @@ export function openModal({ title, body, confirm = 'Save', danger = false, extra
 /** The season control. Rendered BY the season-scoped views rather than by the
     chrome, so a page never advertises a year it does not use -- and it writes to
     the one shared db.season, so those pages agree with each other. */
-export const seasonPicker = (db, label = 'Season') => `<div class="season-pick">
-  <span>${esc(label)}</span>
-  <select data-season aria-label="Season">
-    ${db.seasons.map((s) => `<option value="${s}" ${s === db.season ? 'selected' : ''}>${s}</option>`).join('')}
-  </select>
+/**
+ * A dropdown that actually drops DOWN.
+ *
+ * A native <select> hands its popup to the OS, which lines the menu up with the
+ * CHOSEN row -- so picking a year near the end of the list opens the menu over
+ * the top of the control, which is what made these hard to read. This renders
+ * our own menu anchored below the button, and keeps the real <select> in the
+ * DOM (visually hidden) as the value holder: choosing an option writes to it and
+ * fires a normal `change`, so every listener already watching for one is
+ * untouched.
+ *
+ * `attrs` goes on the select, so `data-season` / `data-mgr` keep working.
+ */
+export const picker = ({ label, attrs = '', options, value }) => {
+  const now = options.find((o) => String(o.value) === String(value)) || options[0];
+  return `<div class="season-pick">
+  ${label ? `<span>${esc(label)}</span>` : ''}
+  <div class="pick" data-pick>
+    <select class="pick-native" tabindex="-1" aria-hidden="true" ${attrs}>
+      ${options.map((o) => `<option value="${esc(String(o.value))}"${
+        String(o.value) === String(value) ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}
+    </select>
+    <button type="button" class="pick-btn" data-pick-btn aria-haspopup="listbox" aria-expanded="false"
+      ${label ? `aria-label="${esc(label)}"` : ''}>
+      <span data-pick-text>${esc(now ? now.label : '')}</span>${icon('chev', 'pick-caret')}
+    </button>
+    <div class="pick-menu" data-pick-menu role="listbox" hidden>
+      ${options.map((o) => `<button type="button" role="option" data-pick-val="${esc(String(o.value))}"
+        aria-selected="${String(o.value) === String(value)}">${esc(o.label)}</button>`).join('')}
+    </div>
+  </div>
 </div>`;
+};
+
+export const seasonPicker = (db, label = 'Season') => picker({
+  label,
+  attrs: 'data-season aria-label="Season"',
+  value: db.season,
+  options: db.seasons.map((s) => ({ value: s, label: String(s) })),
+});
 
 /* Inline formatting lives in the rule text as markers, not as HTML. Three
    reasons: the word-level diff below stays meaningful (bolding a word changes

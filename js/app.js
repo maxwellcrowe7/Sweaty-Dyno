@@ -102,6 +102,39 @@ function shell() {
     const sel = e.target.closest('[data-season]');
     if (sel) db.season = Number(sel.value);
   });
+
+  /* Our own dropdowns, wired once by delegation. They exist because a native
+     <select> lets the OS put its popup wherever it likes -- usually over the
+     control -- and these sit at the top of a page where that reads badly. */
+  const shutPickers = (except = null) => {
+    document.querySelectorAll('[data-pick]').forEach((p) => {
+      if (p === except) return;
+      p.querySelector('[data-pick-menu]').hidden = true;
+      p.querySelector('[data-pick-btn]')?.setAttribute('aria-expanded', 'false');
+    });
+  };
+  document.body.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-pick-btn]');
+    const opt = e.target.closest('[data-pick-val]');
+    shutPickers(btn || opt ? e.target.closest('[data-pick]') : null);
+    if (btn) {
+      const menu = btn.closest('[data-pick]').querySelector('[data-pick-menu]');
+      menu.hidden = !menu.hidden;
+      btn.setAttribute('aria-expanded', String(!menu.hidden));
+      return;
+    }
+    if (!opt) return;
+    // write through to the real control, so anything listening for `change`
+    // never learns this was not a select
+    const pick = opt.closest('[data-pick]');
+    const sel = pick.querySelector('.pick-native');
+    pick.querySelector('[data-pick-menu]').hidden = true;
+    pick.querySelector('[data-pick-btn]').setAttribute('aria-expanded', 'false');
+    if (sel.value === opt.dataset.pickVal) return;
+    sel.value = opt.dataset.pickVal;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') shutPickers(); });
 }
 
 const openSheet  = () => { $('#sheet').classList.add('open'); $('#sheetBd').classList.add('open'); };
