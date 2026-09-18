@@ -88,7 +88,7 @@ const moveRow = (db, w) => {
     <div class="wv-out">${w.dropped ? `<i class="wv-mark out">&minus;</i>${man(w.dropped)}` : ''}</div>
     <div class="wv-who"><b>${esc(team?.manager || w.alias || 'Unassigned')}</b>
       <span>&ndash; ${fmtDate(w.date, { year: true })}</span></div>
-    ${fa ? '<span class="chip ghost wv-val">Free agent</span>'
+    ${fa ? '<span class="chip ghost wv-val" title="Free agent">FA</span>'
       : `<div class="val wv-val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab || 0}</div>`}
   </div>`;
 };
