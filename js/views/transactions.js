@@ -202,7 +202,7 @@ export function render(db, state = {}) {
     ]).map((r) => `<div class="sum-row">
       <b>${r.label}</b>
       ${r.cells.map((c) => `<div><em${c.n ? '' : ' class="none"'}>${c.n}</em>${
-        c.sub ? `<i>(${c.sub})</i>` : ''}</div>`).join('')}
+        c.sub ? `<s>/</s><i>${c.sub}</i>` : ''}</div>`).join('')}
     </div>`).join('')}
   </div>
 
