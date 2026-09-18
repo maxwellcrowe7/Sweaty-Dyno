@@ -170,6 +170,7 @@ export function render(db) {
         <button class="btn" data-save-ids>${icon('check')} Save IDs</button>
         <button class="btn primary" data-sync="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Sync ${S} from Sleeper</button>
         <button class="btn" data-tx="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('swap')} Pull ${S} transactions</button>
+        <button class="btn danger" data-tx-clear="${S}">${icon('x')} Clear ${S}</button>
         <button class="btn" data-maxpf="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('chart')} Compute Max PF</button>
       </div>
       <div data-syncout class="s dim" style="font-size:12px;margin-top:12px"></div>
@@ -418,6 +419,33 @@ export function mount(root, db) {
       });
     });
     toast('Season windows saved');
+  });
+
+  /* Start a season over: wipes its transactions and the conditions hanging off
+     them, so a pull can rebuild it from Sleeper alone. */
+  root.querySelector('[data-tx-clear]')?.addEventListener('click', (ev) => {
+    const S = Number(ev.currentTarget.dataset.txClear);
+    const { trades, waivers, conditional } = db.trades(S);
+    if (!trades.length && !waivers.length) return toast(`Nothing stored for ${S}`);
+    openModal({
+      title: `Clear ${S} transactions`,
+      confirm: 'Clear them',
+      danger: true,
+      body: `<p class="s">This deletes <b>${trades.length} trade${trades.length === 1 ? '' : 's'}</b>,
+        <b>${waivers.length} pickup${waivers.length === 1 ? '' : 's'}</b>${
+        conditional.length ? ` and <b>${conditional.length} condition${conditional.length === 1 ? '' : 's'}</b>` : ''}
+        from ${S}, hand-entered ones included.</p>
+        <p class="s dim">Pull ${S} again afterwards and Sleeper rebuilds it.</p>`,
+      onConfirm: async () => {
+        await db.update('trades', (t) => {
+          const mine = (x) => (x.date ? db.seasonOf(x.date) : x.season) === S;
+          t.trades = t.trades.filter((x) => !mine(x));
+          t.waivers = t.waivers.filter((x) => !mine(x));
+          t.conditions = (t.conditions || []).filter((c) => c.season !== S);
+        });
+        toast(`${S} transactions cleared`);
+      },
+    });
   });
 
   root.querySelector('[data-tx]')?.addEventListener('click', async (ev) => {
