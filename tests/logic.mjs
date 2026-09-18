@@ -101,10 +101,11 @@ await db.update('trades', (t) => { t.trades.push({id:'2026-01',season:2026,date:
 eq('trade added', db.trades(2026).trades.length, 1);
 
 print('\n— conditional status logic —');
-const c = db.get('trades').conditionalTrades[0];
-eq('met stays met', db.conditionalStatus(c).key, 'met');
-eq('open+future deadline', db.conditionalStatus({status:'open',deadline:'2099-01-01'}).key, 'open');
-eq('open+past deadline expires', db.conditionalStatus({status:'open',deadline:'2020-01-01'}).key, 'expired');
+const c = db.get('trades').conditions[0];
+eq('met stays met', db.conditionStatus(c).key, 'met');
+eq('open+future deadline', db.conditionStatus({status:'open',deadline:'2099-01-01'}).key, 'open');
+// a passed deadline asks for a ruling rather than making one
+eq('open+past deadline needs a decision', db.conditionStatus({status:'open',deadline:'2020-01-01'}).key, 'due');
 
 print('\n— optimal lineup (Max PF) —');
 const SL = await import('../js/sleeper.js');

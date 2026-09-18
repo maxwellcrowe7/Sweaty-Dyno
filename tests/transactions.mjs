@@ -149,4 +149,53 @@ eq('his one trade is counted once', (mine.match(/<em>1<\/em>/g) || []).length >=
 const fa = V.render(db, { tradeTab: 'waivers', tradeKind: 'fa' });
 eq('free agents only means free agents only', [has(fa, 'Free agent'), has(fa, '$10')], [true, false]);
 
+/* ---- conditions: tag, lock, break, settle ---- */
+await db.update('trades', (t) => {
+  t.trades = [
+    { id: 'origin', season: 2025, date: '2025-08-01',
+      sides: [{ team: 1, receives: [{ label: 'Star Player' }] },
+              { team: 5, receives: [{ label: '2026 3rd', pick: { season: 2026, round: 3, origin: 1 } }] }] },
+    { id: 'elsewhere', season: 2025, date: '2025-09-01',
+      sides: [{ team: 6, receives: [{ label: 'Frozen Guy' }] },
+              { team: 1, receives: [{ label: 'Someone Else' }] }] },
+    { id: 'settler', season: 2025, date: '2025-12-20',
+      sides: [{ team: 5, receives: [{ label: '2027 2nd', pick: { season: 2027, round: 2, origin: 1 } }] },
+              { team: 1, receives: [] }] },
+  ];
+  t.waivers = [];
+  t.conditions = [{
+    id: 'c1', season: 2025, tradeId: 'origin',
+    text: 'If Star Player finishes top 5, Noah sends a 2027 2nd.',
+    deadline: '2099-12-28', deadlineLabel: 'End of the playoffs', status: 'open',
+    locks: [
+      { kind: 'player', label: 'Frozen Guy', heldBy: 1 },
+      { kind: 'pick', season: 2027, round: 2, origin: 1, heldBy: 1 },
+    ],
+    settledBy: null, settledOn: null, outcome: null,
+  }];
+});
+eq('the condition hangs off its trade', db.conditionFor('origin')?.id, 'c1');
+eq('and an untagged trade has none', db.conditionFor('elsewhere'), null);
+eq('both locks are live while it is open', db.lockedAssets(2025).length, 2);
+
+// the tripwire: Frozen Guy was locked in team 1's hands and went to team 6
+const broke = db.lockBreaks(2025);
+eq('a locked player traded away is caught', broke.length, 1);
+eq('and it names the trade that did it', broke[0].trade.id, 'elsewhere');
+eq('the settling trade is not a violation', broke.some((b) => b.trade?.id === 'settler'), false);
+
+// a deadline that passes asks for a ruling rather than making one
+await db.update('trades', (t) => { t.conditions[0].deadline = '2020-01-01'; });
+eq('a passed deadline needs a decision', db.conditionStatus(db.conditionFor('origin')).key, 'due');
+eq('and the locks hold until it is decided', db.lockedAssets(2025).length, 2);
+
+await db.update('trades', (t) => {
+  Object.assign(t.conditions[0], { status: 'met', settledBy: 'settler' });
+});
+eq('settling releases the locks', db.lockedAssets(2025).length, 0);
+eq('and clears the violations with them', db.lockBreaks(2025).length, 0);
+
+const withCond = V.render(db, { tradeTab: 'trades' });
+eq('the settling trade says so', /Settles the/.test(withCond), true);
+
 print(fail ? `\n${fail} FAILURE(S)` : '\nTransactions passed.');

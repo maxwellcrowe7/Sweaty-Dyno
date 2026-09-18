@@ -7,6 +7,8 @@
 
 import { SUPABASE, isConfigured } from './config.js';
 import { migrate } from './migrate.js';
+
+const today = () => new Date().toISOString().slice(0, 10);
 import { Supabase } from './supabase.js';
 import { unfmt } from './util.js';
 
@@ -809,18 +811,89 @@ class Store {
     const byDate = (a, b) => (b.date || '').localeCompare(a.date || '');
     return {
       trades: t.trades.filter(f).slice().sort(byDate),
-      conditional: t.conditionalTrades.filter(f),
+      conditional: (t.conditions || []).filter(f),
       waivers: t.waivers.filter(f).slice().sort((a, b) => byDate(a, b) || (b.n || 0) - (a.n || 0)),
     };
   }
 
-  /** Conditional status, re-evaluated against today so "expired" is never stale. */
-  conditionalStatus(c) {
+  /**
+   * Where a condition stands, re-read against today so nothing goes stale.
+   * A deadline that passes does NOT decide the outcome by itself -- it moves
+   * the condition to `due`, which asks the commissioner to say what happened.
+   */
+  conditionStatus(c) {
     if (c.status === 'met') return { key: 'met', label: 'Condition met', chip: 'mint' };
-    if (c.status === 'expired') return { key: 'expired', label: 'Expired', chip: 'red' };
-    if (c.deadline && new Date(c.deadline) < new Date())
-      return { key: 'expired', label: 'Deadline passed', chip: 'red' };
+    if (c.status === 'void') return { key: 'void', label: 'Not met', chip: 'red' };
+    if (c.deadline && c.deadline < today())
+      return { key: 'due', label: 'Needs a decision', chip: 'gold' };
     return { key: 'open', label: 'Open', chip: 'gold' };
+  }
+
+  /** Conditions for a season, newest first, with their trade attached. */
+  conditions(season = null) {
+    const t = this.get('trades');
+    const byId = new Map(t.trades.map((x) => [x.id, x]));
+    return (t.conditions || [])
+      .filter((c) => season == null || c.season === season)
+      .map((c) => ({ ...c, trade: byId.get(c.tradeId) || null, settling: byId.get(c.settledBy) || null }))
+      .sort((a, b) => (b.trade?.date || '').localeCompare(a.trade?.date || ''));
+  }
+
+  /** The condition attached to a trade, if any. */
+  conditionFor(tradeId) { return (this.get('trades').conditions || []).find((c) => c.tradeId === tradeId) || null; }
+
+  /**
+   * Every asset frozen by a condition that has not resolved. A lock names the
+   * manager holding it -- "the 2026 3rd is locked" is not enough to tell a
+   * violation from a settlement.
+   */
+  lockedAssets(season = null) {
+    return this.conditions(season)
+      .filter((c) => ['open', 'due'].includes(this.conditionStatus(c).key))
+      .flatMap((c) => (c.locks || []).map((l) => ({ ...l, condition: c })));
+  }
+
+  /** A lock and a traded asset are the same thing when this says so. */
+  sameAsset(lock, asset) {
+    if (lock.kind === 'player') return !asset.pick && lock.label === asset.label;
+    return Boolean(asset.pick) && asset.pick.season === lock.season
+      && asset.pick.round === lock.round && asset.pick.origin === lock.origin;
+  }
+
+  /**
+   * Locked assets that moved anyway. Sleeper will happily let a manager trade
+   * or drop a frozen player, so the app cannot prevent it -- it can only notice,
+   * which is what makes a lock more than a sticky note.
+   */
+  lockBreaks(season = null) {
+    const locks = this.lockedAssets(season);
+    if (!locks.length) return [];
+    const t = this.get('trades');
+    const out = [];
+    for (const lock of locks) {
+      const from = lock.condition.trade?.date || '';
+      // the parties to the original deal. An asset moving between them is the
+      // condition being settled -- often the whole point of the lock -- so only
+      // a move to someone outside that circle counts against it.
+      const parties = new Set((lock.condition.trade?.sides || []).map((x) => x.team));
+      for (const tr of t.trades) {
+        if (tr.id === lock.condition.tradeId || tr.id === lock.condition.settledBy) continue;
+        if ((tr.date || '') < from) continue;
+        for (const side of tr.sides) {
+          for (const raw of side.receives) {
+            const a = typeof raw === 'string' ? { label: raw } : raw;
+            if (this.sameAsset(lock, a) && side.team !== lock.heldBy && !parties.has(side.team))
+              out.push({ lock, trade: tr, how: 'traded' });
+          }
+        }
+      }
+      if (lock.kind !== 'player') continue;
+      for (const w of t.waivers) {
+        if ((w.date || '') < from || w.dropped !== lock.label) continue;
+        if (w.team === lock.heldBy) out.push({ lock, move: w, how: 'dropped' });
+      }
+    }
+    return out;
   }
 
   /* ---------- health checks surfaced in Admin ---------- */

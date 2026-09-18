@@ -38,8 +38,15 @@ const side = (db, s, showFrom, banded, who) => `
     <ul>${s.receives.map((x) => assetRow(db, x, showFrom)).join('')}</ul>
   </div>`;
 
-const tradeCard = (db, t, cond = null) => {
-  const st = cond ? db.conditionalStatus(cond) : null;
+/* A lock, written the way it reads: "Kareem Hunt, held by Max". */
+const lockLabel = (db, l) => (l.kind === 'player' ? l.label
+  : `${l.season} ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'][l.round] || `${l.round}th`}${
+    l.origin && db.team(l.origin) ? ` (${db.team(l.origin).manager})` : ''}`);
+
+const tradeCard = (db, t, cond = null, breaks = []) => {
+  const st = cond ? db.conditionStatus(cond) : null;
+  const mine = breaks.filter((b) => b.lock.condition.id === cond?.id);
+  const settling = cond?.settledBy ? null : db.conditions(null).find((c) => c.settledBy === t.id);
   // Two-team deals are self-describing: what I get is what you gave. Three-way
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
@@ -60,12 +67,26 @@ const tradeCard = (db, t, cond = null) => {
     </div>
     <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom, banded, who)).join('')}</div>
     ${cond ? `<div class="cond">
-      <div class="lbl">Condition</div>${esc(cond.condition)}
+      <div class="lbl">Condition</div>${esc(cond.text)}
+      ${cond.locks?.length ? `<div class="locks">
+        ${cond.locks.map((l) => `<span class="lock-chip">${icon('lock')}${esc(lockLabel(db, l))}
+          <em>${esc(db.team(l.heldBy)?.manager || '?')}</em></span>`).join('')}
+      </div>` : ''}
       <div class="out">
         ${st.key === 'open'
           ? `${icon('clock')} Resolves by ${esc(cond.deadlineLabel || fmtDate(cond.deadline, { year: true }))}`
-          : `${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome || st.label)}`}
-      </div></div>` : ''}
+          : st.key === 'due'
+            ? `${icon('alert')} Deadline passed &mdash; say what happened`
+            : `${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome || st.label)}`}
+        ${cond.settledBy ? ` &middot; settled by the ${esc(fmtDate(
+          db.get('trades').trades.find((x) => x.id === cond.settledBy)?.date, { year: true }))} trade` : ''}
+      </div>
+      ${mine.length ? `<div class="lock-break">${icon('alert')}
+        ${mine.length === 1 ? 'A locked asset moved anyway' : `${mine.length} locked assets moved anyway`}:
+        ${esc(mine.map((b) => lockLabel(db, b.lock)).join(', '))}</div>` : ''}
+    </div>` : ''}
+    ${settling ? `<div class="cond settles">${icon('check')}
+      Settles the ${esc(fmtDate(settling.trade?.date, { year: true }))} condition</div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
       <div class="lbl">Note</div>${esc(t.note)}</div>` : ''}
   </div>`;
@@ -126,8 +147,9 @@ export function render(db, state = {}) {
   const mgr = state.tradeMgr ? Number(state.tradeMgr) : null;
   const S = db.season;
   const { trades, conditional, waivers } = db.trades(S);
-  const condFor = (t) => (t.conditionalId ? conditional.find((c) => c.id === t.conditionalId) : null)
-    || conditional.find((c) => c.settledTradeId === t.id) || null;
+  const condFor = (t) => conditional.find((c) => c.tradeId === t.id) || null;
+  const locked = db.lockedAssets(S);
+  const breaks = db.lockBreaks(S);
 
   // a manager filter narrows WHOSE transactions you see; a trade he was in is
   // still shown whole, because a one-sided trade card would be a lie
@@ -139,7 +161,7 @@ export function render(db, state = {}) {
   const moveRows = waivers.filter(myMove).filter((w) => kind === 'all'
     || (kind === 'fa' ? w.type === 'free_agent' : w.type !== 'free_agent'));
 
-  const open = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
+  const open = conditional.filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key));
   const claims = moveRows.filter((w) => w.type !== 'free_agent');
   const spent = (phase) => claims.filter((w) => db.faabPhase(w.date) === phase)
     .reduce((a, w) => a + (w.faab || 0), 0);
@@ -160,7 +182,7 @@ export function render(db, state = {}) {
   const who = mgr ? ` for ${db.team(mgr)?.manager || `T${mgr}`}` : '';
   const group = (p) => tab === 'trades'
     ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
-       ${p.rows.map((t) => tradeCard(db, t, condFor(t))).join('')}`
+       ${p.rows.map((t) => tradeCard(db, t, condFor(t), breaks)).join('')}`
     : `<div class="section-title">${p.title}
          <span class="sub-n">${money(spent(p.key))} spent</span></div>
        <div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`;
@@ -219,6 +241,25 @@ export function render(db, state = {}) {
     </div>`).join('')}
   </div>
 
+  ${/* Only while something is frozen: a standing list is the thing to check
+       before waving a trade through, and it should vanish when nothing is. */''}
+  ${tab === 'trades' && locked.length ? `
+    <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
+    <div class="card"><div class="card-bd flush"><div class="rows">
+      ${locked.map((l) => {
+        const broke = breaks.find((b) => b.lock === l);
+        return `<div class="row lock-row${broke ? ' broke' : ''}">
+          <span class="lk">${icon('lock')}</span>
+          <div class="grow">
+            <div class="t">${esc(lockLabel(db, l))}</div>
+            <div class="s">held by ${esc(db.team(l.heldBy)?.manager || '?')} &middot; until ${
+              esc(l.condition.deadlineLabel || fmtDate(l.condition.deadline, { year: true }) || 'the condition resolves')}</div>
+          </div>
+          ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
+        </div>`;
+      }).join('')}
+    </div></div></div>` : ''}
+
   ${list}
   `;
 }
@@ -233,46 +274,110 @@ export function mount(root, db, go, setState) {
   root.querySelector('[data-mgr]')?.addEventListener('change', (e) =>
     setState({ tradeMgr: e.target.value }));
 
-  /* The one hand-entered thing on this page: the strings attached to a deal. */
+  /* The one hand-entered thing on this page: the strings attached to a deal --
+     what was promised, what is frozen until it resolves, and which later trade
+     eventually discharged it. Sleeper supplies everything else. */
   root.querySelectorAll('[data-cond-edit]').forEach((b) => b.addEventListener('click', () => {
     const id = b.dataset.condEdit;
-    const { conditional } = db.trades();
-    const c = conditional.find((x) => x.settledTradeId === id || x.id === id) || null;
+    const trade = db.get('trades').trades.find((x) => x.id === id);
+    const c = db.conditionFor(id);
+    const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'];
+
+    // every asset that changed hands in this deal, and who ended up with it
+    const inTrade = trade.sides.flatMap((side) => side.receives.map((raw) => {
+      const a = typeof raw === 'string' ? { label: raw } : raw;
+      return a.pick
+        ? { kind: 'pick', season: a.pick.season, round: a.pick.round, origin: a.pick.origin, heldBy: side.team }
+        : { kind: 'player', label: a.label, heldBy: side.team };
+    })).filter((l) => l.kind === 'player' ? !/FAAB/i.test(l.label) : true);
+
+    const same = (x, y) => x.kind === y.kind && x.heldBy === y.heldBy && (x.kind === 'player'
+      ? x.label === y.label
+      : x.season === y.season && x.round === y.round && x.origin === y.origin);
+    const held = (l) => db.team(l.heldBy)?.manager || `T${l.heldBy}`;
+    const text = (l) => (l.kind === 'player' ? l.label
+      : `${l.season} ${ORD[l.round] || `${l.round}th`}${l.origin && db.team(l.origin) ? ` (${db.team(l.origin).manager})` : ''}`);
+    // anything locked that this trade did not move gets written out longhand
+    const extra = (c?.locks || []).filter((l) => !inTrade.some((x) => same(x, l)))
+      .map((l) => `${text(l)} @ ${held(l)}`).join('\n');
+
+    // a candidate settlement: a later trade involving anyone from this one
+    const people = new Set(trade.sides.map((x) => x.team));
+    const after = db.get('trades').trades
+      .filter((x) => x.id !== id && (x.date || '') >= (trade.date || '')
+        && x.sides.some((sd) => people.has(sd.team)))
+      .sort((x, y) => (y.date || '').localeCompare(x.date || ''));
+
     openModal({
       title: 'Condition',
       confirm: 'Save',
       closeButtons: false,
       body: `
         <div class="field"><label>If&hellip; then&hellip;</label>
-          <textarea name="condition" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.condition || '')}</textarea></div>
+          <textarea name="text" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.text || '')}</textarea></div>
         <div class="fgrid">
           <div class="field"><label>Deadline</label><input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
           <div class="field"><label>Deadline label</label><input name="deadlineLabel" value="${esc(c?.deadlineLabel || '')}" placeholder="End of the playoffs"></div>
         </div>
+
+        <div class="section-title">Locked until it resolves</div>
+        <div class="lock-pick">
+          ${inTrade.map((l, i) => `<label class="lk-opt">
+            <input type="checkbox" name="lk${i}" ${(c?.locks || []).some((x) => same(x, l)) ? 'checked' : ''}>
+            <span>${esc(text(l))}</span><em>${esc(held(l))}</em></label>`).join('')}
+        </div>
+        <div class="field"><label>Other assets &mdash; one per line, <span class="dimmer">asset @ manager</span></label>
+          <textarea name="extra" placeholder="Kareem Hunt @ Max&#10;2026 3rd (Alex) @ Max">${esc(extra)}</textarea></div>
+
+        <div class="section-title">Outcome</div>
         <div class="fgrid">
           <div class="field"><label>Status</label><select name="status">
-            ${['open', 'met', 'expired'].map((s) =>
-              `<option value="${s}" ${(c?.status || 'open') === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-          <div class="field"><label>Outcome</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>
-        </div>`,
+            ${[['open', 'Open'], ['met', 'Condition met'], ['void', 'Not met']].map(([v, t]) =>
+              `<option value="${v}" ${(c?.status || 'open') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+          <div class="field"><label>Settled by</label><select name="settledBy">
+            <option value="">&mdash;</option>
+            ${after.map((x) => `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
+              esc(fmtDate(x.date, { year: true }))} &middot; ${
+              esc(x.sides.map((sd) => db.team(sd.team)?.manager || '?').join(' / '))}</option>`).join('')}</select></div>
+        </div>
+        <div class="field"><label>What happened</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>`,
       onConfirm: async (d) => {
-        const text = d.condition.trim();
+        const body = d.text.trim();
+        // parse "2026 3rd (Alex) @ Max" and "Kareem Hunt @ Max"
+        const byName = (n) => db.teams().find((t) => t.manager.toLowerCase() === String(n).trim().toLowerCase())?.number ?? null;
+        const parsed = [];
+        for (const line of String(d.extra || '').split('\n')) {
+          const [asset, owner] = line.split('@');
+          if (!asset?.trim() || !owner?.trim()) continue;
+          const heldBy = byName(owner);
+          if (!heldBy) { toast(`No manager called "${owner.trim()}"`); return false; }
+          const m = asset.trim().match(/^(\d{4})\s+(\d)(?:st|nd|rd|th)(?:\s*\(([^)]+)\))?$/i);
+          parsed.push(m
+            ? { kind: 'pick', season: Number(m[1]), round: Number(m[2]), origin: m[3] ? byName(m[3]) : null, heldBy }
+            : { kind: 'player', label: asset.trim(), heldBy });
+        }
+        const locks = [...inTrade.filter((l, i) => d[`lk${i}`]), ...parsed];
+
         await db.update('trades', (t) => {
-          const at = t.conditionalTrades.findIndex((x) => x.settledTradeId === id || x.id === id);
-          if (!text) { if (at > -1) t.conditionalTrades.splice(at, 1); return; }
-          const trade = t.trades.find((x) => x.id === id);
+          t.conditions ||= [];
+          const at = t.conditions.findIndex((x) => x.id === c?.id);
+          if (!body) { if (at > -1) t.conditions.splice(at, 1); return; }
           const rec = {
-            id: at > -1 ? t.conditionalTrades[at].id : `cond-${id}`,
-            season: trade?.season ?? null, date: trade?.date ?? null,
-            status: d.status, sides: trade?.sides || [],
-            condition: text, deadline: d.deadline || null,
+            id: c?.id || `cond-${id}`,
+            season: trade.season ?? db.seasonOf(trade.date),
+            tradeId: id,
+            text: body,
+            deadline: d.deadline || null,
             deadlineLabel: d.deadlineLabel.trim() || null,
-            resolvedDate: d.status === 'open' ? null : (trade?.date ?? null),
-            outcome: d.outcome.trim() || null, settledTradeId: id,
+            status: d.status,
+            locks,
+            settledBy: d.settledBy || null,
+            settledOn: d.status === 'open' ? null : (db.get('trades').trades.find((x) => x.id === d.settledBy)?.date || null),
+            outcome: d.outcome.trim() || null,
           };
-          if (at > -1) t.conditionalTrades[at] = rec; else t.conditionalTrades.push(rec);
+          if (at > -1) t.conditions[at] = rec; else t.conditions.push(rec);
         });
-        toast(text ? 'Condition saved' : 'Condition removed');
+        toast(body ? 'Condition saved' : 'Condition removed');
       },
     });
   }));

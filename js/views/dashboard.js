@@ -47,8 +47,10 @@ export function render(db) {
   const emp = db.empire();
   const led = db.ledger();
   const owing = led.filter((t) => t.owesNow > 0).sort((a, b) => b.owesNow - a.owesNow);
-  const { trades, conditional } = db.trades();
-  const openCond = conditional.filter((c) => db.conditionalStatus(c).key === 'open');
+  const { trades } = db.trades();
+  // anything still hanging over the league: open, or past its deadline and
+  // waiting on a decision
+  const openCond = db.conditions().filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key));
   const mg = db.minigames(S);
   const nextGame = mg.games.find((g) => g.status !== 'final');
   const spend = db.minigameSpend(S);
@@ -161,11 +163,11 @@ export function render(db) {
   ${openCond.length ? `
   <div class="section-title">Open conditions</div>
   ${openCond.map((c) => {
-    const s = db.conditionalStatus(c);
+    const s = db.conditionStatus(c);
     return `<div class="trade">
       <div class="trade-hd"><span class="chip ${s.chip}">${s.label}</span>
-        <span class="d">${fmtDate(c.date, { year: true })}</span></div>
-      <div class="cond"><div class="lbl">Condition</div>${esc(c.condition)}
+        <span class="d">${fmtDate(c.trade?.date, { year: true })}</span></div>
+      <div class="cond"><div class="lbl">Condition</div>${esc(c.text)}
         ${c.deadlineLabel ? `<div class="out">Resolves by ${esc(c.deadlineLabel)}</div>` : ''}</div>
     </div>`;
   }).join('')}` : ''}

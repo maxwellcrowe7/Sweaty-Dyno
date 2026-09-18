@@ -93,5 +93,26 @@ export function migrate(data) {
   // weekly scores gained a ceiling alongside actual points
   for (const w of d.stats?.weekly || []) if (!('maxPoints' in w)) w.maxPoints = null;
 
+  /* A conditional trade used to be its own copy of a trade, which meant the
+     same deal existed twice once Sleeper started supplying trades. It is now a
+     CONDITION that points at the trade it hangs off, holds the assets it
+     freezes, and names the trade that eventually discharges it. */
+  if (d.trades && !d.trades.conditions) {
+    d.trades.conditions = (d.trades.conditionalTrades || []).map((c) => ({
+      id: c.id,
+      season: c.season,
+      tradeId: c.settledTradeId || null,
+      text: c.condition || '',
+      deadline: c.deadline || null,
+      deadlineLabel: c.deadlineLabel || null,
+      status: c.status === 'met' ? 'met' : c.status === 'expired' ? 'void' : 'open',
+      locks: [],
+      settledBy: null,
+      settledOn: c.resolvedDate || null,
+      outcome: c.outcome || null,
+    }));
+  }
+  if (d.trades) delete d.trades.conditionalTrades;
+
   return d;
 }

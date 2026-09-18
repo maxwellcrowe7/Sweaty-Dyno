@@ -1,5 +1,5 @@
 {
-  "_README": "A trade is a list of sides; each side is what that team RECEIVES. team:null with an alias means the participant has not been mapped to a team number yet (see managers.json > unresolvedAliases). Conditional trades carry status: open | met | expired.",
+  "_README": "A trade is a list of sides; each side is what that team RECEIVES. A CONDITION hangs off a trade: it carries the strings attached, the assets it freezes (locks), and the later trade that discharges it. Sleeper knows nothing about conditions, so they are the one hand-entered thing here.",
   "trades": [
     {
       "id": "2025-01",
@@ -127,35 +127,6 @@
       "conditionalId": "cond-2025-01"
     }
   ],
-  "conditionalTrades": [
-    {
-      "id": "cond-2025-01",
-      "season": 2025,
-      "date": "2025-12-07",
-      "status": "met",
-      "sides": [
-        {
-          "team": 6,
-          "receives": [
-            "Kareem Hunt",
-            "Bam Knight"
-          ]
-        },
-        {
-          "team": 5,
-          "receives": [
-            "2026 3rd (maxcrowe)"
-          ]
-        }
-      ],
-      "condition": "If Max reaches the finals, the 2026 3rd (maxcrowe) will turn into 2026 3rd (NoahG621).",
-      "deadline": "2025-12-28",
-      "deadlineLabel": "End of the 2025 playoffs",
-      "resolvedDate": "2025-12-28",
-      "outcome": "Condition met — Max reached the finals, so the pick converted to the 2026 3rd (NoahG621).",
-      "settledTradeId": "2025-06"
-    }
-  ],
   "waivers": [
     {
       "n": 1,
@@ -260,6 +231,21 @@
       "team": 2,
       "player": "Chris Rodriguez",
       "faab": 9
+    }
+  ],
+  "conditions": [
+    {
+      "id": "cond-2025-01",
+      "season": 2025,
+      "tradeId": "2025-06",
+      "text": "If Max reaches the finals, the 2026 3rd (maxcrowe) will turn into 2026 3rd (NoahG621).",
+      "deadline": "2025-12-28",
+      "deadlineLabel": "End of the 2025 playoffs",
+      "status": "met",
+      "locks": [],
+      "settledBy": null,
+      "settledOn": "2025-12-28",
+      "outcome": "Condition met \u2014 Max reached the finals, so the pick converted to the 2026 3rd (NoahG621)."
     }
   ]
 }
