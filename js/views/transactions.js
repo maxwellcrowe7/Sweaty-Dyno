@@ -1,4 +1,4 @@
-import { esc, icon, teamTag, fmtDate, empty, posChip, seasonPicker, picker, openModal, toast, money } from '../util.js';
+import { esc, icon, teamTag, fmtDate, empty, posChip, seasonPicker, openModal, toast, money } from '../util.js';
 
 /* Everything on this page comes from Sleeper. The only thing a commissioner
    adds by hand is the condition on a conditional trade, because Sleeper has no
@@ -106,14 +106,14 @@ const KINDS = {
   waivers: [['all', 'All'], ['claims', 'Claims'], ['fa', 'Free agents']],
 };
 
-const mgrPicker = (db, S, sel) => picker({
-  label: 'Manager',
-  attrs: 'data-mgr aria-label="Manager"',
-  value: sel,
-  options: [{ value: '', label: 'All' }, ...db.teams(S).slice()
-    .sort((a, b) => a.manager.localeCompare(b.manager))
-    .map((t) => ({ value: t.number, label: t.manager }))],
-});
+const mgrPicker = (db, S, sel) => `<div class="season-pick">
+  <span>Manager</span>
+  <select data-mgr aria-label="Manager">
+    <option value="">All</option>
+    ${db.teams(S).slice().sort((a, b) => a.manager.localeCompare(b.manager)).map((t) =>
+      `<option value="${t.number}" ${String(t.number) === String(sel) ? 'selected' : ''}>${esc(t.manager)}</option>`).join('')}
+  </select>
+</div>`;
 
 export function render(db, state = {}) {
   const tab = state.tradeTab === 'waivers' ? 'waivers' : 'trades';
