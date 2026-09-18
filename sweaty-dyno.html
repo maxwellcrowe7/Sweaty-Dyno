@@ -615,9 +615,10 @@ table.dt th.sticky{width:1%}
 }
 .wv-in{grid-column:1}
 .wv-out{grid-column:1}
-.wv-who{grid-column:1;min-width:0;display:flex;align-items:baseline;gap:7px}
-.wv-who b{font-size:12.5px;color:var(--ink-2)}
-.wv-who span{font-size:11.5px;color:var(--ink-3)}
+.wv-who{grid-column:1;min-width:0;display:flex;align-items:baseline;gap:5px;font-size:13.5px}
+.wv-who b{font-weight:600;color:var(--ink-2);white-space:nowrap}
+/* the date wears the same grey as a club, so every line is one row of phrases */
+.wv-who span{font-size:12px;color:var(--ink-3);white-space:nowrap}
 /* baseline, not centre: the club is smaller than the name, and centring it in
    the row floated it above the name's baseline. The chip keeps its own
    centring, since it is a box rather than a word. */
@@ -636,12 +637,12 @@ table.dt th.sticky{width:1%}
 @media (min-width:760px){
   /* in and out lead, because they are what the line is about; who and when sit
      behind them, and the money stays on the right rail */
-  .row.wv{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 128px 84px;gap:12px}
+  /* every card is its own grid, so the last two tracks are fixed -- otherwise
+     each row would size them to its own content and nothing would line up */
+  .row.wv{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 172px 104px;gap:14px}
   .wv-in{grid-column:1}
   .wv-out{grid-column:2}
-  .wv-who{grid-column:3;display:block}
-  .wv-who b{display:block}
-  .wv-who span{display:block;margin-top:2px}
+  .wv-who{grid-column:3}
   .wv-val{grid-column:4;justify-self:end}
 }
 
@@ -4776,10 +4777,8 @@ const moveRow = (db, w) => {
   return `<div class="row wv">
     <div class="wv-in"><i class="wv-mark in">+</i>${man(w.player)}</div>
     <div class="wv-out">${w.dropped ? `<i class="wv-mark out">&minus;</i>${man(w.dropped)}` : ''}</div>
-    <div class="wv-who">
-      <b>${esc(team?.manager || w.alias || 'Unassigned')}</b>
-      <span>${fmtDate(w.date, { year: true })}</span>
-    </div>
+    <div class="wv-who"><b>${esc(team?.manager || w.alias || 'Unassigned')}</b>
+      <span>&ndash; ${fmtDate(w.date, { year: true })}</span></div>
     ${fa ? '<span class="chip ghost wv-val">Free agent</span>'
       : `<div class="val wv-val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab || 0}</div>`}
   </div>`;

@@ -86,10 +86,8 @@ const moveRow = (db, w) => {
   return `<div class="row wv">
     <div class="wv-in"><i class="wv-mark in">+</i>${man(w.player)}</div>
     <div class="wv-out">${w.dropped ? `<i class="wv-mark out">&minus;</i>${man(w.dropped)}` : ''}</div>
-    <div class="wv-who">
-      <b>${esc(team?.manager || w.alias || 'Unassigned')}</b>
-      <span>${fmtDate(w.date, { year: true })}</span>
-    </div>
+    <div class="wv-who"><b>${esc(team?.manager || w.alias || 'Unassigned')}</b>
+      <span>&ndash; ${fmtDate(w.date, { year: true })}</span></div>
     ${fa ? '<span class="chip ghost wv-val">Free agent</span>'
       : `<div class="val wv-val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab || 0}</div>`}
   </div>`;
