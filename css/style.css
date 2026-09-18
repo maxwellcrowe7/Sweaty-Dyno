@@ -587,7 +587,14 @@ table.dt th.sticky{width:1%}
 /* a second, quieter row of pills for filtering inside a tab */
 /* A waiver line: manager, who came in, who went out, what it cost. In and out
    are the same size and shape so the drop is read, not skimmed past. */
-.row.wv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:center}
+/* Each pickup is its own card rather than a row in a table: they are separate
+   events, and a shared grid made a week of them read as one block. */
+.wv-list{display:flex;flex-direction:column;gap:7px}
+.row.wv{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:center;
+  border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+  padding:11px 14px;
+}
 .wv-in{grid-column:1}
 .wv-out{grid-column:1}
 .wv-who{grid-column:1;min-width:0;display:flex;align-items:baseline;gap:7px}
@@ -603,7 +610,7 @@ table.dt th.sticky{width:1%}
 .wv-out .pos-chip{opacity:.62}
 /* Same size as the name, so the two read as one phrase; the grey alone is
    enough to keep the player ahead of his club. */
-.nfl{font-size:inherit;font-weight:500;letter-spacing:0;color:var(--ink-3);flex:none;margin-left:-2px}
+.nfl{font-size:12px;font-weight:500;letter-spacing:0;color:var(--ink-3);flex:none;margin-left:-2px}
 .wv-mark{font-style:normal;font-weight:700;font-size:13px;width:11px;flex:none;text-align:center}
 .wv-mark.in{color:var(--mint)}
 .wv-mark.out{color:var(--red)}

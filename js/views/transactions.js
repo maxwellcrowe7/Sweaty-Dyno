@@ -153,8 +153,7 @@ export function render(db, state = {}) {
        ${p.rows.map((t) => tradeCard(db, t, condFor(t))).join('')}`
     : `<div class="section-title">${p.title}
          <span class="sub-n">${money(spent(p.key))} of ${money(pot)}</span></div>
-       <div class="card"><div class="card-bd flush"><div class="rows">
-         ${p.rows.map((w) => moveRow(db, w)).join('')}</div></div></div>`;
+       <div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`;
 
   const list = phases.length ? phases.map(group).join('')
     : (tab === 'trades'
