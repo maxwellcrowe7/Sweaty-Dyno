@@ -225,7 +225,15 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 /* The +/- marker is a real element with two bars, inserted only on titles that
    actually toggle — so it is never an affordance that does nothing. The vertical
    bar collapses into the horizontal one, turning the plus into a minus. */
-.section-title[aria-expanded]{cursor:pointer;user-select:none}
+/* A heading you click is a control, so it reads a step larger than a plain
+   label -- the tighter letterspacing keeps the extra size from spreading the
+   words out. Only the ones app.js actually wired are affected: a title inside a
+   card is a label and stays as it was. */
+.section-title[aria-expanded]{
+  cursor:pointer;user-select:none;
+  font-size:13.5px;letter-spacing:.16em;margin-top:28px;
+}
+.section-title[aria-expanded] .sec-mark{width:14px;height:14px}
 .section-title[aria-expanded]:hover{color:var(--ink-2)}
 .section-title[aria-expanded]:focus-visible{outline:2px solid var(--heat);outline-offset:3px;border-radius:4px}
 .section-title[aria-expanded="false"]{color:var(--ink-2)}
