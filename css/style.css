@@ -589,7 +589,7 @@ table.dt th.sticky{width:1%}
    are the same size and shape so the drop is read, not skimmed past. */
 /* Each pickup is its own card rather than a row in a table: they are separate
    events, and a shared grid made a week of them read as one block. */
-.wv-list{display:flex;flex-direction:column;gap:7px}
+.wv-list{display:flex;flex-direction:column;gap:10px}
 .row.wv{
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:center;
   border:1px solid var(--line);border-radius:var(--r);background:var(--surface);

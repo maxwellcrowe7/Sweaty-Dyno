@@ -138,7 +138,6 @@ export function render(db, state = {}) {
   const claims = moveRows.filter((w) => w.type !== 'free_agent');
   const spent = (phase) => claims.filter((w) => db.faabPhase(w.date) === phase)
     .reduce((a, w) => a + (w.faab || 0), 0);
-  const pot = (mgr ? 1 : db.teams(S).length) * 100;
 
   const inPhase = (rows, phase) => rows.filter((x) =>
     (db.faabPhase(x.date) === 'pre') === (phase === 'pre'));
@@ -152,7 +151,7 @@ export function render(db, state = {}) {
     ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
        ${p.rows.map((t) => tradeCard(db, t, condFor(t))).join('')}`
     : `<div class="section-title">${p.title}
-         <span class="sub-n">${money(spent(p.key))} of ${money(pot)}</span></div>
+         <span class="sub-n">${money(spent(p.key))} spent</span></div>
        <div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`;
 
   const list = phases.length ? phases.map(group).join('')

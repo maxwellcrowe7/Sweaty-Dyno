@@ -607,7 +607,7 @@ table.dt th.sticky{width:1%}
    are the same size and shape so the drop is read, not skimmed past. */
 /* Each pickup is its own card rather than a row in a table: they are separate
    events, and a shared grid made a week of them read as one block. */
-.wv-list{display:flex;flex-direction:column;gap:7px}
+.wv-list{display:flex;flex-direction:column;gap:10px}
 .row.wv{
   display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:center;
   border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
@@ -4838,7 +4838,6 @@ function render(db, state = {}) {
   const claims = moveRows.filter((w) => w.type !== 'free_agent');
   const spent = (phase) => claims.filter((w) => db.faabPhase(w.date) === phase)
     .reduce((a, w) => a + (w.faab || 0), 0);
-  const pot = (mgr ? 1 : db.teams(S).length) * 100;
 
   const inPhase = (rows, phase) => rows.filter((x) =>
     (db.faabPhase(x.date) === 'pre') === (phase === 'pre'));
@@ -4852,7 +4851,7 @@ function render(db, state = {}) {
     ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
        ${p.rows.map((t) => tradeCard(db, t, condFor(t))).join('')}`
     : `<div class="section-title">${p.title}
-         <span class="sub-n">${money(spent(p.key))} of ${money(pot)}</span></div>
+         <span class="sub-n">${money(spent(p.key))} spent</span></div>
        <div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`;
 
   const list = phases.length ? phases.map(group).join('')
