@@ -317,11 +317,14 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
    each said once. The counts carry the weight; everything that labels them is
    deliberately quieter. */
 .sum{margin-top:8px}
-.sum-row{display:grid;grid-template-columns:minmax(96px,168px) 1fr 1fr;align-items:center;
+.sum-row{display:grid;grid-template-columns:minmax(96px,160px) 1fr 1fr 1fr;align-items:center;
   gap:12px;padding:11px 16px;border-top:1px solid var(--line-soft)}
 /* the phases share what is left rather than hugging the right edge, so a wide
    card has no dead middle */
 .sum-row > div,.sum-row.hd span + span{text-align:center}
+/* the total is the sum of the two beside it, so a rule separates it from them */
+.sum-row .tot{border-left:1px solid var(--line-soft);padding-left:12px}
+.sum-row.hd .tot{color:var(--ink-2)}
 .sum-row.hd{padding:9px 16px 5px;border-top:0}
 .sum-row.hd span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
 .sum-row b{font-family:var(--f-display);font-size:18px;font-weight:700;
@@ -704,11 +707,14 @@ table.dt th.sticky{width:1%}
 .pills.sub button{font-size:11.5px;padding:4px 10px}
 @media (max-width:620px){
   /* the phase columns shrink before the labels do */
-  .sum-row{grid-template-columns:1fr 92px 92px;gap:8px;padding:10px 13px}
+  /* the label takes only what it needs and never wraps -- a two-line "Free
+     Agents" made its row taller than the one above it */
+  .sum-row{grid-template-columns:auto 1fr 1fr 1fr;gap:6px;padding:10px 11px}
+  .sum-row b{white-space:nowrap;font-size:15px}
+  .sum-row .tot{padding-left:6px}
+  .sum-row em,.sum-row i{font-size:19px}
+  .sum-row s{font-size:15px}
   .sum-row > div{gap:5px}
-  .sum-row b{font-size:16px}
-  .sum-row em,.sum-row i{font-size:21px}
-  .sum-row s{font-size:17px}
   .sum-row.hd{padding:9px 13px 4px}
   .sum-row.hd span{letter-spacing:.06em}
   /* wrapped onto its own line, the rule above it means nothing */

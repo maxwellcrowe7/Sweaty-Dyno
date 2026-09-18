@@ -142,7 +142,10 @@ eq('every trade is listed', [has(all, 'P1'), has(all, 'P3')], [true, true]);
 const mine = V.render(db, { tradeTab: 'trades', tradeMgr: '6' });
 eq('a manager filter drops the deals he was not in', has(mine, 'P1'), false);
 eq('but keeps the whole card of the one he was', [has(mine, 'P3'), has(mine, 'P4')], [true, true]);
-eq('and the tab counts follow him', has(mine, 'Trades 1'), true);
+// the counts moved off the pills and into the summary, where they are split by
+// phase -- one trade, and it was in-season
+eq('and the summary counts follow him', /In-season<\/span>/.test(mine), true);
+eq('his one trade is counted once', (mine.match(/<em>1<\/em>/g) || []).length >= 2, true);
 const fa = V.render(db, { tradeTab: 'waivers', tradeKind: 'fa' });
 eq('free agents only means free agents only', [has(fa, 'Free agent'), has(fa, '$10')], [true, false]);
 

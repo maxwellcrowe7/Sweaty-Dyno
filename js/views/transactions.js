@@ -176,8 +176,9 @@ export function render(db, state = {}) {
        them */''}
   <div class="pill-bar">
     <div class="pills">
-      <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades ${trades.filter(mine).length}</button>
-      <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers ${waivers.filter(myMove).length}</button>
+      ${/* the counts live in the summary below, said once and split by phase */''}
+      <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades</button>
+      <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers</button>
     </div>
     <span class="pill-sep"></span>
     <div class="pills sub">
@@ -191,17 +192,26 @@ export function render(db, state = {}) {
        let each row answer them. Counts lead, money annotates the row where it
        means something, and the whole thing costs one card instead of two. */''}
   <div class="card sum">
-    <div class="sum-row hd"><span></span>${PHASES.map(([, t]) => `<span>${t}</span>`).join('')}</div>
+    ${/* the season total closes the row: the two phases are the story, and the
+         sum of them is what you ask for next */''}
+    <div class="sum-row hd"><span></span>${PHASES.map(([, t]) =>
+      `<span>${t}</span>`).join('')}<span class="tot">Total</span></div>
     ${(tab === 'trades' ? [
-      { label: 'Trades', cells: PHASES.map(([k]) => ({ n: inPhase(tradeRows, k).length })) },
-      { label: 'Conditional', cells: PHASES.map(([k]) => ({ n: inPhase(withCond, k).length })) },
-    ] : [
-      { label: 'Waivers', cells: PHASES.map(([k]) => ({
-        n: claims.filter((w) => db.faabPhase(w.date) === k).length, sub: money(spent(k)) })) },
-      { label: 'Free Agents', cells: PHASES.map(([k]) => ({ n: fa.filter((w) => db.faabPhase(w.date) === k).length })) },
+      { label: 'Trades', rows: tradeRows },
+      { label: 'Conditional', rows: withCond },
+    ].map((r) => ({ label: r.label,
+        cells: [...PHASES.map(([k]) => ({ n: inPhase(r.rows, k).length })), { n: r.rows.length }] }))
+    : [
+      { label: 'Waivers', cells: [
+        ...PHASES.map(([k]) => ({
+          n: claims.filter((w) => db.faabPhase(w.date) === k).length, sub: money(spent(k)) })),
+        { n: claims.length, sub: money(spent('pre') + spent('in')) }] },
+      { label: 'Free Agents', cells: [
+        ...PHASES.map(([k]) => ({ n: fa.filter((w) => db.faabPhase(w.date) === k).length })),
+        { n: fa.length }] },
     ]).map((r) => `<div class="sum-row">
       <b>${r.label}</b>
-      ${r.cells.map((c) => `<div><em${c.n ? '' : ' class="none"'}>${c.n}</em>${
+      ${r.cells.map((c, i) => `<div${i === 2 ? ' class="tot"' : ''}><em${c.n ? '' : ' class="none"'}>${c.n}</em>${
         c.sub ? `<s>/</s><i>${c.sub}</i>` : ''}</div>`).join('')}
     </div>`).join('')}
   </div>
