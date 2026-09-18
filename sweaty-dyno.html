@@ -4954,7 +4954,7 @@ function render(db, state = {}) {
     ] : [
       { label: 'Waivers', cells: PHASES.map(([k]) => ({
         n: claims.filter((w) => db.faabPhase(w.date) === k).length, sub: money(spent(k)) })) },
-      { label: 'Free agents', cells: PHASES.map(([k]) => ({ n: fa.filter((w) => db.faabPhase(w.date) === k).length })) },
+      { label: 'Free Agents', cells: PHASES.map(([k]) => ({ n: fa.filter((w) => db.faabPhase(w.date) === k).length })) },
     ]).map((r) => `<div class="sum-row">
       <b>${r.label}</b>
       ${r.cells.map((c) => `<div><em${c.n ? '' : ' class="none"'}>${c.n}</em>${
