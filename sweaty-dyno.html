@@ -4782,10 +4782,13 @@ const assetRow = (db, raw, showFrom) => {
   const origin = a.pick?.origin ? db.team(a.pick.origin) : null;
   const label = a.pick && origin ? `${a.label} (${origin.manager})` : a.label;
   const from = showFrom && a.from ? db.team(a.from) : null;
+  // a pick or a pile of FAAB has no club; a player carries his, as on a pickup
+  const club = pick || a.faab != null ? null : db.nflTeam(a.label);
   return `<li>
     ${a.faab != null ? `<span class="pos-chip pos-none">$</span>`
       : pick ? `<span class="pos-chip pos-none">PK</span>` : posChip(db.position(a.label))}
     <span class="${pick ? 'pk' : ''}">${esc(label)}</span>
+    ${club && club !== '--' ? `<span class="nfl">&ndash; ${esc(club)}</span>` : ''}
     ${from ? `<span class="from">from ${esc(from.manager)}</span>` : ''}
   </li>`;
 };

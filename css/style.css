@@ -619,7 +619,10 @@ table.dt th.sticky{width:1%}
 .who b{font-size:13.5px}
 .who .arrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .trade-side ul{margin:0;list-style:none;display:flex;flex-direction:column;gap:5px}
-.trade-side li{display:flex;align-items:center;gap:7px;font-size:13px}
+/* baseline so the club sits on the player's line, as it does on a pickup; the
+   chip keeps its own centring, being a box rather than a word */
+.trade-side li{display:flex;align-items:baseline;gap:7px;font-size:13px}
+.trade-side li .pos-chip{align-self:center}
 .trade-side li .pk{color:var(--ink-2);font-style:italic}
 /* the header carries the managers and nothing else -- a "Trade" chip on a trade
    said nothing the page had not already said */
