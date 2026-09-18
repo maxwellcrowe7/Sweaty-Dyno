@@ -635,6 +635,8 @@ table.dt th.sticky{width:1%}
 .wv-mark.out{color:var(--red)}
 /* off the rail: the money and the FA tag sit a touch in from the card edge */
 .wv-val{grid-column:2;grid-row:1;justify-self:end;margin-right:4px}
+/* FA reads at a size closer to the figures it stands in for */
+.chip.wv-val{font-size:12px;padding:4px 10px}
 @media (min-width:760px){
   /* in and out lead, because they are what the line is about; who and when sit
      behind them, and the money stays on the right rail */
@@ -644,7 +646,9 @@ table.dt th.sticky{width:1%}
   .wv-in{grid-column:1}
   .wv-out{grid-column:2}
   .wv-who{grid-column:3}
-  .wv-val{grid-column:4;justify-self:end;margin-right:6px}
+  /* centred in the track rather than pinned right, so the tag sits on the same
+     visual line as the figures instead of hanging off their edge */
+  .wv-val{grid-column:4;justify-self:center;margin-right:6px}
 }
 
 /* the spend against that budget, said next to the heading it belongs to */
