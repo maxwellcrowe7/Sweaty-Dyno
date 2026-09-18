@@ -328,15 +328,17 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 /* Count and money read as one figure -- same size, the money in parentheses --
    and the pair centres under its column heading. */
 .sum-row > div{display:flex;align-items:baseline;justify-content:center;gap:7px}
-.sum-row em{font-style:normal;font-family:var(--f-display);
-  font-size:24px;font-weight:700;line-height:1.05;letter-spacing:.01em}
+.sum-row em{font-style:normal;font-family:var(--f-body);
+  font-size:22px;font-weight:700;line-height:1.15;letter-spacing:-.01em}
 .sum-row em.none{color:var(--ink-3);opacity:.5}
-.sum-row i{font-style:normal;font-family:var(--f-display);font-size:24px;
-  font-weight:700;line-height:1.05;letter-spacing:.01em;color:var(--mint)}
-/* the slash is punctuation, not data: it belongs to neither figure, so it takes
-   neither figure's colour */
-.sum-row s{text-decoration:none;font-family:var(--f-display);font-size:20px;
-  font-weight:400;color:var(--ink-3);opacity:.7}
+.sum-row i{font-style:normal;font-family:var(--f-body);font-size:22px;
+  font-weight:700;line-height:1.15;letter-spacing:-.01em;color:var(--mint)}
+/* The slash is punctuation, not data: it belongs to neither figure, so it takes
+   neither figure's colour. Its line-height is pinned to the figures' -- left to
+   inherit the body's 1.5 it made the waiver rows taller than the free-agent
+   ones, which is the whole reason the money moved out from underneath. */
+.sum-row s{text-decoration:none;font-family:var(--f-body);font-size:18px;
+  font-weight:400;line-height:1.15;color:var(--ink-3);opacity:.7}
 .tile.accent .v{color:var(--heat)} .tile.mint .v{color:var(--mint)}
 .tile.gold .v{color:var(--gold)} .tile.violet .v{color:var(--violet)}
 .tile.red .v{color:var(--red)}
@@ -704,11 +706,10 @@ table.dt th.sticky{width:1%}
   .sum-row{grid-template-columns:1fr 92px 92px;gap:8px;padding:10px 13px}
   .sum-row > div{gap:5px}
   .sum-row b{font-size:14px}
-  .sum-row i{font-size:21px}
-  .sum-row s{font-size:17px}
+  .sum-row em,.sum-row i{font-size:19px}
+  .sum-row s{font-size:16px}
   .sum-row.hd{padding:9px 13px 4px}
   .sum-row.hd span{letter-spacing:.06em}
-  .sum-row em{font-size:21px}
   /* wrapped onto its own line, the rule above it means nothing */
   .pill-sep{display:none}
 }
