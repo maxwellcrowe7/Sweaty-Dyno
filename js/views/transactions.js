@@ -163,14 +163,18 @@ export function render(db, state = {}) {
   <div class="view-hd"><h2>Transactions</h2>
     <div class="hd-picks">${mgrPicker(db, S, state.tradeMgr || '')}${seasonPicker(db)}</div></div>
 
-  <div class="pills">
-    <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades ${trades.filter(mine).length}</button>
-    <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers ${waivers.filter(myMove).length}</button>
-  </div>
-
-  <div class="pills sub">
-    ${KINDS[tab].map(([k, label]) =>
-      `<button data-kind="${k}" aria-pressed="${kind === k}">${label}</button>`).join('')}
+  ${/* the sub-filter shares the tabs' line but sits at the far end of it: it
+       narrows what the tabs chose, and the gap plus the smaller pills say so
+       more plainly than stacking it underneath did */''}
+  <div class="pill-bar">
+    <div class="pills">
+      <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades ${trades.filter(mine).length}</button>
+      <button data-tab="waivers" aria-pressed="${tab === 'waivers'}">Waivers ${waivers.filter(myMove).length}</button>
+    </div>
+    <div class="pills sub">
+      ${KINDS[tab].map(([k, label]) =>
+        `<button data-kind="${k}" aria-pressed="${kind === k}">${label}</button>`).join('')}
+    </div>
   </div>
 
   ${tab === 'trades' ? `
