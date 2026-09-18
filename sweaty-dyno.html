@@ -642,7 +642,9 @@ table.dt th.sticky{width:1%}
      behind them, and the money stays on the right rail */
   /* every card is its own grid, so the last two tracks are fixed -- otherwise
      each row would size them to its own content and nothing would line up */
-  .row.wv{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 172px 64px;gap:14px}
+  /* the drop leans toward the add rather than splitting the width evenly, so
+     the two read as one swap instead of two columns */
+  .row.wv{grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr) 156px 64px;gap:14px}
   .wv-in{grid-column:1}
   .wv-out{grid-column:2}
   .wv-who{grid-column:3}
@@ -4776,7 +4778,9 @@ const moveRow = (db, w) => {
   const team = w.team ? db.team(w.team) : null;
   const man = (name) => {
     const club = db.nflTeam(name);
-    return `${posChip(db.position(name))}<span class="nm">${esc(name)}</span>${
+    // the add column is deliberately narrow; a name long enough to clip keeps
+    // its full self in the tooltip
+    return `${posChip(db.position(name))}<span class="nm" title="${esc(name)}">${esc(name)}</span>${
       club && club !== '--' ? `<span class="nfl">&ndash; ${esc(club)}</span>` : ''}`;
   };
   return `<div class="row wv">

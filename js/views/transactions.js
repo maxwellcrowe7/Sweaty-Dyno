@@ -80,7 +80,9 @@ const moveRow = (db, w) => {
   const team = w.team ? db.team(w.team) : null;
   const man = (name) => {
     const club = db.nflTeam(name);
-    return `${posChip(db.position(name))}<span class="nm">${esc(name)}</span>${
+    // the add column is deliberately narrow; a name long enough to clip keeps
+    // its full self in the tooltip
+    return `${posChip(db.position(name))}<span class="nm" title="${esc(name)}">${esc(name)}</span>${
       club && club !== '--' ? `<span class="nfl">&ndash; ${esc(club)}</span>` : ''}`;
   };
   return `<div class="row wv">
