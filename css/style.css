@@ -587,22 +587,31 @@ table.dt th.sticky{width:1%}
 /* a second, quieter row of pills for filtering inside a tab */
 /* A waiver line: manager, who came in, who went out, what it cost. In and out
    are the same size and shape so the drop is read, not skimmed past. */
-.row.wv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
-.wv-who{grid-column:1;min-width:0}
-.wv-who b{font-size:13px}
-.wv-who span{font-size:11.5px;color:var(--ink-3);margin-left:7px}
+.row.wv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:center}
+.wv-in{grid-column:1}
+.wv-out{grid-column:1}
+.wv-who{grid-column:1;min-width:0;display:flex;align-items:baseline;gap:7px}
+.wv-who b{font-size:12.5px;color:var(--ink-2)}
+.wv-who span{font-size:11.5px;color:var(--ink-3)}
 .wv-in,.wv-out{display:flex;align-items:center;gap:7px;min-width:0;font-size:13.5px}
 .wv-in .nm,.wv-out .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wv-out{color:var(--ink-3)}
 .wv-out .pos-chip{opacity:.62}
+/* the club, quiet enough that it never competes with the name it follows */
+.nfl{font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink-3);flex:none}
 .wv-mark{font-style:normal;font-weight:700;font-size:13px;width:11px;flex:none;text-align:center}
 .wv-mark.in{color:var(--mint)}
 .wv-mark.out{color:var(--red)}
 .wv-val{grid-column:2;grid-row:1;justify-self:end}
 @media (min-width:760px){
-  .row.wv{grid-template-columns:132px minmax(0,1fr) minmax(0,1fr) 84px;gap:12px}
+  /* in and out lead, because they are what the line is about; who and when sit
+     behind them, and the money stays on the right rail */
+  .row.wv{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 128px 84px;gap:12px}
+  .wv-in{grid-column:1}
+  .wv-out{grid-column:2}
+  .wv-who{grid-column:3;display:block}
   .wv-who b{display:block}
-  .wv-who span{margin-left:0;display:block;margin-top:2px}
+  .wv-who span{display:block;margin-top:2px}
   .wv-val{grid-column:4;justify-self:end}
 }
 

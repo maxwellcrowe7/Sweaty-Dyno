@@ -71,20 +71,25 @@ const tradeCard = (db, t, cond = null) => {
 /* A pickup is four facts: who, in, out, what it cost. The drop used to be a
    clause at the end of a subtitle, which buried the half of the move that
    costs you a roster spot -- it now sits beside the add as its equal, one
-   column each, marked + and -. The minus and the dulled colour already say
+   column each, marked + and -, and they lead the line because they are what you
+   came to read. The minus and the dulled colour already say
    "out", so the name is not struck through as well, and a move that dropped
    nobody just leaves the column empty. */
 const moveRow = (db, w) => {
   const fa = w.type === 'free_agent';
   const team = w.team ? db.team(w.team) : null;
-  const man = (name) => `${posChip(db.position(name))}<span class="nm">${esc(name)}</span>`;
+  const man = (name) => {
+    const club = db.nflTeam(name);
+    return `${posChip(db.position(name))}<span class="nm">${esc(name)}</span>${
+      club ? `<span class="nfl">${esc(club)}</span>` : ''}`;
+  };
   return `<div class="row wv">
+    <div class="wv-in"><i class="wv-mark in">+</i>${man(w.player)}</div>
+    <div class="wv-out">${w.dropped ? `<i class="wv-mark out">&minus;</i>${man(w.dropped)}` : ''}</div>
     <div class="wv-who">
       <b>${esc(team?.manager || w.alias || 'Unassigned')}</b>
       <span>${fmtDate(w.date, { year: true })}</span>
     </div>
-    <div class="wv-in"><i class="wv-mark in">+</i>${man(w.player)}</div>
-    <div class="wv-out">${w.dropped ? `<i class="wv-mark out">&minus;</i>${man(w.dropped)}` : ''}</div>
     ${fa ? '<span class="chip ghost wv-val">Free agent</span>'
       : `<div class="val wv-val" style="color:${w.faab ? 'var(--mint)' : 'var(--ink-3)'}">$${w.faab || 0}</div>`}
   </div>`;

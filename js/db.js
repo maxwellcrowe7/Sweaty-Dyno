@@ -744,6 +744,8 @@ class Store {
   draft(season = this.season) { return this.get('drafts').rookie[String(season)] || null; }
   draftSeasons() { return Object.keys(this.get('drafts').rookie).map(Number).sort((a, b) => b - a); }
   position(player) { return this.get('players').positions[player] || null; }
+  /** NFL club, learned from Sleeper on a transaction pull. Null until then. */
+  nflTeam(player) { return this.get('players').nflTeams?.[player] || null; }
 
   /**
    * Which season a transaction date belongs to. Sleeper files moves by the week

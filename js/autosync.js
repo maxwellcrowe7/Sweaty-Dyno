@@ -122,6 +122,7 @@ async function namer(db, pids, onStep = () => {}) {
   const pl = await SL.players();
   const learned = {};
   const positions = {};
+  const nflTeams = {};
   for (const p of missing) {
     const r = pl[String(p)];
     if (!r) continue;
@@ -130,8 +131,9 @@ async function namer(db, pids, onStep = () => {}) {
     learned[p] = name;
     const pos = r.position || (Array.isArray(r.fantasy_positions) ? r.fantasy_positions[0] : null);
     if (pos) positions[name] = pos;
+    if (r.team) nflTeams[name] = r.team;
   }
-  return { nameOf: (p) => known[p] || learned[p] || `Player ${p}`, learned, positions };
+  return { nameOf: (p) => known[p] || learned[p] || `Player ${p}`, learned, positions, nflTeams };
 }
 
 /**
@@ -156,7 +158,7 @@ export async function pullTransactions(db, season, onStep = () => {}) {
     ...raw.trades.flatMap((t) => t.sides.flatMap((s) => s.receives.map((r) => r.player).filter(Boolean))),
     ...raw.moves.flatMap((m) => [m.player, m.dropped].filter(Boolean)),
   ];
-  const { nameOf, learned, positions } = await namer(db, pids, onStep);
+  const { nameOf, learned, positions, nflTeams } = await namer(db, pids, onStep);
 
   const name = (v) => (v == null ? null : nameOf(v));
   const trades = raw.trades.map((t) => ({
@@ -177,6 +179,8 @@ export async function pullTransactions(db, season, onStep = () => {}) {
     await db.update('players', (p) => {
       p.sleeperNames = { ...(p.sleeperNames || {}), ...learned };
       p.positions = { ...positions, ...p.positions };
+      // a player's NFL team DOES change, so the newer answer wins here
+      p.nflTeams = { ...(p.nflTeams || {}), ...nflTeams };
     });
   }
 
