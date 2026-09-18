@@ -81,7 +81,7 @@ const moveRow = (db, w) => {
   const man = (name) => {
     const club = db.nflTeam(name);
     return `${posChip(db.position(name))}<span class="nm">${esc(name)}</span>${
-      club && club !== '--' ? `<span class="nfl">${esc(club)}</span>` : ''}`;
+      club && club !== '--' ? `<span class="nfl">&ndash; ${esc(club)}</span>` : ''}`;
   };
   return `<div class="row wv">
     <div class="wv-in"><i class="wv-mark in">+</i>${man(w.player)}</div>

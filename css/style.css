@@ -593,12 +593,16 @@ table.dt th.sticky{width:1%}
 .wv-who{grid-column:1;min-width:0;display:flex;align-items:baseline;gap:7px}
 .wv-who b{font-size:12.5px;color:var(--ink-2)}
 .wv-who span{font-size:11.5px;color:var(--ink-3)}
-.wv-in,.wv-out{display:flex;align-items:center;gap:7px;min-width:0;font-size:13.5px}
+/* baseline, not centre: the club is smaller than the name, and centring it in
+   the row floated it above the name's baseline. The chip keeps its own
+   centring, since it is a box rather than a word. */
+.wv-in,.wv-out{display:flex;align-items:baseline;gap:7px;min-width:0;font-size:13.5px}
+.wv-in .pos-chip,.wv-out .pos-chip{align-self:center}
 .wv-in .nm,.wv-out .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wv-out{color:var(--ink-3)}
 .wv-out .pos-chip{opacity:.62}
 /* the club, quiet enough that it never competes with the name it follows */
-.nfl{font-size:10.5px;font-weight:700;letter-spacing:.07em;color:var(--ink-3);flex:none}
+.nfl{font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-3);flex:none;margin-left:-2px}
 .wv-mark{font-style:normal;font-weight:700;font-size:13px;width:11px;flex:none;text-align:center}
 .wv-mark.in{color:var(--mint)}
 .wv-mark.out{color:var(--red)}
