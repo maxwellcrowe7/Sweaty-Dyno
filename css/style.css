@@ -755,15 +755,25 @@ table.dt th.sticky{width:1%}
    violet ground -- it carries its own date, and needs no colour of its own to
    say what it is. */
 .settle-wrap{margin-top:9px}
-/* The follow-up, coloured by where the condition stands: blue while it is only
-   promised, gold once the deadline has passed and it needs a ruling, green when
-   it actually happened, red when it never will. */
-.trade.nested{border-color:color-mix(in oklab,var(--violet) 28%,var(--line));background:var(--bg-2)}
-.trade.nested.is-open{border-color:rgba(90,200,250,.4);background:rgba(90,200,250,.05)}
-.trade.nested.is-due{border-color:rgba(245,196,81,.42);background:rgba(245,196,81,.05)}
-.trade.nested.is-met{border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.05)}
-.trade.nested.is-void{border-color:rgba(255,77,94,.4);background:rgba(255,77,94,.05)}
-.trade.nested.is-void .who b,.trade.nested.is-void .trade-side li{opacity:.65}
+/* The follow-up takes one colour from where the condition stands -- blue while
+   it is only promised, gold once the deadline has passed and it needs a ruling,
+   green when it happened, red when it never will -- and wears it in two shades:
+   the name band deeper, the assets beneath it lighter. One hue per card is set
+   once and everything else mixes against it. */
+.trade.nested{--nt:var(--violet)}
+.trade.nested.is-open{--nt:var(--blue)}
+.trade.nested.is-due{--nt:var(--gold)}
+.trade.nested.is-met{--nt:var(--mint)}
+.trade.nested.is-void{--nt:var(--red)}
+.trade.nested{
+  border-color:color-mix(in oklab,var(--nt) 45%,var(--line));
+  background:color-mix(in oklab,var(--nt) 10%,var(--surface));
+}
+.trade.nested .trade-hd{background:color-mix(in oklab,var(--nt) 24%,var(--surface));
+  border-bottom-color:color-mix(in oklab,var(--nt) 34%,var(--line-soft))}
+.trade.nested .trade-side{background:color-mix(in oklab,var(--nt) 10%,var(--surface))}
+.trade.nested .trade-body{background:color-mix(in oklab,var(--nt) 34%,var(--line-soft))}
+.trade.nested.is-void .who b,.trade.nested.is-void .trade-side li{opacity:.7}
 /* a trade that has not happened yet has no date to show */
 .trade.nested .pending{font-style:normal;font-size:10.5px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--ink-3);font-weight:700}
