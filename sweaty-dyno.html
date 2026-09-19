@@ -831,7 +831,9 @@ table.dt th.sticky{width:1%}
 .lk{color:var(--violet);display:flex;align-self:center;flex:none}
 .lk svg{width:14px;height:14px}
 .lk-name{font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lk-holder{margin-left:auto;font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.lk-holder{margin-left:auto;display:flex;align-items:baseline;gap:6px;
+  font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.lk-holder em{font-style:normal;font-size:11px;font-weight:500;color:var(--ink-3)}
 .lk-item.broke .lk-name{color:var(--red)}
 .lk-item.broke .lk{color:var(--red)}
 /* Building the promised return the way the card draws it: a column per
@@ -5388,7 +5390,8 @@ function render(db, state = {}) {
             <span class="lk">${icon('lock')}</span>
             <span class="lk-name">${esc(lockLabel(db, l))}</span>
             ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
-            <span class="lk-holder">${esc(db.team(l.heldBy)?.manager || '?')}</span>
+            ${/* "held", not "owned": the asset is frozen in his hands for now */''}
+            <span class="lk-holder"><em>held by</em>${esc(db.team(l.heldBy)?.manager || '?')}</span>
           </div>`;
         }).join('')}
       </div>`;

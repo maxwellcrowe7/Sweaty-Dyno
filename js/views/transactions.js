@@ -310,7 +310,8 @@ export function render(db, state = {}) {
             <span class="lk">${icon('lock')}</span>
             <span class="lk-name">${esc(lockLabel(db, l))}</span>
             ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
-            <span class="lk-holder">${esc(db.team(l.heldBy)?.manager || '?')}</span>
+            ${/* "held", not "owned": the asset is frozen in his hands for now */''}
+            <span class="lk-holder"><em>held by</em>${esc(db.team(l.heldBy)?.manager || '?')}</span>
           </div>`;
         }).join('')}
       </div>`;
