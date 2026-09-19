@@ -837,16 +837,24 @@ table.dt th.sticky{width:1%}
   .ab-kill{opacity:0;transition:opacity .14s}
   .ab-row:hover .ab-kill,.ab-kill:focus-visible{opacity:1}
 }
-/* The palette: always present, so using it never resizes anything. Quiet until
-   you go near it, since it is a tool rather than a value. */
-.ab-menu{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:0;opacity:.72}
-.ab-menu:hover{opacity:1}
-.ab-add-lbl{display:inline-flex;color:var(--ink-3);margin-right:1px}
-.ab-add-lbl svg{width:13px;height:13px}
-.ab-menu button{padding:2px 8px;border-radius:999px;border:1px solid var(--line);
-  background:var(--surface-2);font-size:11px;font-weight:600;color:var(--ink-2);cursor:pointer}
-.ab-menu button:hover{border-color:var(--heat);color:var(--heat)}
-.ab-menu-lbl{width:1px;height:13px;padding:0;background:var(--line);margin:0 3px}
+/* The palette is one line tall whether it is showing a plus or the chips it
+   hides, so opening it cannot change the height of anything. The chips scroll
+   sideways in the rare column too narrow to hold them. */
+.ab-pal{display:flex;align-items:center;height:22px;margin-top:1px}
+.ab-plus{display:grid;place-items:center;width:22px;height:22px;flex:none;
+  border-radius:999px;border:1px solid var(--line);background:var(--surface-2);
+  color:var(--ink-2);cursor:pointer}
+.ab-plus:hover{border-color:var(--heat);color:var(--heat)}
+.ab-plus svg{width:13px;height:13px}
+.ab-pal.open .ab-plus{display:none}
+.ab-chips{display:none;align-items:center;gap:4px;min-width:0;overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.ab-chips::-webkit-scrollbar{display:none}
+.ab-pal.open .ab-chips{display:flex}
+.ab-chips button{flex:none;padding:2px 7px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface-2);font-size:10.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.ab-chips button:hover{border-color:var(--heat);color:var(--heat)}
+.ab-menu-lbl{width:1px;height:12px;padding:0;background:var(--line);margin:0 2px;flex:none}
 
 /* ---------- guillotine ---------- */
 .guillo{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border-radius:var(--r);overflow:hidden}

@@ -345,16 +345,18 @@ export function mount(root, db, go, setState) {
     const colHtml = (team) => `<div class="ab-col" data-col data-team="${team}">
       <div class="ab-who">${teamTag(db.team(team))}<span class="arrow">gets</span></div>
       <div class="ab-list" data-list></div>
-      ${/* The palette is always here rather than behind a button: it is small,
-           it says what a column can hold, and nothing on screen moves when you
-           use it. A button that opened this was resizing the modal. */''}
-      <div class="ab-menu">
-        <span class="ab-add-lbl">${icon('plus')}</span>
-        <button type="button" data-new="faab">FAAB</button>
-        <span class="ab-menu-lbl" aria-hidden="true"></span>
-        ${POS.map((pz) => `<button type="button" data-new="pos:${pz}">${pz}</button>`).join('')}
-        <span class="ab-menu-lbl" aria-hidden="true"></span>
-        ${[1, 2, 3].map((n) => `<button type="button" data-new="rd:${n}">${ORD[n]}</button>`).join('')}
+      ${/* Closed it is a plus; open it is the same strip of chips in the same
+           one-line space -- so the palette can hide without the modal changing
+           height when it comes back. */''}
+      <div class="ab-pal" data-pal>
+        <button type="button" class="ab-plus" data-pal-open aria-label="Add an asset">${icon('plus')}</button>
+        <span class="ab-chips">
+          <button type="button" data-new="faab">FAAB</button>
+          <span class="ab-menu-lbl" aria-hidden="true"></span>
+          ${POS.map((pz) => `<button type="button" data-new="pos:${pz}">${pz}</button>`).join('')}
+          <span class="ab-menu-lbl" aria-hidden="true"></span>
+          ${[1, 2, 3].map((n) => `<button type="button" data-new="rd:${n}">${ORD[n]}</button>`).join('')}
+        </span>
       </div>
     </div>`;
 
@@ -486,6 +488,7 @@ export function mount(root, db, go, setState) {
     };
     const addRow = (col, kind, spec, a) => {
       col.querySelector('[data-list]').insertAdjacentHTML('beforeend', rowHtml(col.dataset.team, kind, spec, a));
+      col.querySelector('[data-pal]').classList.remove('open');
       col.querySelector('[data-list] .ab-row:last-child input:not([type=hidden])')?.focus();
     };
 
@@ -495,6 +498,11 @@ export function mount(root, db, go, setState) {
         addRow(col, a.faab != null ? 'faab' : a.pick ? 'pick' : 'player',
           a.pick ? a.pick.round : (a.pos || 'RB'), a);
       }
+      col.querySelector('[data-pal-open]').addEventListener('click', (e) => {
+        e.stopPropagation();
+        m.root.querySelectorAll('.ab-pal').forEach((x) => x.classList.remove('open'));
+        col.querySelector('[data-pal]').classList.add('open');
+      });
       col.querySelectorAll('[data-new]').forEach((opt) => opt.addEventListener('click', () => {
         const [kind, spec] = opt.dataset.new.split(':');
         addRow(col, kind === 'rd' ? 'pick' : kind === 'pos' ? 'player' : 'faab', spec);
@@ -518,7 +526,11 @@ export function mount(root, db, go, setState) {
 
     m.root.addEventListener('click', (e) => {
       const kill = e.target.closest?.('[data-del-row]');
-      if (kill) kill.closest('.ab-row').remove();
+      if (kill) { kill.closest('.ab-row').remove(); return; }
+      // clicking away puts the palette back to a plus
+      if (!e.target.closest?.('.ab-pal')) {
+        m.root.querySelectorAll('.ab-pal').forEach((x) => x.classList.remove('open'));
+      }
     });
   }));
 }
