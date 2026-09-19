@@ -5167,8 +5167,7 @@ function render(db, state = {}) {
        empty and says so, rather than leaving you to wonder whether it is empty
        or whether you are on the wrong tab. */''}
   ${tab !== 'trades' ? '' : `
-    <div class="section-title">Locked assets${
-      locked.length ? `<span class="sub-n dim">${locked.length}</span>` : ''}</div>
+    <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
     ${!locked.length ? `<div class="card"><div class="card-bd lock-none">
       ${icon('lock')} Nothing is locked right now</div></div>`
     : `<div class="card"><div class="card-bd flush"><div class="rows">
