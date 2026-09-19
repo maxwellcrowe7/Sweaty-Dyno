@@ -840,10 +840,10 @@ table.dt th.sticky{width:1%}
   .ab-kill{opacity:0;transition:opacity .14s}
   .ab-row:hover .ab-kill,.ab-kill:focus-visible{opacity:1}
 }
-/* The palette reserves the height its open state needs, so the chips can wrap
-   onto a second line without anything around them moving. Closed, the plus
-   sits centred in that reserved space. */
-.ab-pal{display:flex;align-items:center;min-height:44px;margin-top:1px}
+/* The trigger stays put and the chips flow out beside it, wrapping onto the
+   line below. The palette reserves the height that open state needs, so
+   nothing around it moves when the chips appear. */
+.ab-pal{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:46px;margin-top:1px}
 .ab-plus{display:inline-flex;align-items:center;gap:5px;flex:none;
   padding:3px 10px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.02em;
@@ -852,9 +852,13 @@ table.dt th.sticky{width:1%}
 /* the caret points down at the options it opens */
 .ab-caret{width:12px;height:12px;transform:rotate(90deg);flex:none;color:var(--ink-3)}
 .ab-plus:hover .ab-caret{color:var(--heat)}
-.ab-pal.open .ab-plus{display:none}
-.ab-chips{display:none;align-items:center;flex-wrap:wrap;gap:4px;min-width:0}
-.ab-pal.open .ab-chips{display:flex}
+/* it still says what it does; the caret turns to say it can be put away */
+.ab-pal.open .ab-caret{transform:rotate(-90deg)}
+/* display:contents, so the chips join the trigger's own flex line and wrap with
+   it rather than forming a block of their own underneath */
+.ab-chips{display:none}
+.ab-chips .ab-menu-lbl:first-child{display:none}
+.ab-pal.open .ab-chips{display:contents}
 .ab-chips button{flex:none;padding:2px 7px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface-2);font-size:10.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
 .ab-chips button:hover{border-color:var(--heat);color:var(--heat)}
