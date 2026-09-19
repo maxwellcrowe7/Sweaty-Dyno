@@ -740,8 +740,10 @@ table.dt th.sticky{width:1%}
 .cond .lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);
   font-weight:700;margin-right:9px;white-space:nowrap}
 .cond .out{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);color:var(--ink-2)}
-/* How much a condition has frozen, at the end of the line that describes it --
-   the names are in the tooltip and in the Locked assets section above. */
+/* The padlock on a promised asset: it is frozen so that it is still there to
+   settle the condition, so the follow-up is where saying so means something. */
+.trade-side li .lk-mark{display:inline-flex;align-self:center;color:var(--violet);flex:none}
+.trade-side li .lk-mark svg{width:12px;height:12px}
 .lock-chip{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px;
   border-radius:999px;vertical-align:1px;
   background:rgba(156,140,250,.1);border:1px solid color-mix(in oklab,var(--violet) 35%,var(--line));

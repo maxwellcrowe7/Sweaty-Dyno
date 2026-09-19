@@ -195,15 +195,18 @@ await db.update('trades', (t) => {
       { kind: 'pick', season: 2027, round: 2, origin: 1, heldBy: 1 },
     ],
     settledBy: null, settledOn: null, outcome: null,
+    expected: [{ team: 5, receives: [{ label: '2027 2nd', pick: { season: 2027, round: 2, origin: 1 } }] }],
   }];
 });
 eq('the condition hangs off its trade', db.conditionFor('origin')?.id, 'c1');
 eq('and an untagged trade has none', db.conditionFor('elsewhere'), null);
 eq('every lock is live while it is open', db.lockedAssets(2025).length, 3);
-// the card states how many assets are frozen, once
+// locks are marked on the promised return and nowhere else
 {
   const h = V.render(db, { tradeTab: 'trades' });
-  eq('the count rides on the condition line', /lock-chip[\s\S]{0,400}?>3<\/span>/.test(h), true);
+  const nest = h.slice(h.indexOf('settle-wrap'));
+  eq('the promised row is padlocked', /lk-mark/.test(nest), true);
+  eq('and the deal above it is not', /lk-mark/.test(h.slice(0, h.indexOf('settle-wrap'))), false);
 }
 
 // the tripwire: Frozen Guy was locked in team 1's hands and went to team 6
