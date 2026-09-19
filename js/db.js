@@ -15,6 +15,9 @@ import { unfmt } from './util.js';
 const FILES = ['league', 'managers', 'bank', 'minigames', 'drafts', 'trades', 'stats', 'players', 'rules'];
 const LS_KEY = 'sweatydyno:overlay:v1';
 const LS_ADMIN = 'sweatydyno:admin';
+const LS_SEASON = 'sweatydyno:season';
+const readSeason = () => { try { return localStorage.getItem(LS_SEASON); } catch { return null; } };
+const writeSeason = (y) => { try { localStorage.setItem(LS_SEASON, String(y)); } catch { /* private mode */ } };
 
 /* ---------- adapter: static JSON + localStorage overlay ---------- */
 class JsonAdapter {
@@ -202,9 +205,25 @@ class Store {
   }
   team(n, season = this.season) { return n == null ? null : this.teams(season).find((t) => t.number === Number(n)) || null; }
 
-  /** Current view season — set by the app shell, defaults to league config. */
-  get season() { return this._season ?? this.league.currentSeason; }
-  set season(s) { this._season = Number(s); this.emit(); }
+  /**
+   * Current view season. Remembered across reloads: picking 2025 and hitting
+   * refresh used to drop you back on the league's current season, which made
+   * the picker feel like it had not taken. Falls back to league config, and
+   * ignores a stored year the league no longer has.
+   */
+  get season() {
+    if (this._season == null) {
+      const saved = Number(readSeason());
+      this._season = this.seasons.includes(saved) ? saved : this.league.currentSeason;
+    }
+    return this._season;
+  }
+
+  set season(s) {
+    this._season = Number(s);
+    writeSeason(this._season);
+    this.emit();
+  }
 
   /* ---------- bank ---------- */
 
