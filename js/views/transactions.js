@@ -89,12 +89,13 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
     ${cond ? `<div class="cond">
       <p class="cond-line"><span class="lbl">Condition</span>${esc(cond.text)}</p>
       ${/* a resolved condition freezes nothing: the chips go with it */''}
-      ${cond.locks?.length && ['open', 'due'].includes(st.key) ? `<div class="locks">
-        ${/* the holder is in the Locked assets list above, and on a two-team
-             deal the asset itself usually names him */''}
+      ${/* labelled like the condition above it, with the assets running to the
+           right -- so the padlock on every chip has nothing left to say */''}
+      ${cond.locks?.length && ['open', 'due'].includes(st.key) ? `<p class="cond-line locks">
+        <span class="lbl">Locked assets</span>
         ${cond.locks.map((l) => `<span class="lock-chip"
-          title="${esc(db.team(l.heldBy)?.manager || '')}">${icon('lock')}${esc(lockLabel(db, l))}</span>`).join('')}
-      </div>` : ''}
+          title="${esc(db.team(l.heldBy)?.manager || '')}">${esc(lockLabel(db, l))}</span>`).join('')}
+      </p>` : ''}
       ${/* "Condition met" plus the wording above usually says what happened --
            "met" already implies Max made the finals. The note is for the times
            it does not, so an empty one prints nothing. */''}
