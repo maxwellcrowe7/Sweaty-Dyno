@@ -180,7 +180,8 @@ const mgrPicker = (db, S, sel) => `<div class="season-pick">
 export function render(db, state = {}) {
   const tab = state.tradeTab === 'waivers' ? 'waivers' : 'trades';
   const kind = state.tradeKind || 'all';
-  const mgr = state.tradeMgr ? Number(state.tradeMgr) : null;
+  // ?mgr=6 arrives from the Managers tab; the picker takes over from there
+  const mgr = Number(state.tradeMgr ?? state.params?.mgr) || null;
   const S = db.season;
   const { trades, conditional, waivers } = db.trades(S);
   const condFor = (t) => conditional.find((c) => c.tradeId === t.id) || null;

@@ -79,7 +79,10 @@ function barChart(rows, key, label, unit = '') {
 export function render(db, state = {}) {
   const S = db.season;
   const st = db.stats(S);
-  const focus = state.focusTeam ?? [...st.rows].sort((a, b) => b.total - a.total)[0]?.number ?? 1;
+  // ?team=6 arrives from the Managers tab, otherwise the season's leader
+  const focus = state.focusTeam
+    || Number(state.params?.team)
+    || [...st.rows].sort((a, b) => b.total - a.total)[0]?.number || 1;
   const metric = st.hasCeiling && state.metric === 'ceiling' ? 'ceiling' : 'actual';
   const wkKey = metric === 'ceiling' ? 'byWeekMax' : 'byWeek';
   const sync = db.get('stats').lastSleeperSync;

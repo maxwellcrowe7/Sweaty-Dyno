@@ -1,9 +1,16 @@
-import { money, esc, icon, teamTag, teamColor, empty } from '../util.js';
+import { esc, icon, teamColor } from '../util.js';
+
+/* A directory, not a dashboard. Every figure this page used to carry -- paid in,
+   won, net, empire points -- is another tab's headline, and repeating them made
+   one franchise 200px tall, so ten of them took three screens.
+   What is left is what nothing else owns: who holds which franchise, who held it
+   before, and a way through to the pages that do carry their numbers. */
+
+const since = (t) => Math.min(...t.ownership.map((o) => o.fromSeason));
 
 export function render(db) {
-  const led = db.ledger();
   const mg = db.get('managers');
-  const emp = db.empire();
+  const teams = db.teams().slice().sort((a, b) => a.number - b.number);
   const finishes = db.get('bank').finishes || [];
 
   return `
@@ -11,48 +18,34 @@ export function render(db) {
     <div><b>Team numbers are provisional.</b> Confirm the mapping in <code>tools/remap_teams.py</code>
     and re-run it — the whole app follows.</div></div>` : ''}
 
-  <div class="section-title">Franchises</div>
-  ${led.sort((a, b) => a.number - b.number).map((t) => {
-    const rings = finishes.filter((f) => f.team === t.number && f.place === 1);
-    const ep = emp.board.find((b) => b.number === t.number);
-    const hist = t.ownership.map((o) => {
-      const m = db.managerById(o.managerId);
-      return `${esc(m?.name ?? o.managerId)} <span class="dimmer">${o.fromSeason}&ndash;${o.toSeason ?? 'now'}</span>`;
-    }).join(' <span class="dimmer">&rarr;</span> ');
-    return `<div class="card" style="margin-bottom:10px;border-left:3px solid ${teamColor(t.number)}">
-      <div class="card-hd">
-        <div style="font-family:var(--f-display);font-size:22px;font-weight:700;color:${teamColor(t.number)};
-          min-width:34px">${String(t.number).padStart(2, '0')}</div>
-        <div style="min-width:0">
-          <h3 style="font-size:17px">${esc(t.fullName)}</h3>
-          <div class="sub" style="text-transform:none;letter-spacing:0;font-size:11.5px">
-            Team ${t.number}${t.sleeper ? ` &middot; <span style="color:var(--ink-3)">@${esc(t.sleeper)}</span>` : ''}</div>
+  <div class="section-title">Franchises<span class="sub-n dim">${teams.length}</span></div>
+  <div class="fr-list">
+    ${teams.map((t) => {
+      const rings = finishes.filter((f) => f.team === t.number && f.place === 1).length;
+      // a franchise that has only ever had one owner has no history to tell
+      const past = t.ownership.length > 1 ? t.ownership : [];
+      return `<div class="fr" style="--tc:${teamColor(t.number)}">
+        <div class="fr-no">${String(t.number).padStart(2, '0')}</div>
+        <div class="fr-who">
+          <b>${esc(t.fullName)}</b>
+          ${t.sleeper ? `<span class="fr-sl">@${esc(t.sleeper)}</span>` : ''}
         </div>
-        <div class="spacer"></div>
-        ${rings.map(() => '<span class="chip gold">' + icon('trophy') + ' Champ</span>').join('')}
-      </div>
-      <div class="card-bd" style="padding-top:12px">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">
-          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Paid in</div>
-            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px">${money(t.paidIn)}</div></div>
-          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Won</div>
-            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px;color:var(--mint)">${money(t.won)}</div></div>
-          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Net</div>
-            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px"
-              class="${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</div></div>
-          <div><div class="k" style="font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);font-weight:700">Empire</div>
-            <div style="font-family:var(--f-display);font-size:19px;font-weight:700;margin-top:3px;color:var(--violet)">${ep?.total ?? 0}</div></div>
+        <div class="fr-since">since ${since(t)}</div>
+        <div class="fr-rings">${rings
+          ? Array.from({ length: rings }, () => icon('crown')).join('')
+          : ''}</div>
+        <div class="fr-go">
+          <button data-go-trades="${t.number}">Trades</button>
+          <button data-go-stats="${t.number}">Stats</button>
         </div>
-        ${t.owesNow ? `<div class="banner" style="margin-top:13px;background:rgba(255,77,94,.07);border-color:rgba(255,77,94,.26)">
-          ${icon('alert')}<div>Owes <b style="color:var(--red)">${money(t.owesNow)}</b> for ${db.league.currentSeason} or earlier.</div></div>` : ''}
-        ${t.owes - t.owesNow > 0 ? `<div class="s dimmer" style="margin-top:11px;font-size:11.5px">
-          ${money(t.owes - t.owesNow)} of buy-ins scheduled for later seasons.</div>` : ''}
-        <div class="s dim" style="margin-top:13px;font-size:12px">
-          <span class="dimmer" style="letter-spacing:.12em;text-transform:uppercase;font-size:9.5px;font-weight:700">Ownership</span><br>${hist}
-        </div>
-      </div>
-    </div>`;
-  }).join('')}
+        ${past.length ? `<div class="fr-hist">${past.map((o) => {
+          const m = db.managerById(o.managerId);
+          return `<span>${esc(m?.name ?? o.managerId)}
+            <em>${o.fromSeason}&ndash;${o.toSeason ?? 'now'}</em></span>`;
+        }).join('<i>&rarr;</i>')}</div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>
 
   ${(mg.unresolvedAliases || []).some((a) => !a.managerId) ? `
   <div class="section-title">Unmapped names</div>
@@ -66,4 +59,13 @@ export function render(db) {
       </div>`).join('')}
   </div></div>` : ''}
   `;
+}
+
+export function mount(root, db, go) {
+  /* The rest of the app is season-scoped and manager-blind; this is the one page
+     that knows people, so it is the natural way in to their pages. */
+  root.querySelectorAll('[data-go-trades]').forEach((b) => b.addEventListener('click', () =>
+    go('trades', { mgr: b.dataset.goTrades })));
+  root.querySelectorAll('[data-go-stats]').forEach((b) => b.addEventListener('click', () =>
+    go('stats', { team: b.dataset.goStats })));
 }

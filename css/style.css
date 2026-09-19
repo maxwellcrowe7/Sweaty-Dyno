@@ -1396,6 +1396,45 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
   .toc ol{max-height:236px;overflow-y:auto}
 }
 
+/* ---------- franchises ----------
+   A directory row: number, who, since when, rings, and the way through to the
+   pages that carry their figures. Ten of these fit a laptop screen, which the
+   card version they replace did not come close to. */
+.fr-list{display:flex;flex-direction:column;gap:6px}
+.fr{
+  display:grid;grid-template-columns:38px minmax(0,1fr) auto auto auto;
+  align-items:center;gap:12px;padding:10px 14px;
+  border:1px solid var(--line);border-left:3px solid var(--tc);
+  border-radius:var(--r);background:var(--surface);
+}
+.fr-no{font-family:var(--f-display);font-size:20px;font-weight:700;color:var(--tc);letter-spacing:.02em}
+.fr-who{display:flex;align-items:baseline;gap:8px;min-width:0}
+.fr-who b{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-sl{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.fr-since{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.fr-rings{display:flex;gap:2px;color:var(--gold)}
+.fr-rings svg{width:16px;height:16px}
+.fr-go{display:flex;gap:6px}
+.fr-go button{
+  padding:3px 10px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface-2);font-size:11px;font-weight:600;color:var(--ink-3);cursor:pointer;
+}
+.fr-go button:hover{border-color:var(--heat);color:var(--heat)}
+/* only a franchise that has changed hands has this line at all */
+.fr-hist{
+  grid-column:2 / -1;display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;
+  margin-top:2px;font-size:11.5px;color:var(--ink-3);
+}
+.fr-hist em{font-style:normal;opacity:.7;margin-left:3px}
+.fr-hist i{font-style:normal;opacity:.5}
+@media (max-width:620px){
+  .fr{grid-template-columns:32px minmax(0,1fr) auto;gap:8px;padding:9px 11px}
+  .fr-since{display:none}
+  .fr-go{grid-column:2 / -1;margin-top:2px}
+  .fr-who{flex-wrap:wrap;gap:2px 8px}
+  .fr-who b{font-size:14px}
+}
+
 /* ---------- accordions ---------- */
 .acc-hd{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;
