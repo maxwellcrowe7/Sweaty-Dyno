@@ -814,13 +814,13 @@ table.dt th.sticky{width:1%}
 }
 .ab-who .tnum{align-self:center}
 .ab-col > :not(.ab-who){margin-left:11px;margin-right:11px}
-.ab-row{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.ab-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
 /* these controls live outside .field, so they were falling back to the
    browser's own white box. Same ground, border and ink as every other input,
    and the select loses its native chrome for a caret drawn in our own grey. */
 .ab-row input:not([type=hidden]),.ab-row select{
   background-color:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
-  padding:7px 9px;font-size:13px;color:var(--ink);flex:1;min-width:0;
+  padding:4px 9px;font-size:13px;line-height:1.5;color:var(--ink);flex:1;min-width:0;
 }
 .ab-row input::placeholder{color:var(--ink-3)}
 .ab-row input:focus,.ab-row select:focus{outline:none;border-color:var(--heat);
@@ -839,7 +839,8 @@ table.dt th.sticky{width:1%}
 .ab-menu button:hover{border-color:var(--heat);color:var(--heat)}
 .ab-menu-lbl{width:100%;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--ink-3);margin-top:3px}
-.ab-add{padding:3px 9px;font-size:11.5px}
+.ab-add{padding:2px 9px;font-size:11.5px}
+.ab-add svg{width:13px;height:13px}
 
 /* ---------- guillotine ---------- */
 .guillo{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border-radius:var(--r);overflow:hidden}
