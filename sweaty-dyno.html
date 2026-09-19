@@ -5528,8 +5528,11 @@ function mount(root, db, go, setState) {
       }
       col.querySelector('[data-pal-open]').addEventListener('click', (e) => {
         e.stopPropagation();
+        const pal = col.querySelector('[data-pal]');
+        const wasOpen = pal.classList.contains('open');
         m.root.querySelectorAll('.ab-pal').forEach((x) => x.classList.remove('open'));
-        col.querySelector('[data-pal]').classList.add('open');
+        // the trigger toggles: clicking it again puts the options away
+        if (!wasOpen) pal.classList.add('open');
       });
       col.querySelectorAll('[data-new]').forEach((opt) => opt.addEventListener('click', () => {
         const [kind, spec] = opt.dataset.new.split(':');
