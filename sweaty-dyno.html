@@ -948,6 +948,11 @@ table.dt th.sticky{width:1%}
 .modal-hd{display:flex;align-items:center;gap:10px;padding:16px 18px 12px;position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line-soft);z-index:2}
 .modal-hd h3{font-size:17px;text-transform:uppercase;letter-spacing:.06em}
 .modal-bd2{padding:16px 18px}
+/* A modal whose contents expand -- a section that opens, a row that is added --
+   would otherwise grow with them, since .modal is capped rather than sized. A
+   real height on the body makes the frame constant and lets the content scroll
+   inside it. */
+.modal-bd2.fixed{height:min(58dvh,560px);overflow-y:auto;overscroll-behavior:contain}
 .modal-ft{display:flex;gap:9px;padding:0 18px;margin-top:4px}
 .modal-ft .btn{flex:1}
 
@@ -2152,9 +2157,12 @@ const by = (arr, f) => arr.reduce((m, x) => ((m[f(x)] ||= []).push(x), m), {});
    openModal({title, body, confirm, extra, closeButtons, onConfirm}) -> resolves when closed.
    `extra` is an optional button sharing the footer row with Cancel and Save.
    `closeButtons:false` drops the X and Cancel — clicking outside and Escape still close.
+   `fixedHeight` gives the body a real height instead of letting it size itself, so a
+   modal whose contents expand scrolls rather than growing (and, on a phone, rather
+   than shoving the whole sheet up the screen).
    `body` is an HTML string; the <form> inside is serialised and handed to onConfirm. */
 function openModal({ title, body, confirm = 'Save', danger = false, extra = '',
-                            closeButtons = true, onConfirm = null }) {
+                            closeButtons = true, onConfirm = null, fixedHeight = false }) {
   const bd = el('div', { class: 'modal-bd' });
   bd.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
@@ -2162,7 +2170,7 @@ function openModal({ title, body, confirm = 'Save', danger = false, extra = '',
         <h3>${esc(title)}</h3><div class="spacer" style="margin-left:auto"></div>
         ${closeButtons ? `<button class="btn sm ghost" data-close aria-label="Close">${icon('x')}</button>` : ''}
       </div>
-      <form class="modal-bd2">${body}</form>
+      <form class="modal-bd2${fixedHeight ? ' fixed' : ''}">${body}</form>
       ${onConfirm ? `<div class="modal-ft">
         ${extra}
         ${closeButtons ? '<button class="btn" data-close type="button">Cancel</button>' : ''}
@@ -5397,6 +5405,9 @@ function mount(root, db, go, setState) {
       title: 'Condition',
       confirm: 'Save',
       closeButtons: false,
+      // the palette opens and rows come and go: the frame holds still and the
+      // content scrolls inside it
+      fixedHeight: true,
       body: `
         <div class="field"><label>If&hellip; then&hellip;</label>
           <textarea name="text" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.text || '')}</textarea></div>

@@ -369,6 +369,9 @@ export function mount(root, db, go, setState) {
       title: 'Condition',
       confirm: 'Save',
       closeButtons: false,
+      // the palette opens and rows come and go: the frame holds still and the
+      // content scrolls inside it
+      fixedHeight: true,
       body: `
         <div class="field"><label>If&hellip; then&hellip;</label>
           <textarea name="text" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.text || '')}</textarea></div>

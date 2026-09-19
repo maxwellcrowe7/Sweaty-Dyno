@@ -127,9 +127,12 @@ export const by = (arr, f) => arr.reduce((m, x) => ((m[f(x)] ||= []).push(x), m)
    openModal({title, body, confirm, extra, closeButtons, onConfirm}) -> resolves when closed.
    `extra` is an optional button sharing the footer row with Cancel and Save.
    `closeButtons:false` drops the X and Cancel — clicking outside and Escape still close.
+   `fixedHeight` gives the body a real height instead of letting it size itself, so a
+   modal whose contents expand scrolls rather than growing (and, on a phone, rather
+   than shoving the whole sheet up the screen).
    `body` is an HTML string; the <form> inside is serialised and handed to onConfirm. */
 export function openModal({ title, body, confirm = 'Save', danger = false, extra = '',
-                            closeButtons = true, onConfirm = null }) {
+                            closeButtons = true, onConfirm = null, fixedHeight = false }) {
   const bd = el('div', { class: 'modal-bd' });
   bd.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
@@ -137,7 +140,7 @@ export function openModal({ title, body, confirm = 'Save', danger = false, extra
         <h3>${esc(title)}</h3><div class="spacer" style="margin-left:auto"></div>
         ${closeButtons ? `<button class="btn sm ghost" data-close aria-label="Close">${icon('x')}</button>` : ''}
       </div>
-      <form class="modal-bd2">${body}</form>
+      <form class="modal-bd2${fixedHeight ? ' fixed' : ''}">${body}</form>
       ${onConfirm ? `<div class="modal-ft">
         ${extra}
         ${closeButtons ? '<button class="btn" data-close type="button">Cancel</button>' : ''}

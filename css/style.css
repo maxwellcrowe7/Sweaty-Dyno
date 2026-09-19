@@ -930,6 +930,11 @@ table.dt th.sticky{width:1%}
 .modal-hd{display:flex;align-items:center;gap:10px;padding:16px 18px 12px;position:sticky;top:0;background:var(--surface);border-bottom:1px solid var(--line-soft);z-index:2}
 .modal-hd h3{font-size:17px;text-transform:uppercase;letter-spacing:.06em}
 .modal-bd2{padding:16px 18px}
+/* A modal whose contents expand -- a section that opens, a row that is added --
+   would otherwise grow with them, since .modal is capped rather than sized. A
+   real height on the body makes the frame constant and lets the content scroll
+   inside it. */
+.modal-bd2.fixed{height:min(58dvh,560px);overflow-y:auto;overscroll-behavior:contain}
 .modal-ft{display:flex;gap:9px;padding:0 18px;margin-top:4px}
 .modal-ft .btn{flex:1}
 
