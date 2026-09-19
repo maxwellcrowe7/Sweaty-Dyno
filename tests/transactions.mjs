@@ -200,12 +200,10 @@ await db.update('trades', (t) => {
 eq('the condition hangs off its trade', db.conditionFor('origin')?.id, 'c1');
 eq('and an untagged trade has none', db.conditionFor('elsewhere'), null);
 eq('every lock is live while it is open', db.lockedAssets(2025).length, 3);
-// a lock marks the asset where it already sits rather than being listed again
+// the card states how many assets are frozen, once
 {
   const h = V.render(db, { tradeTab: 'trades' });
-  eq('the frozen row is marked', /<li class="locked">/.test(h), true);
-  // Frozen Guy is in neither deal, so he still needs naming
-  eq('and one with nowhere to sit is named', /Also locked/.test(h), true);
+  eq('the count rides on the condition line', /lock-chip[\s\S]{0,400}?>3<\/span>/.test(h), true);
 }
 
 // the tripwire: Frozen Guy was locked in team 1's hands and went to team 6

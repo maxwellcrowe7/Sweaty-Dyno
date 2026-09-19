@@ -9,7 +9,7 @@ const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || 
 /** An asset is either a plain string (hand-entered) or a pulled object. */
 const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
 
-const assetRow = (db, raw, showFrom, locked = false) => {
+const assetRow = (db, raw, showFrom) => {
   const a = normalize(raw);
   const pick = a.pick || isPickText(a.label);
   const origin = a.pick?.origin ? db.team(a.pick.origin) : null;
@@ -17,8 +17,7 @@ const assetRow = (db, raw, showFrom, locked = false) => {
   const from = showFrom && a.from ? db.team(a.from) : null;
   // a pick or a pile of FAAB has no club; a player carries his, as on a pickup
   const club = pick || a.faab != null ? null : db.nflTeam(a.label);
-  return `<li${locked ? ' class="locked"' : ''}>
-    ${locked ? `<span class="lk-mark" title="Locked until the condition resolves">${icon('lock')}</span>` : ''}
+  return `<li>
     ${a.faab != null ? `<span class="pos-chip pos-none">$</span>`
       : pick ? `<span class="pos-chip pos-none">PK</span>` : posChip(db.position(a.label))}
     <span class="${pick ? 'pk' : ''}">${esc(label)}</span>
@@ -33,10 +32,10 @@ const assetRow = (db, raw, showFrom, locked = false) => {
    row, where it sits over the column that is his -- and on the side itself for
    the two cases where that alignment cannot hold, a stacked phone layout and a
    three-way deal that wraps onto a second row. */
-const side = (db, s, showFrom, banded, who, isLocked = () => false) => `
+const side = (db, s, showFrom, banded, who) => `
   <div class="trade-side">
     ${who(s)}
-    <ul>${s.receives.map((x) => assetRow(db, x, showFrom, isLocked(x, s))).join('')}</ul>
+    <ul>${s.receives.map((x) => assetRow(db, x, showFrom)).join('')}</ul>
   </div>`;
 
 /* A lock, written the way it reads: "Kareem Hunt, held by Max". */
@@ -44,7 +43,7 @@ const lockLabel = (db, l) => (l.kind === 'player' ? l.label
   : `${l.season} ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'][l.round] || `${l.round}th`}${
     l.origin && db.team(l.origin) ? ` (${db.team(l.origin).manager})` : ''}`);
 
-const tradeCard = (db, t, cond = null, breaks = [], nested = false, lockedIn = null) => {
+const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
   const st = cond ? db.conditionStatus(cond) : null;
   const mine = breaks.filter((b) => b.lock.condition.id === cond?.id);
   // the trade that discharged this condition rides inside this card rather than
@@ -59,15 +58,11 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, lockedIn = n
     ? { id: `${t.id}-expected`, date: null, sides: cond.expected } : null;
   /* The follow-up reads left to right the same way the deal above it does --
      a nested card that swapped the managers round made you re-read both. */
-  /* A lock is a fact about an asset, and the asset is already drawn -- so the
-     padlock rides on the row it belongs to rather than being listed again. */
+  /* A count, not a list: an asset that moves in both the deal and its follow-up
+     wore two padlocks, which read as two locks. The number is stated once and
+     the names come with it on hover -- the standing Locked assets section above
+     carries the full detail. */
   const live = cond && ['open', 'due'].includes(st.key) ? (cond.locks || []) : [];
-  const isLocked = lockedIn || ((raw) => {
-    const a = normalize(raw);
-    return live.some((l) => db.sameAsset(l, a));
-  });
-  const orphans = live.filter((l) => ![t, promised].filter(Boolean)
-    .some((x) => x.sides.some((sd) => sd.receives.some((r) => db.sameAsset(l, normalize(r))))));
 
   const align = (x) => {
     if (!x) return null;
@@ -96,18 +91,14 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, lockedIn = n
       </div>
       ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
     </div>
-    <div class="trade-body">${t.sides.map((s) =>
-      side(db, s, showFrom, banded, who, isLocked)).join('')}</div>
+    <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom, banded, who)).join('')}</div>
     ${cond ? `<div class="cond">
-      <p class="cond-line"><span class="lbl">Condition</span>${esc(cond.text)}</p>
+      <p class="cond-line"><span class="lbl">Condition</span>${esc(cond.text)}${
+        live.length ? `<span class="lock-chip" title="${esc(live.map((l) =>
+          `${lockLabel(db, l)} — ${db.team(l.heldBy)?.manager || '?'}`).join('\n'))}">${
+          icon('lock')}${live.length}</span>` : ''}</p>
       ${/* a resolved condition freezes nothing: the chips go with it */''}
-      ${/* only the ones with nowhere to sit: an asset neither deal draws still
-           has to be named somewhere */''}
-      ${orphans.length ? `<p class="cond-line locks">
-        <span class="lbl">Also locked</span>
-        ${orphans.map((l) => `<span class="lock-chip"
-          title="held by ${esc(db.team(l.heldBy)?.manager || '?')}">${icon('lock')}${esc(lockLabel(db, l))}</span>`).join('')}
-      </p>` : ''}
+
       ${/* "Condition met" plus the wording above usually says what happened --
            "met" already implies Max made the finals. The note is for the times
            it does not, so an empty one prints nothing. */''}
@@ -122,7 +113,7 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, lockedIn = n
       ${/* the settlement sits on the condition's own ground -- it belongs to the
            condition, and a second colour around it only said so again */''}
       ${settler || promised ? `<div class="settle-wrap">
-        ${tradeCard(db, align(settler || promised), null, [], st.key, isLocked)}
+        ${tradeCard(db, align(settler || promised), null, [], st.key)}
       </div>` : ''}
     </div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
