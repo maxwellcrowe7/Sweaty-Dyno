@@ -322,7 +322,7 @@ export function mount(root, db, go, setState) {
      owes it, so there is nothing separate to keep in step. */
   const POS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
   const ORD = ['', '1st', '2nd', '3rd'];
-  const ROWS = 6;
+  const ROWS = 4;
 
   root.querySelectorAll('[data-cond-edit]').forEach((b) => b.addEventListener('click', () => {
     const id = b.dataset.condEdit;
@@ -331,46 +331,48 @@ export function mount(root, db, go, setState) {
     const parties = trade.sides.map((sd) => sd.team).filter(Boolean);
     const years = Array.from({ length: 4 }, (_, i) => (db.seasonOf(trade.date) || db.season) + i);
 
-    // existing promise, flattened back into rows
-    const rows = (c?.expected || []).flatMap((sd) => sd.receives.map((a) => ({
-      to: sd.team,
-      kind: a.faab != null ? 'faab' : a.pick ? 'pick' : 'player',
-      pos: a.pos || '', name: a.label,
-      yr: a.pick?.season || years[0], rd: a.pick?.round || 1, own: a.pick?.origin || parties[0],
-      amt: a.faab ?? '',
-    })));
-    while (rows.length < ROWS) rows.push(null);
+    // the promise, as it stands, grouped the way the card draws it
+    const held = (team) => (c?.expected || []).find((sd) => sd.team === team)?.receives || [];
 
-    const mSel = (name, sel) => `<select name="${name}">${db.teams()
-      .filter((t) => parties.includes(t.number) || String(t.number) === String(sel))
-      .map((t) => `<option value="${t.number}" ${String(t.number) === String(sel) ? 'selected' : ''}>${
-        esc(t.manager)}</option>`).join('')}</select>`;
     const ownSel = (name, sel) => `<select name="${name}">${db.teams()
       .map((t) => `<option value="${t.number}" ${String(t.number) === String(sel) ? 'selected' : ''}>${
         esc(t.manager)}</option>`).join('')}</select>`;
 
-    const rowHtml = (r, i) => `<div class="ab-row" data-kind="${r?.kind || 'player'}"
-      ${!r && i > 1 ? 'hidden' : ''}>
-      ${mSel(`r${i}to`, r?.to ?? parties[0])}
-      <select name="r${i}kind" data-kind-pick>
+    /* One column per manager, like the trade above it: the column says who
+       receives, so a row only has to say what. */
+    const rowHtml = (side, i, a) => `<div class="ab-row" data-kind="${
+      a ? (a.faab != null ? 'faab' : a.pick ? 'pick' : 'player') : 'player'}"
+      ${a || i === 0 ? '' : 'hidden'}>
+      <select name="s${side}r${i}kind" data-kind-pick>
         ${[['player', 'Player'], ['pick', 'Pick'], ['faab', 'FAAB']].map(([v, t]) =>
-          `<option value="${v}" ${(r?.kind || 'player') === v ? 'selected' : ''}>${t}</option>`).join('')}
+          `<option value="${v}" ${(a ? (a.faab != null ? 'faab' : a.pick ? 'pick' : 'player') : 'player') === v
+            ? 'selected' : ''}>${t}</option>`).join('')}
       </select>
       <span class="f f-player">
-        <select name="r${i}pos">${['', ...POS].map((pz) =>
-          `<option value="${pz}" ${(r?.pos || '') === pz ? 'selected' : ''}>${pz || 'Pos'}</option>`).join('')}</select>
-        <input name="r${i}name" placeholder="Player name" value="${esc(r?.kind === 'player' ? r.name : '')}">
+        <select name="s${side}r${i}pos">${['', ...POS].map((pz) =>
+          `<option value="${pz}" ${(a?.pos || '') === pz ? 'selected' : ''}>${pz || 'Pos'}</option>`).join('')}</select>
+        <input name="s${side}r${i}name" placeholder="Player name"
+          value="${esc(a && !a.pick && a.faab == null ? a.label : '')}">
       </span>
       <span class="f f-pick">
-        <select name="r${i}yr">${years.map((y) =>
-          `<option value="${y}" ${String(r?.yr) === String(y) ? 'selected' : ''}>${y}</option>`).join('')}</select>
-        <select name="r${i}rd">${[1, 2, 3].map((n) =>
-          `<option value="${n}" ${Number(r?.rd) === n ? 'selected' : ''}>${ORD[n]}</option>`).join('')}</select>
-        ${ownSel(`r${i}own`, r?.own ?? parties[0])}
+        <select name="s${side}r${i}yr">${years.map((y) =>
+          `<option value="${y}" ${String(a?.pick?.season) === String(y) ? 'selected' : ''}>${y}</option>`).join('')}</select>
+        <select name="s${side}r${i}rd">${[1, 2, 3].map((n) =>
+          `<option value="${n}" ${Number(a?.pick?.round) === n ? 'selected' : ''}>${ORD[n]}</option>`).join('')}</select>
+        ${ownSel(`s${side}r${i}own`, a?.pick?.origin ?? parties[side])}
       </span>
-      <span class="f f-faab"><input type="number" min="0" name="r${i}amt"
-        placeholder="$" value="${esc(r?.kind === 'faab' ? String(r.amt) : '')}"></span>
+      <span class="f f-faab"><input type="number" min="0" name="s${side}r${i}amt"
+        placeholder="$" value="${esc(a?.faab != null ? String(a.faab) : '')}"></span>
     </div>`;
+
+    const colHtml = (team, side) => {
+      const mine = held(team);
+      return `<div class="ab-col">
+        <div class="ab-who">${teamTag(db.team(team))}<span class="arrow">gets</span></div>
+        ${Array.from({ length: ROWS }, (_, i) => rowHtml(side, i, mine[i])).join('')}
+        <button type="button" class="btn sm ghost ab-add" data-add-row>${icon('plus')} Asset</button>
+      </div>`;
+    };
 
     const after = db.get('trades').trades
       .filter((x) => x.id !== id && (x.date || '') >= (trade.date || '')
@@ -388,10 +390,8 @@ export function mount(root, db, go, setState) {
           <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
 
         <div class="section-title">What changes hands if it happens</div>
-        <div class="ab-head"><span>Goes to</span><span>Asset</span></div>
-        <div data-rows>${rows.map(rowHtml).join('')}</div>
-        <button type="button" class="btn sm" data-add-row>${icon('plus')} Another asset</button>
-        <p class="s dimmer" style="margin:9px 0 0">Everything listed here is locked in the
+        <div class="ab-grid">${parties.map((team, i) => colHtml(team, i)).join('')}</div>
+        <p class="s dimmer" style="margin:2px 0 0">Everything listed here is locked in the
           sender's hands until the condition resolves.</p>
 
         <div class="section-title">Outcome</div>
@@ -411,22 +411,26 @@ export function mount(root, db, go, setState) {
       onConfirm: async (d) => {
         const body = d.text.trim();
         const want = [];
-        for (let i = 0; i < ROWS; i++) {
-          const kind = d[`r${i}kind`];
-          const to = Number(d[`r${i}to`]);
-          if (kind === 'player') {
-            const name = String(d[`r${i}name`] || '').trim();
-            if (!name) continue;
-            want.push({ to, asset: { label: name, pos: d[`r${i}pos`] || null } });
-          } else if (kind === 'pick') {
-            const yr = Number(d[`r${i}yr`]); const rd = Number(d[`r${i}rd`]); const own = Number(d[`r${i}own`]);
-            want.push({ to, asset: { label: `${yr} ${ORD[rd]}`, pick: { season: yr, round: rd, origin: own } } });
-          } else {
-            const amt = Number(d[`r${i}amt`]);
-            if (!amt) continue;
-            want.push({ to, asset: { label: `$${amt} FAAB`, faab: amt } });
+        parties.forEach((team, side) => {
+          for (let i = 0; i < ROWS; i++) {
+            const kind = d[`s${side}r${i}kind`];
+            if (kind === 'player') {
+              const name = String(d[`s${side}r${i}name`] || '').trim();
+              if (!name) continue;
+              want.push({ to: team, asset: { label: name, pos: d[`s${side}r${i}pos`] || null } });
+            } else if (kind === 'pick') {
+              const yr = Number(d[`s${side}r${i}yr`]);
+              const rd = Number(d[`s${side}r${i}rd`]);
+              const own = Number(d[`s${side}r${i}own`]);
+              if (!yr || !rd) continue;
+              want.push({ to: team, asset: { label: `${yr} ${ORD[rd]}`, pick: { season: yr, round: rd, origin: own } } });
+            } else {
+              const amt = Number(d[`s${side}r${i}amt`]);
+              if (!amt) continue;
+              want.push({ to: team, asset: { label: `$${amt} FAAB`, faab: amt } });
+            }
           }
-        }
+        });
         const expected = [...new Set(want.map((w) => w.to))].map((team) => ({
           team, receives: want.filter((w) => w.to === team).map((w) => w.asset),
         }));
@@ -467,10 +471,11 @@ export function mount(root, db, go, setState) {
     m.root.querySelectorAll('[data-kind-pick]').forEach((sel) => sel.addEventListener('change', () => {
       sel.closest('.ab-row').dataset.kind = sel.value;
     }));
-    m.root.querySelector('[data-add-row]')?.addEventListener('click', () => {
-      const next = [...m.root.querySelectorAll('.ab-row')].find((r) => r.hidden);
+    m.root.querySelectorAll('[data-add-row]').forEach((add) => add.addEventListener('click', () => {
+      const col = add.closest('.ab-col');
+      const next = [...col.querySelectorAll('.ab-row')].find((r) => r.hidden);
       if (next) next.hidden = false;
-      if (!m.root.querySelector('.ab-row[hidden]')) m.root.querySelector('[data-add-row]').hidden = true;
-    });
+      if (!col.querySelector('.ab-row[hidden]')) add.hidden = true;
+    }));
   }));
 }

@@ -623,8 +623,8 @@ table.dt th.sticky{width:1%}
 .who .tnum{align-self:center}
 .trade-side .who{padding:0 13px 7px}
 .trade-side ul{padding:0 13px}
-.who b{font-size:15px}
-.who .arrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.who b,.ab-who b{font-size:15px}
+.who .arrow,.ab-who .arrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .trade-side ul{margin:0;list-style:none;display:flex;flex-direction:column;gap:5px}
 /* baseline so the club sits on the player's line, as it does on a pickup; the
    chip keeps its own centring, being a box rather than a word */
@@ -780,22 +780,28 @@ table.dt th.sticky{width:1%}
 .lock-row .lk{color:var(--violet);display:flex}
 .lock-row .lk svg{width:15px;height:15px}
 .lock-row.broke .t{color:var(--red)}
-/* Building the promised return asset by asset. Each row is one thing changing
-   hands: who gets it, what kind of thing it is, and the fields that kind needs
-   -- the others are hidden rather than absent, so the row never reflows. */
-.ab-head{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-bottom:5px;
-  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
-.ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:7px}
+/* Building the promised return the way the card draws it: a column per
+   manager, the assets he receives stacked underneath. The column says who, so
+   a row only has to say what -- and only the fields that kind needs are shown,
+   hidden rather than absent so a row never reflows as you change it. */
+.ab-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:620px){ .ab-grid{grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);
+  border:1px solid var(--line);border-radius:var(--r)} }
+.ab-col{background:var(--surface);padding:10px 11px 9px}
+.ab-who{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.ab-who .tnum{align-self:center}
+.ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px}
 .ab-row[hidden]{display:none}
-.ab-row > select{width:110px;flex:none}
-.ab-row .f{display:none;align-items:center;gap:7px;flex:1;min-width:0}
+.ab-row > select{width:80px;flex:none}
+.ab-row .f{display:none;align-items:center;gap:6px;flex:1;min-width:0}
 .ab-row[data-kind="player"] .f-player,
 .ab-row[data-kind="pick"] .f-pick,
-.ab-row[data-kind="faab"] .f-faab{display:flex}
-.ab-row .f-player select{width:82px;flex:none}
-.ab-row .f-player input{flex:1;min-width:120px}
-.ab-row .f-pick select{flex:1;min-width:88px}
-.ab-row .f-faab input{width:110px}
+.ab-row[data-kind="faab"] .f-faab{display:flex;flex-wrap:wrap}
+.ab-row .f-player select{width:68px;flex:none}
+.ab-row .f-player input{flex:1 1 96px;min-width:96px}
+.ab-row .f-pick select{flex:1 1 62px;min-width:62px}
+.ab-row .f-faab input{width:96px}
+.ab-add{margin-top:2px;padding:3px 9px;font-size:11.5px}
 
 /* ---------- guillotine ---------- */
 .guillo{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border-radius:var(--r);overflow:hidden}
