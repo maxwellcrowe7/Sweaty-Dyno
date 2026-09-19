@@ -31,7 +31,8 @@ export function render(db) {
           <b>${esc(t.fullName)}</b>
           ${t.sleeper ? `<span class="fr-sl">@${esc(t.sleeper)}</span>` : ''}
           ${/* a role, said once, quietly -- it is one row in ten */''}
-          ${t.managerId === comm ? '<span class="fr-comm">Commissioner</span>' : ''}
+          ${t.managerId === comm
+            ? '<span class="fr-comm" title="Commissioner" aria-label="Commissioner">C</span>' : ''}
         </div>
         <div class="fr-since">since ${since(t)}</div>
         <div class="fr-rings">${rings

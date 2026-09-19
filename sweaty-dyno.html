@@ -1429,12 +1429,13 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .fr-who{display:flex;align-items:baseline;gap:8px;min-width:0}
 .fr-who b{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fr-sl{font-size:12px;color:var(--ink-3);white-space:nowrap}
-/* the one role worth naming on this page: loud enough to find on a scan,
-   quiet enough that nine other rows still read normally */
+/* the one role worth marking on this page, worn like a captain's C: enough to
+   find on a scan of ten rows, small enough that the nine others read normally */
 .fr-comm{
-  flex:none;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--heat);
-  background:rgba(255,107,44,.12);border:1px solid rgba(255,107,44,.34);
+  flex:none;display:inline-grid;place-items:center;width:17px;height:17px;
+  align-self:center;border-radius:999px;font-size:9.5px;font-weight:700;
+  line-height:1;color:var(--heat);
+  background:rgba(255,107,44,.12);border:1px solid rgba(255,107,44,.38);
 }
 .fr-since{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
 .fr-rings{display:flex;gap:2px;color:var(--gold)}
@@ -6832,7 +6833,8 @@ function render(db) {
           <b>${esc(t.fullName)}</b>
           ${t.sleeper ? `<span class="fr-sl">@${esc(t.sleeper)}</span>` : ''}
           ${/* a role, said once, quietly -- it is one row in ten */''}
-          ${t.managerId === comm ? '<span class="fr-comm">Commissioner</span>' : ''}
+          ${t.managerId === comm
+            ? '<span class="fr-comm" title="Commissioner" aria-label="Commissioner">C</span>' : ''}
         </div>
         <div class="fr-since">since ${since(t)}</div>
         <div class="fr-rings">${rings
