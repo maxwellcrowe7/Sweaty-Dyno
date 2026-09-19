@@ -205,6 +205,31 @@ class Store {
   }
   team(n, season = this.season) { return n == null ? null : this.teams(season).find((t) => t.number === Number(n)) || null; }
 
+  /** Who held a franchise in a given season, by manager id. */
+  ownerAt(number, season) {
+    const t = this.get('managers').teams.find((x) => x.number === Number(number));
+    const own = [...(t?.ownership || [])]
+      .filter((o) => o.fromSeason <= season && (o.toSeason == null || o.toSeason >= season))
+      .sort((a, b) => b.fromSeason - a.fromSeason)[0];
+    return own?.managerId ?? null;
+  }
+
+  /**
+   * What Sleeper last said about who owns each roster, recorded on a pull so
+   * this can be read without a network call. Turns into a flag on the Managers
+   * tab: a franchise nobody owns, or one owned by somebody we do not know yet.
+   */
+  rosterStatus(number) {
+    const a = this.get('managers').rosterAudit;
+    const seen = a?.teams?.[String(number)];
+    if (!seen) return null;
+    const mine = this.teams(a.season).find((t) => t.number === Number(number))?.managerId ?? null;
+    if (!seen.ownerId) return { key: 'vacant', season: a.season, was: mine };
+    if (seen.managerId && seen.managerId === mine) return null;         // as expected
+    if (seen.managerId) return { key: 'moved', season: a.season, was: mine, managerId: seen.managerId };
+    return { key: 'incoming', season: a.season, was: mine, user: seen };
+  }
+
   /**
    * Current view season. Remembered across reloads: picking 2025 and hitting
    * refresh used to drop you back on the league's current season, which made

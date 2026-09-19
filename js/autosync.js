@@ -158,6 +158,22 @@ export async function pullTransactions(db, season, onStep = () => {}) {
   const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
   if (!Object.keys(map.rosterToTeam).length) return 'No rosters matched — check the aliases in managers.json.';
 
+  /* Record who Sleeper thinks owns each franchise, so the Managers tab can flag
+     a departure without a network call of its own. The roster-to-team map is
+     kept too: once an owner changes, his roster no longer matches a manager,
+     and last season's map is the only thing that still says which team it is. */
+  await db.update('managers', (m) => {
+    m.rosterMap = { ...(m.rosterMap || {}), [String(season)]: map.rosterToTeam };
+    const known = m.rosterMap[String(season)] || {};
+    const prior = Object.assign({}, ...Object.values(m.rosterMap || {}));
+    const teams = {};
+    for (const [rid, seen] of Object.entries(map.owners || {})) {
+      const team = known[rid] ?? prior[rid];
+      if (team) teams[String(team)] = seen;
+    }
+    m.rosterAudit = { season, at: new Date().toISOString().slice(0, 10), teams };
+  });
+
   const weeks = Array.from({ length: 18 }, (_, i) => i + 1);
   onStep('Reading transactions…');
   // first pass names nothing; it only tells us which players we need names for

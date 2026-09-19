@@ -1449,6 +1449,21 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 /* a fixed lane, so a franchise with no title does not shift "since" left */
 .fr-rings{display:flex;justify-content:flex-end;gap:2px;min-width:20px;color:var(--gold)}
 .fr-rings svg{width:16px;height:16px}
+/* a title the franchise holds but the current manager did not win: still on the
+   shelf, plainly not his */
+.fr-rings .past{opacity:.3}
+/* Sleeper says the roster changed hands: red while nobody is on it, orange once
+   someone is and the handover only needs confirming. */
+.fr-flag{
+  flex:none;padding:1px 8px;border-radius:999px;font-size:9px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;
+}
+.fr-flag.gone{color:var(--red);background:rgba(255,77,94,.12);border:1px solid rgba(255,77,94,.4)}
+.fr-flag.new{color:var(--gold);background:rgba(245,196,81,.12);border:1px solid rgba(245,196,81,.42)}
+.fr-hand{display:grid;place-items:center;width:24px;height:24px;padding:0;flex:none;
+  border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-3);cursor:pointer}
+.fr-hand:hover{border-color:var(--heat);color:var(--heat)}
+.fr-hand svg{width:13px;height:13px}
 .fr-go{display:flex;gap:6px}
 .fr-go button{
   display:inline-flex;align-items:center;gap:5px;
@@ -2699,6 +2714,31 @@ class Store {
   }
   team(n, season = this.season) { return n == null ? null : this.teams(season).find((t) => t.number === Number(n)) || null; }
 
+  /** Who held a franchise in a given season, by manager id. */
+  ownerAt(number, season) {
+    const t = this.get('managers').teams.find((x) => x.number === Number(number));
+    const own = [...(t?.ownership || [])]
+      .filter((o) => o.fromSeason <= season && (o.toSeason == null || o.toSeason >= season))
+      .sort((a, b) => b.fromSeason - a.fromSeason)[0];
+    return own?.managerId ?? null;
+  }
+
+  /**
+   * What Sleeper last said about who owns each roster, recorded on a pull so
+   * this can be read without a network call. Turns into a flag on the Managers
+   * tab: a franchise nobody owns, or one owned by somebody we do not know yet.
+   */
+  rosterStatus(number) {
+    const a = this.get('managers').rosterAudit;
+    const seen = a?.teams?.[String(number)];
+    if (!seen) return null;
+    const mine = this.teams(a.season).find((t) => t.number === Number(number))?.managerId ?? null;
+    if (!seen.ownerId) return { key: 'vacant', season: a.season, was: mine };
+    if (seen.managerId && seen.managerId === mine) return null;         // as expected
+    if (seen.managerId) return { key: 'moved', season: a.season, was: mine, managerId: seen.managerId };
+    return { key: 'incoming', season: a.season, was: mine, user: seen };
+  }
+
   /**
    * Current view season. Remembered across reloads: picking 2025 and hitting
    * refresh used to drop you back on the league's current season, which made
@@ -3500,12 +3540,22 @@ async function buildRosterMap(leagueId, managersFile, teamsForSeason) {
 
   const teamOf = (mid) => teamsForSeason.find((t) => t.managerId === mid)?.number ?? null;
   const rosterToTeam = {};
+  // who Sleeper says owns each roster, matched or not -- the caller uses this to
+  // notice a franchise that has changed hands
+  const owners = {};
   for (const r of rs) {
     const mid = byUser.get(r.owner_id);
     const tn = mid ? teamOf(mid) : null;
     if (tn) rosterToTeam[r.roster_id] = tn;
+    const u = us.find((x) => x.user_id === r.owner_id);
+    owners[r.roster_id] = {
+      ownerId: r.owner_id ?? null,
+      ownerName: u?.display_name || u?.username || null,
+      teamName: u?.metadata?.team_name || null,
+      managerId: mid ?? null,
+    };
   }
-  return { rosterToTeam, unmatched, users: us, rosters: rs };
+  return { rosterToTeam, owners, unmatched, users: us, rosters: rs };
 }
 
 /* ---------- weekly points ---------- */
@@ -3875,6 +3925,22 @@ async function pullTransactions(db, season, onStep = () => {}) {
   onStep('Matching rosters…');
   const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
   if (!Object.keys(map.rosterToTeam).length) return 'No rosters matched — check the aliases in managers.json.';
+
+  /* Record who Sleeper thinks owns each franchise, so the Managers tab can flag
+     a departure without a network call of its own. The roster-to-team map is
+     kept too: once an owner changes, his roster no longer matches a manager,
+     and last season's map is the only thing that still says which team it is. */
+  await db.update('managers', (m) => {
+    m.rosterMap = { ...(m.rosterMap || {}), [String(season)]: map.rosterToTeam };
+    const known = m.rosterMap[String(season)] || {};
+    const prior = Object.assign({}, ...Object.values(m.rosterMap || {}));
+    const teams = {};
+    for (const [rid, seen] of Object.entries(map.owners || {})) {
+      const team = known[rid] ?? prior[rid];
+      if (team) teams[String(team)] = seen;
+    }
+    m.rosterAudit = { season, at: new Date().toISOString().slice(0, 10), teams };
+  });
 
   const weeks = Array.from({ length: 18 }, (_, i) => i + 1);
   onStep('Reading transactions…');
@@ -6837,7 +6903,7 @@ return { render };
 
 /* ===== js/views/managers.js ===== */
 __M["js/views/managers.js"] = (function () {
-const { esc, icon, teamColor } = __M["js/util.js"];
+const { esc, icon, teamColor, openModal, toast } = __M["js/util.js"];
 
 /* A directory, not a dashboard. Every figure this page used to carry -- paid in,
    won, net, empire points -- is another tab's headline, and repeating them made
@@ -6845,7 +6911,13 @@ const { esc, icon, teamColor } = __M["js/util.js"];
    What is left is what nothing else owns: who holds which franchise, who held it
    before, and a way through to the pages that do carry their numbers. */
 
-const since = (t) => Math.min(...t.ownership.map((o) => o.fromSeason));
+/* When the manager whose row this is took it on -- which depends on the season
+   being viewed, the same way the name does. Dating the row from the open-ended
+   entry instead showed Andrew's row starting the year Matt takes over. */
+const since = (t, season) => [...t.ownership]
+  .filter((o) => o.fromSeason <= season && (o.toSeason == null || o.toSeason >= season))
+  .sort((a, b) => b.fromSeason - a.fromSeason)[0]?.fromSeason
+  ?? Math.min(...t.ownership.map((o) => o.fromSeason));
 function render(db) {
   const mg = db.get('managers');
   const comm = db.league.commissioner;
@@ -6860,7 +6932,13 @@ function render(db) {
   <div class="section-title">Franchises<span class="sub-n dim">${teams.length}</span></div>
   <div class="fr-list">
     ${teams.map((t) => {
-      const rings = finishes.filter((f) => f.team === t.number && f.place === 1).length;
+      /* A title belongs to the franchise -- empire points ride with the team,
+         so a replacement inherits them. One won by a previous owner is dulled
+         rather than dropped: the club is still on the shelf, it is just not
+         this manager's. */
+      const rings = finishes.filter((f) => f.team === t.number && f.place === 1)
+        .map((f) => db.ownerAt(t.number, f.season) === t.managerId);
+      const flag = db.rosterStatus(t.number);
       // a franchise that has only ever had one owner has no history to tell
       const past = t.ownership.length > 1 ? t.ownership : [];
       return `<div class="fr" style="--tc:${teamColor(t.number)}">
@@ -6871,13 +6949,23 @@ function render(db) {
           ${/* a role, said once, quietly -- it is one row in ten */''}
           ${t.managerId === comm
             ? '<span class="fr-comm" title="Commissioner" aria-label="Commissioner">C</span>' : ''}
+          ${/* Sleeper is the source of truth for who owns a roster: a franchise
+               it says nobody owns is a departure, and one owned by somebody we
+               cannot name is a handover waiting to be confirmed. */''}
+          ${flag?.key === 'vacant' ? `<span class="fr-flag gone"
+            title="No owner in Sleeper as of ${flag.season}">No manager</span>` : ''}
+          ${flag?.key === 'incoming' ? `<span class="fr-flag new"
+            title="${esc(flag.user.ownerName || 'Someone')} owns this roster in Sleeper">${
+            db.isAdmin ? '' : ''}New owner &mdash; confirm</span>` : ''}
         </div>
         ${/* rings first, so "since" holds one column down the page */''}
         <div class="fr-rings">${rings
-          ? Array.from({ length: rings }, () => icon('crown')).join('')
-          : ''}</div>
-        <div class="fr-since">since ${since(t)}</div>
+          .map((his) => icon('crown', his ? '' : 'past')).join('')}</div>
+        <div class="fr-since">since ${since(t, db.season)}</div>
         <div class="fr-go">
+          ${db.isAdmin ? `<button class="fr-hand" data-hand="${t.number}"
+            aria-label="Hand this franchise over" title="Hand this franchise over">${
+            icon('users')}</button>` : ''}
           ${/* named and marked for the tab they land on */''}
           <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
           <button data-go-drafts="${t.number}">${icon('board')}Drafts</button>
@@ -6905,9 +6993,87 @@ function render(db) {
   </div></div>` : ''}
   `;
 }
+
+/* Handing a franchise over. The league is season-granular on purpose: a manager
+   who quits in November either owns that season or the next one starts without
+   him, because splitting a season would complicate every ownership lookup in the
+   app for something that may never happen. */
+function handOver(db, number) {
+  const t = db.team(number);
+  const seen = db.rosterStatus(number);
+  const mgrs = db.get('managers').managers.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const next = (seen?.season ?? db.league.currentSeason) + 1;
+  const suggested = seen?.user?.ownerName || '';
+
+  openModal({
+    title: `Team ${number} changes hands`,
+    confirm: 'Hand it over',
+    body: `
+      <p class="s dim" style="margin:0 0 12px">
+        <b>${esc(t?.manager || 'The current manager')}</b> has held this franchise
+        since ${esc(String(db.get('managers').teams.find((x) => x.number === number)?.ownership.at(-1).fromSeason))}.
+        ${seen?.key === 'incoming' ? `Sleeper now shows <b>${esc(seen.user.ownerName || 'someone new')}</b> on this roster.` : ''}
+        ${seen?.key === 'vacant' ? 'Sleeper shows nobody on this roster.' : ''}
+      </p>
+      <div class="field"><label>Taking over</label>
+        <select name="who">
+          <option value="">&mdash; someone new &mdash;</option>
+          ${mgrs.map((m) => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}
+        </select></div>
+      <div class="fgrid">
+        <div class="field"><label>Their name</label>
+          <input name="name" placeholder="First name" value="${esc(suggested.split(/\s+/)[0] || '')}"></div>
+        <div class="field"><label>Full name</label><input name="fullName" placeholder="First Last"></div>
+      </div>
+      <div class="fgrid">
+        <div class="field"><label>Sleeper username</label>
+          <input name="sleeper" value="${esc(suggested)}" placeholder="their Sleeper handle"></div>
+        <div class="field"><label>From season</label>
+          <select name="from">${db.seasons.map((y) =>
+            `<option value="${y}" ${y === next ? 'selected' : ''}>${y}</option>`).join('')}</select></div>
+      </div>
+      <p class="s dimmer" style="margin:2px 0 0">Everything before that season stays with
+        ${esc(t?.manager || 'the outgoing manager')} &mdash; past trades, drafts and standings
+        all read the owner of the day. Titles stay with the franchise, since the empire
+        points do.</p>`,
+    onConfirm: async (d) => {
+      const from = Number(d.from);
+      let id = d.who;
+      if (!id) {
+        const name = String(d.name || '').trim();
+        if (!name) { toast('Name the incoming manager'); return false; }
+        id = name.toLowerCase().replace(/[^a-z0-9]+/g, '') || `mgr${Date.now()}`;
+      }
+      await db.update('managers', (m) => {
+        if (!m.managers.some((x) => x.id === id)) {
+          m.managers.push({
+            id,
+            name: String(d.name || '').trim() || id,
+            aliases: [String(d.name || '').trim(), String(d.fullName || '').trim(),
+              String(d.sleeper || '').trim()].filter(Boolean),
+            sleeperUserId: null,
+            sleeperUsername: String(d.sleeper || '').trim() || null,
+            usernameConfirmed: false,
+            fullName: String(d.fullName || '').trim() || String(d.name || '').trim() || id,
+          });
+        }
+        const team = m.teams.find((x) => x.number === number);
+        const outgoing = [...team.ownership].sort((a, b) => b.fromSeason - a.fromSeason)[0];
+        if (outgoing && outgoing.toSeason == null) outgoing.toSeason = from - 1;
+        team.ownership.push({ managerId: id, fromSeason: from, toSeason: null });
+        team.ownership.sort((a, b) => a.fromSeason - b.fromSeason);
+        // the flag has served its purpose; the next pull writes a fresh one
+        if (m.rosterAudit?.teams) delete m.rosterAudit.teams[String(number)];
+      });
+      toast(`Team ${number} handed over from ${from}`);
+    },
+  });
+}
 function mount(root, db, go) {
   /* The rest of the app is season-scoped and manager-blind; this is the one page
      that knows people, so it is the natural way in to their pages. */
+  root.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () =>
+    handOver(db, Number(b.dataset.hand))));
   root.querySelectorAll('[data-go-trades]').forEach((b) => b.addEventListener('click', () =>
     go('trades', { mgr: b.dataset.goTrades })));
   root.querySelectorAll('[data-go-drafts]').forEach((b) => b.addEventListener('click', () =>

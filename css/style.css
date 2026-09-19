@@ -1431,6 +1431,21 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 /* a fixed lane, so a franchise with no title does not shift "since" left */
 .fr-rings{display:flex;justify-content:flex-end;gap:2px;min-width:20px;color:var(--gold)}
 .fr-rings svg{width:16px;height:16px}
+/* a title the franchise holds but the current manager did not win: still on the
+   shelf, plainly not his */
+.fr-rings .past{opacity:.3}
+/* Sleeper says the roster changed hands: red while nobody is on it, orange once
+   someone is and the handover only needs confirming. */
+.fr-flag{
+  flex:none;padding:1px 8px;border-radius:999px;font-size:9px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;
+}
+.fr-flag.gone{color:var(--red);background:rgba(255,77,94,.12);border:1px solid rgba(255,77,94,.4)}
+.fr-flag.new{color:var(--gold);background:rgba(245,196,81,.12);border:1px solid rgba(245,196,81,.42)}
+.fr-hand{display:grid;place-items:center;width:24px;height:24px;padding:0;flex:none;
+  border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-3);cursor:pointer}
+.fr-hand:hover{border-color:var(--heat);color:var(--heat)}
+.fr-hand svg{width:13px;height:13px}
 .fr-go{display:flex;gap:6px}
 .fr-go button{
   display:inline-flex;align-items:center;gap:5px;

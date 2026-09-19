@@ -50,12 +50,22 @@ export async function buildRosterMap(leagueId, managersFile, teamsForSeason) {
 
   const teamOf = (mid) => teamsForSeason.find((t) => t.managerId === mid)?.number ?? null;
   const rosterToTeam = {};
+  // who Sleeper says owns each roster, matched or not -- the caller uses this to
+  // notice a franchise that has changed hands
+  const owners = {};
   for (const r of rs) {
     const mid = byUser.get(r.owner_id);
     const tn = mid ? teamOf(mid) : null;
     if (tn) rosterToTeam[r.roster_id] = tn;
+    const u = us.find((x) => x.user_id === r.owner_id);
+    owners[r.roster_id] = {
+      ownerId: r.owner_id ?? null,
+      ownerName: u?.display_name || u?.username || null,
+      teamName: u?.metadata?.team_name || null,
+      managerId: mid ?? null,
+    };
   }
-  return { rosterToTeam, unmatched, users: us, rosters: rs };
+  return { rosterToTeam, owners, unmatched, users: us, rosters: rs };
 }
 
 /* ---------- weekly points ---------- */
