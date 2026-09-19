@@ -874,6 +874,10 @@ table.dt th.sticky{width:1%}
 }
 .field select{padding-right:30px;background-position:right 11px center}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
+/* a field that does not apply yet: present, so the form keeps its shape, but
+   plainly not asking for anything */
+.field.off{opacity:.45}
+.field.off select{cursor:not-allowed}
 .field textarea{resize:vertical;min-height:66px;line-height:1.5}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 /* a field that wants the whole line while keeping the grid's spacing */

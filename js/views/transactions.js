@@ -374,7 +374,7 @@ export function mount(root, db, go, setState) {
         ${/* the deadline is part of where this stands, not part of the terms */''}
         <div class="section-title">Outcome</div>
         <div class="fgrid">
-          <div class="field"><label>Status</label><select name="status">
+          <div class="field"><label>Status</label><select name="status" data-status>
             ${[['open', 'Open'], ['met', 'Condition met'], ['void', 'Not met']].map(([v, t]) =>
               `<option value="${v}" ${(c?.status || 'open') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
           <div class="field"><label>Deadline</label>
@@ -383,7 +383,7 @@ export function mount(root, db, go, setState) {
         <div class="fgrid one">
           ${/* a noun, because the value is a trade: "Completion trade: --" reads
                where "Settled by: --" sounds like a missing name */''}
-          <div class="field"><label>Completion trade</label><select name="settledBy">
+          <div class="field" data-settled-field><label>Completion trade</label><select name="settledBy">
             <option value="">&mdash;</option>
             ${after.map((x) => `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
               esc(fmtDate(x.date, { year: true }))} &middot; ${
@@ -391,7 +391,7 @@ export function mount(root, db, go, setState) {
               db.seasonOf(x.date) !== (trade.season ?? db.seasonOf(trade.date))
                 ? ` (${db.seasonOf(x.date)})` : ''}</option>`).join('')}</select></div>
         </div>
-        <div class="field"><label>What happened</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>`,
+        <div class="field"><label>Result detail</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>`,
       onConfirm: async (d) => {
         const body = d.text.trim();
         /* the rows were built as you went, so read whatever is in the form */
@@ -445,8 +445,10 @@ export function mount(root, db, go, setState) {
             status: d.status,
             locks,
             expected,
-            settledBy: d.settledBy || null,
-            settledOn: d.status === 'open' ? null : (db.get('trades').trades.find((x) => x.id === d.settledBy)?.date || null),
+            // only a met condition has a trade that completed it
+            settledBy: d.status === 'met' ? (d.settledBy || null) : null,
+            settledOn: d.status === 'met'
+              ? (db.get('trades').trades.find((x) => x.id === d.settledBy)?.date || null) : null,
             outcome: d.outcome.trim() || null,
           };
           if (at > -1) t.conditions[at] = rec; else t.conditions.push(rec);
@@ -505,6 +507,18 @@ export function mount(root, db, go, setState) {
         addRow(col, kind === 'rd' ? 'pick' : kind === 'pos' ? 'player' : 'faab', spec);
       }));
     });
+    /* Only a condition that was met has a trade that completed it: an open one
+       has not happened yet, and one that went unmet never will. */
+    const status = m.root.querySelector('[data-status]');
+    const settled = m.root.querySelector('[data-settled-field]');
+    const syncSettled = () => {
+      const on = status.value === 'met';
+      settled.querySelector('select').disabled = !on;
+      settled.classList.toggle('off', !on);
+    };
+    status.addEventListener('change', syncSettled);
+    syncSettled();
+
     m.root.addEventListener('click', (e) => {
       const kill = e.target.closest?.('[data-del-row]');
       if (kill) { kill.closest('.ab-row').remove(); return; }
