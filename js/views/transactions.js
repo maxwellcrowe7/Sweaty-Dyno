@@ -1,4 +1,4 @@
-import { esc, icon, teamTag, fmtDate, empty, posChip, seasonPicker, openModal, toast, money } from '../util.js';
+import { esc, icon, teamTag, fmtDate, posChip, seasonPicker, openModal, toast, money } from '../util.js';
 
 /* Everything on this page comes from Sleeper. The only thing a commissioner
    adds by hand is the condition on a conditional trade, because Sleeper has no
@@ -211,9 +211,11 @@ export function render(db, state = {}) {
   const inPhase = (rows, phase) => rows.filter((x) =>
     (db.faabPhase(x.date) === 'pre') === (phase === 'pre'));
   const rows = tab === 'trades' ? tradeRows : moveRows;
+  /* Both phases always show, empty or not -- a section that disappears leaves
+     you wondering whether there is nothing there or whether you are looking in
+     the wrong place, which is the same reason Locked assets stays put. */
   const phases = [{ key: 'pre', title: 'Preseason' }, { key: 'in', title: 'In-season' }]
-    .map((p) => ({ ...p, rows: inPhase(rows, p.key) }))
-    .filter((p) => p.rows.length);
+    .map((p) => ({ ...p, rows: inPhase(rows, p.key) }));
 
   const fa = moveRows.filter((w) => w.type === 'free_agent');
   const topBid = claims.reduce((n, w) => Math.max(n, w.faab || 0), 0);
@@ -228,17 +230,20 @@ export function render(db, state = {}) {
     : { ...t, sides: [...t.sides].sort((a, b) => (b.team === mgr) - (a.team === mgr)) });
 
   const who = mgr ? ` for ${db.team(mgr)?.manager || `T${mgr}`}` : '';
-  const group = (p) => tab === 'trades'
+  const bare = (what) => `<div class="card"><div class="card-bd lock-none">
+    ${icon(tab === 'trades' ? 'swap' : 'inbox')} No ${what}${esc(who)}</div></div>`;
+  const group = (p) => (tab === 'trades'
     ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
-       ${p.rows.map((t) => tradeCard(db, facing(t), condFor(t), breaks)).join('')}`
-    : `<div class="section-title">${p.title}
+       ${p.rows.length
+         ? p.rows.map((t) => tradeCard(db, facing(t), condFor(t), breaks)).join('')
+         : bare('trades')}`
+    : `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span>
          <span class="sub-n">${money(spent(p.key))} spent</span></div>
-       <div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`;
+       ${p.rows.length
+         ? `<div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`
+         : bare('pickups')}`);
 
-  const list = phases.length ? phases.map(group).join('')
-    : (tab === 'trades'
-      ? empty('No trades', `Nothing${who} in ${S}. Pull transactions in Admin to bring them across.`, 'swap')
-      : empty('No pickups', `Nothing${who} in ${S}. Pull transactions in Admin to bring them across.`, 'inbox'));
+  const list = phases.map(group).join('');
 
   return `
   <div class="view-hd"><h2>Transactions</h2>

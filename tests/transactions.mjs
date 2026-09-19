@@ -138,6 +138,15 @@ const V = await import('../js/views/transactions.js');
 const has = (h, s) => h.includes(s);
 const all = V.render(db, { tradeTab: 'trades' });
 eq('both phases head their own group', [has(all, '>Preseason'), has(all, '>In-season')], [true, true]);
+// and they stay put when empty, counting zero rather than vanishing
+{
+  db.season = 2027;
+  const bare = V.render(db, { tradeTab: 'trades' });
+  eq('an empty season still shows both groups',
+     [has(bare, '>Preseason'), has(bare, '>In-season')], [true, true]);
+  eq('each counting nothing', (bare.match(/sub-n dim">0</g) || []).length, 2);
+  db.season = 2025;
+}
 eq('every trade is listed', [has(all, 'P1'), has(all, 'P3')], [true, true]);
 // a link from the Managers tab arrives as ?mgr=, and the picker must show it
 {
