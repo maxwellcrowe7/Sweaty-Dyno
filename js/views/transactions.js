@@ -286,23 +286,24 @@ export function render(db, state = {}) {
        empty and says so, rather than leaving you to wonder whether it is empty
        or whether you are on the wrong tab. */''}
   ${tab !== 'trades' ? '' : `
+    ${/* one card per asset, like a pickup: they are separate promises, and a
+         shared table made a handful of them read as one block */''}
     <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
     ${!locked.length ? `<div class="card"><div class="card-bd lock-none">
       ${icon('lock')} Nothing is locked right now</div></div>`
-    : `<div class="card"><div class="card-bd flush"><div class="rows">
+    : `<div class="wv-list">
       ${locked.map((l) => {
         const broke = breaks.find((b) => b.lock === l);
         return `<div class="row lock-row${broke ? ' broke' : ''}">
           <span class="lk">${icon('lock')}</span>
-          <div class="grow">
-            <div class="t">${esc(lockLabel(db, l))}</div>
-            <div class="s">held by ${esc(db.team(l.heldBy)?.manager || '?')}${
-              l.condition.deadline ? ` &middot; until ${esc(fmtDate(l.condition.deadline, { year: true }))}` : ''}</div>
-          </div>
+          <div class="lk-name">${esc(lockLabel(db, l))}</div>
+          <div class="lk-who"><b>${esc(db.team(l.heldBy)?.manager || '?')}</b>${
+            l.condition.deadline
+              ? `<span>&ndash; until ${esc(fmtDate(l.condition.deadline, { year: true }))}</span>` : ''}</div>
           ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
         </div>`;
       }).join('')}
-    </div></div></div>`}`}
+    </div>`}`}
 
   ${list}
   `;

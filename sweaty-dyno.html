@@ -810,9 +810,21 @@ table.dt th.sticky{width:1%}
 /* the empty state: the section is worth keeping even with nothing in it */
 .lock-none{display:flex;align-items:center;gap:9px;color:var(--ink-3);font-size:13px}
 .lock-none svg{width:15px;height:15px;color:var(--violet);opacity:.7;flex:none}
-.lock-row .lk{color:var(--violet);display:flex}
+/* The standing list of what is frozen: a card each, the way a pickup is, since
+   these are separate promises rather than rows of one table. */
+.row.lock-row{
+  display:flex;align-items:baseline;gap:9px;
+  border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+  padding:11px 14px;
+}
+.lock-row .lk{color:var(--violet);display:flex;align-self:center;flex:none}
 .lock-row .lk svg{width:15px;height:15px}
-.lock-row.broke .t{color:var(--red)}
+.lk-name{font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lk-who{margin-left:auto;display:flex;align-items:baseline;gap:5px;font-size:13.5px;white-space:nowrap}
+.lk-who b{font-weight:600;color:var(--ink-2)}
+.lk-who span{font-size:12px;color:var(--ink-3)}
+.lock-row.broke{border-color:color-mix(in oklab,var(--red) 45%,var(--line))}
+.lock-row.broke .lk-name{color:var(--red)}
 /* Building the promised return the way the card draws it: a column per
    manager, empty until you add to it. The menu merges "what kind" with "which
    one" -- FAAB, a position, a round -- so the row that appears carries only
@@ -5343,23 +5355,24 @@ function render(db, state = {}) {
        empty and says so, rather than leaving you to wonder whether it is empty
        or whether you are on the wrong tab. */''}
   ${tab !== 'trades' ? '' : `
+    ${/* one card per asset, like a pickup: they are separate promises, and a
+         shared table made a handful of them read as one block */''}
     <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
     ${!locked.length ? `<div class="card"><div class="card-bd lock-none">
       ${icon('lock')} Nothing is locked right now</div></div>`
-    : `<div class="card"><div class="card-bd flush"><div class="rows">
+    : `<div class="wv-list">
       ${locked.map((l) => {
         const broke = breaks.find((b) => b.lock === l);
         return `<div class="row lock-row${broke ? ' broke' : ''}">
           <span class="lk">${icon('lock')}</span>
-          <div class="grow">
-            <div class="t">${esc(lockLabel(db, l))}</div>
-            <div class="s">held by ${esc(db.team(l.heldBy)?.manager || '?')}${
-              l.condition.deadline ? ` &middot; until ${esc(fmtDate(l.condition.deadline, { year: true }))}` : ''}</div>
-          </div>
+          <div class="lk-name">${esc(lockLabel(db, l))}</div>
+          <div class="lk-who"><b>${esc(db.team(l.heldBy)?.manager || '?')}</b>${
+            l.condition.deadline
+              ? `<span>&ndash; until ${esc(fmtDate(l.condition.deadline, { year: true }))}</span>` : ''}</div>
           ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
         </div>`;
       }).join('')}
-    </div></div></div>`}`}
+    </div>`}`}
 
   ${list}
   `;
