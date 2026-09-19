@@ -162,9 +162,14 @@ const promised = V.render(db, { tradeTab: 'trades' });
 eq('an open condition shows what it promises', /2027 2nd/.test(promised), true);
 eq('marked as not yet happened', /expected<\/em>/.test(promised), true);
 eq('and tinted for open', /nested is-open/.test(promised), true);
+// the follow-up reads in the same manager order as the deal above it
+eq('the promised side lines up with the parent',
+   promised.indexOf('data-trade="o-expected"') > 0
+   && promised.slice(promised.indexOf('data-trade="o-expected"')).indexOf('2027 2nd') > 0, true);
 await db.update('trades', (t) => { t.conditions[0].status = 'void'; });
-eq('a dead condition says it never happened',
-   /never happened<\/em>/.test(V.render(db, { tradeTab: 'trades' })), true);
+const dead = V.render(db, { tradeTab: 'trades' });
+eq('a dead condition is red, and says nothing more', /nested is-void/.test(dead), true);
+eq('no never-happened caption', /never happened/.test(dead), false);
 
 /* ---- conditions: tag, lock, break, settle ---- */
 await db.update('trades', (t) => {

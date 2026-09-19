@@ -56,6 +56,14 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
     ? db.get('trades').trades.find((x) => x.id === cond.settledBy) : null;
   const promised = !settler && cond?.expected?.length
     ? { id: `${t.id}-expected`, date: null, sides: cond.expected } : null;
+  /* The follow-up reads left to right the same way the deal above it does --
+     a nested card that swapped the managers round made you re-read both. */
+  const align = (x) => {
+    if (!x) return null;
+    const order = t.sides.map((sd) => sd.team);
+    const rank = (sd) => (order.indexOf(sd.team) + 1 || order.length + 1);
+    return { ...x, sides: [...x.sides].sort((a, b) => rank(a) - rank(b)) };
+  };
   // Two-team deals are self-describing: what I get is what you gave. Three-way
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
@@ -72,7 +80,7 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
           aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
         <span class="d">${t.date ? esc(fmtDate(t.date, { year: true }))
-          : `<em class="pending">${nested === 'void' ? 'never happened' : 'expected'}</em>`}</span>
+          : nested === 'void' ? '' : '<em class="pending">expected</em>'}</span>
       </div>
       ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
     </div>
@@ -101,7 +109,7 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
       ${/* the settlement sits on the condition's own ground -- it belongs to the
            condition, and a second colour around it only said so again */''}
       ${settler || promised ? `<div class="settle-wrap">
-        ${tradeCard(db, settler || promised, null, [], st.key)}
+        ${tradeCard(db, align(settler || promised), null, [], st.key)}
       </div>` : ''}
     </div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
