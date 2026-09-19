@@ -734,7 +734,10 @@ table.dt th.sticky{width:1%}
   .pill-sep{display:none}
 }
 .cond{padding:10px 13px 11px;background:rgba(156,140,250,.06);border-top:1px solid var(--line-soft);font-size:12.5px;line-height:1.5}
-.cond .lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);font-weight:700;margin-bottom:3px}
+/* the label sits inline with the text it introduces rather than above it */
+.cond-line{margin:0}
+.cond .lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);
+  font-weight:700;margin-right:9px;white-space:nowrap}
 .cond .out{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);color:var(--ink-2)}
 /* What a condition freezes, said on the deal that froze it. */
 .cond .locks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}

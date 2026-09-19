@@ -71,7 +71,7 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
     </div>
     <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom, banded, who)).join('')}</div>
     ${cond ? `<div class="cond">
-      <div class="lbl">Condition</div>${esc(cond.text)}
+      <p class="cond-line"><span class="lbl">Condition</span>${esc(cond.text)}</p>
       ${/* a resolved condition freezes nothing: the chips go with it */''}
       ${cond.locks?.length && ['open', 'due'].includes(st.key) ? `<div class="locks">
         ${cond.locks.map((l) => `<span class="lock-chip">${icon('lock')}${esc(lockLabel(db, l))}
@@ -96,7 +96,7 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
       ${settler ? `<div class="settle-wrap">${tradeCard(db, settler, null, [], true)}</div>` : ''}
     </div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
-      <div class="lbl">Note</div>${esc(t.note)}</div>` : ''}
+      <p class="cond-line"><span class="lbl">Note</span>${esc(t.note)}</p></div>` : ''}
   </div>`;
 };
 
