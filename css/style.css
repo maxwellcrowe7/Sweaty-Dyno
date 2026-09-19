@@ -744,9 +744,14 @@ table.dt th.sticky{width:1%}
    the right of it. */
 .cond .locks{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:7px}
 .cond .locks .lbl{margin-right:3px}
-.lock-chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;
+/* the padlock that rides on a frozen asset, where the asset already is */
+.trade-side li .lk-mark{display:inline-flex;align-self:center;color:var(--violet);flex:none}
+.trade-side li .lk-mark svg{width:12px;height:12px}
+.trade-side li.locked .nm,.trade-side li.locked > span:not(.pos-chip):not(.nfl):not(.lk-mark){color:var(--ink)}
+.lock-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
   background:rgba(156,140,250,.1);border:1px solid color-mix(in oklab,var(--violet) 35%,var(--line));
   font-size:11.5px;color:var(--ink-2)}
+.lock-chip svg{width:11px;height:11px;color:var(--violet);flex:none}
 /* The tripwire: the app cannot stop a frozen asset from moving, only notice. */
 .lock-break{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding-top:8px;
   border-top:1px dashed var(--red);color:var(--red);font-size:12px}

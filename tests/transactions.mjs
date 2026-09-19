@@ -190,7 +190,8 @@ await db.update('trades', (t) => {
     text: 'If Star Player finishes top 5, Noah sends a 2027 2nd.',
     deadline: '2099-12-28', status: 'open',
     locks: [
-      { kind: 'player', label: 'Frozen Guy', heldBy: 1 },
+      { kind: 'player', label: 'Frozen Guy', heldBy: 1 },      // in neither deal
+      { kind: 'player', label: 'Star Player', heldBy: 1 },            // moved in this trade
       { kind: 'pick', season: 2027, round: 2, origin: 1, heldBy: 1 },
     ],
     settledBy: null, settledOn: null, outcome: null,
@@ -198,7 +199,14 @@ await db.update('trades', (t) => {
 });
 eq('the condition hangs off its trade', db.conditionFor('origin')?.id, 'c1');
 eq('and an untagged trade has none', db.conditionFor('elsewhere'), null);
-eq('both locks are live while it is open', db.lockedAssets(2025).length, 2);
+eq('every lock is live while it is open', db.lockedAssets(2025).length, 3);
+// a lock marks the asset where it already sits rather than being listed again
+{
+  const h = V.render(db, { tradeTab: 'trades' });
+  eq('the frozen row is marked', /<li class="locked">/.test(h), true);
+  // Frozen Guy is in neither deal, so he still needs naming
+  eq('and one with nowhere to sit is named', /Also locked/.test(h), true);
+}
 
 // the tripwire: Frozen Guy was locked in team 1's hands and went to team 6
 const broke = db.lockBreaks(2025);
@@ -209,7 +217,7 @@ eq('the settling trade is not a violation', broke.some((b) => b.trade?.id === 's
 // a deadline that passes asks for a ruling rather than making one
 await db.update('trades', (t) => { t.conditions[0].deadline = '2020-01-01'; });
 eq('a passed deadline needs a decision', db.conditionStatus(db.conditionFor('origin')).key, 'due');
-eq('and the locks hold until it is decided', db.lockedAssets(2025).length, 2);
+eq('and the locks hold until it is decided', db.lockedAssets(2025).length, 3);
 
 await db.update('trades', (t) => {
   Object.assign(t.conditions[0], { status: 'met', settledBy: 'settler' });
