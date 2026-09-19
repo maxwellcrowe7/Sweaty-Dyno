@@ -95,14 +95,11 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
       ${/* "Condition met" plus the wording above usually says what happened --
            "met" already implies Max made the finals. The note is for the times
            it does not, so an empty one prints nothing. */''}
-      ${st.key === 'open'
-        ? (cond.deadline ? `<div class="out">${icon('clock')} ${
-          esc(fmtDate(cond.deadline, { year: true }))}</div>` : '')
-        : st.key === 'due'
-          ? `<div class="out">${icon('alert')} Deadline passed &mdash; say what happened</div>`
-          : cond.outcome
-            ? `<div class="out">${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome)}</div>`
-            : ''}
+      ${/* The chip says open or needs a decision, the follow-up below is tinted
+           to match, and the locked rows carry the date. All this line ever adds
+           is a restatement -- so it now only carries an outcome worth writing. */''}
+      ${['met', 'void'].includes(st.key) && cond.outcome
+        ? `<div class="out">${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome)}</div>` : ''}
       ${mine.length ? `<div class="lock-break">${icon('alert')}
         ${mine.length === 1 ? 'A locked asset moved anyway' : `${mine.length} locked assets moved anyway`}:
         ${esc(mine.map((b) => lockLabel(db, b.lock)).join(', '))}</div>` : ''}
