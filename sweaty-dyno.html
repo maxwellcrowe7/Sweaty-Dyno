@@ -836,14 +836,14 @@ table.dt th.sticky{width:1%}
 /* these controls live outside .field, so they were falling back to the
    browser's own white box. Same ground, border and ink as every other input,
    and the select loses its native chrome for a caret drawn in our own grey. */
-.ab-row input:not([type=hidden]),.ab-row select{
+.ab-grid .ab-row input:not([type=hidden]),.ab-grid .ab-row select{
   background-color:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:4px 9px;font-size:13px;line-height:1.5;color:var(--ink);flex:1;min-width:0;
 }
-.ab-row input::placeholder{color:var(--ink-3)}
-.ab-row input:focus,.ab-row select:focus{outline:none;border-color:var(--heat);
-  box-shadow:0 0 0 3px rgba(255,107,44,.14)}
-.ab-row input[type=number]{flex:none;width:96px}
+.ab-grid .ab-row input::placeholder{color:var(--ink-3)}
+.ab-grid .ab-row input:focus,.ab-grid .ab-row select:focus{outline:none;
+  border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
+.ab-grid .ab-row input[type=number]{flex:none;width:96px}
 .ab-kill{display:grid;place-items:center;width:22px;height:22px;flex:none;
   border-radius:var(--r-sm);color:var(--ink-3)}
 .ab-kill svg{width:13px;height:13px}
@@ -855,15 +855,15 @@ table.dt th.sticky{width:1%}
   .ab-kill{opacity:0;transition:opacity .14s}
   .ab-row:hover .ab-kill,.ab-kill:focus-visible{opacity:1}
 }
-/* the chooser: one row of chips, grouped by what they make */
-.ab-menu{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:7px 0 2px;
-  padding:8px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line)}
+/* The chooser takes the button's place rather than stacking under it, and its
+   options run in one strip -- both so that opening it barely changes how tall
+   the modal is. */
+.ab-menu{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:0}
 .ab-menu[hidden]{display:none}
-.ab-menu button{padding:4px 9px;border-radius:999px;border:1px solid var(--line);
-  background:var(--surface);font-size:11.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.ab-menu button{padding:2px 8px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface-2);font-size:11px;font-weight:600;color:var(--ink-2);cursor:pointer}
 .ab-menu button:hover{border-color:var(--heat);color:var(--heat)}
-.ab-menu-lbl{width:100%;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--ink-3);margin-top:3px}
+.ab-menu-lbl{width:1px;height:13px;padding:0;background:var(--line);margin:0 3px}
 .ab-add{padding:1px 8px;font-size:11px;gap:4px;border-radius:999px}
 .ab-add svg{width:11px;height:11px}
 
@@ -5362,9 +5362,9 @@ function mount(root, db, go, setState) {
       ${/* the chooser opens under the button that asked for it */''}
       <div class="ab-menu" data-menu hidden>
         <button type="button" data-new="faab">FAAB</button>
-        <span class="ab-menu-lbl">Player</span>
+        <span class="ab-menu-lbl" aria-hidden="true"></span>
         ${POS.map((pz) => `<button type="button" data-new="pos:${pz}">${pz}</button>`).join('')}
-        <span class="ab-menu-lbl">Pick</span>
+        <span class="ab-menu-lbl" aria-hidden="true"></span>
         ${[1, 2, 3].map((n) => `<button type="button" data-new="rd:${n}">${ORD[n]}</button>`).join('')}
       </div>
     </div>`;
@@ -5471,7 +5471,10 @@ function mount(root, db, go, setState) {
     });
 
     /* Rows are built as they are chosen rather than sitting there empty. */
-    const shutMenus = () => m.root.querySelectorAll('[data-menu]').forEach((x) => { x.hidden = true; });
+    const shutMenus = () => m.root.querySelectorAll('[data-col]').forEach((x) => {
+      x.querySelector('[data-menu]').hidden = true;
+      x.querySelector('[data-add]').hidden = false;
+    });
     let seq = 0;
     const rowHtml = (team, kind, spec, a) => {
       const i = seq++;
@@ -5499,6 +5502,7 @@ function mount(root, db, go, setState) {
     const addRow = (col, kind, spec, a) => {
       col.querySelector('[data-list]').insertAdjacentHTML('beforeend', rowHtml(col.dataset.team, kind, spec, a));
       col.querySelector('[data-menu]').hidden = true;
+      col.querySelector('[data-add]').hidden = false;
       col.querySelector('[data-list] .ab-row:last-child input:not([type=hidden])')?.focus();
     };
 
@@ -5514,6 +5518,8 @@ function mount(root, db, go, setState) {
         const open = menu.hidden;
         shutMenus();
         menu.hidden = !open;
+        // the chooser stands where the button was, so the modal barely moves
+        col.querySelector('[data-add]').hidden = !menu.hidden;
       });
       col.querySelectorAll('[data-new]').forEach((opt) => opt.addEventListener('click', () => {
         const [kind, spec] = opt.dataset.new.split(':');

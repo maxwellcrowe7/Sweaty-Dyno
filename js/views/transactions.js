@@ -349,9 +349,9 @@ export function mount(root, db, go, setState) {
       ${/* the chooser opens under the button that asked for it */''}
       <div class="ab-menu" data-menu hidden>
         <button type="button" data-new="faab">FAAB</button>
-        <span class="ab-menu-lbl">Player</span>
+        <span class="ab-menu-lbl" aria-hidden="true"></span>
         ${POS.map((pz) => `<button type="button" data-new="pos:${pz}">${pz}</button>`).join('')}
-        <span class="ab-menu-lbl">Pick</span>
+        <span class="ab-menu-lbl" aria-hidden="true"></span>
         ${[1, 2, 3].map((n) => `<button type="button" data-new="rd:${n}">${ORD[n]}</button>`).join('')}
       </div>
     </div>`;
@@ -458,7 +458,10 @@ export function mount(root, db, go, setState) {
     });
 
     /* Rows are built as they are chosen rather than sitting there empty. */
-    const shutMenus = () => m.root.querySelectorAll('[data-menu]').forEach((x) => { x.hidden = true; });
+    const shutMenus = () => m.root.querySelectorAll('[data-col]').forEach((x) => {
+      x.querySelector('[data-menu]').hidden = true;
+      x.querySelector('[data-add]').hidden = false;
+    });
     let seq = 0;
     const rowHtml = (team, kind, spec, a) => {
       const i = seq++;
@@ -486,6 +489,7 @@ export function mount(root, db, go, setState) {
     const addRow = (col, kind, spec, a) => {
       col.querySelector('[data-list]').insertAdjacentHTML('beforeend', rowHtml(col.dataset.team, kind, spec, a));
       col.querySelector('[data-menu]').hidden = true;
+      col.querySelector('[data-add]').hidden = false;
       col.querySelector('[data-list] .ab-row:last-child input:not([type=hidden])')?.focus();
     };
 
@@ -501,6 +505,8 @@ export function mount(root, db, go, setState) {
         const open = menu.hidden;
         shutMenus();
         menu.hidden = !open;
+        // the chooser stands where the button was, so the modal barely moves
+        col.querySelector('[data-add]').hidden = !menu.hidden;
       });
       col.querySelectorAll('[data-new]').forEach((opt) => opt.addEventListener('click', () => {
         const [kind, spec] = opt.dataset.new.split(':');
