@@ -61,7 +61,7 @@ export function render(db) {
         <div class="fr-go">
           ${db.isAdmin ? `<button class="fr-hand" data-hand="${t.number}"
             aria-label="Hand this franchise over" title="Hand this franchise over">${
-            icon('swap')}</button>` : ''}
+            icon('user')}</button>` : ''}
           ${/* named and marked for the tab they land on */''}
           <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
           <button data-go-drafts="${t.number}">${icon('board')}Drafts</button>
