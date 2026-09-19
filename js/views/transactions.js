@@ -368,17 +368,19 @@ export function mount(root, db, go, setState) {
       body: `
         <div class="field"><label>If&hellip; then&hellip;</label>
           <textarea name="text" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.text || '')}</textarea></div>
-        <div class="field"><label>Deadline</label>
-          <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
-
         <div class="section-title">Promised return</div>
         <div class="ab-grid">${parties.map(colHtml).join('')}</div>
 
+        ${/* the deadline is part of where this stands, not part of the terms */''}
         <div class="section-title">Outcome</div>
         <div class="fgrid">
           <div class="field"><label>Status</label><select name="status">
             ${[['open', 'Open'], ['met', 'Condition met'], ['void', 'Not met']].map(([v, t]) =>
               `<option value="${v}" ${(c?.status || 'open') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+          <div class="field"><label>Deadline</label>
+            <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
+        </div>
+        <div class="fgrid one">
           <div class="field"><label>Settled by</label><select name="settledBy">
             <option value="">&mdash;</option>
             ${after.map((x) => `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${

@@ -876,6 +876,8 @@ table.dt th.sticky{width:1%}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
 .field textarea{resize:vertical;min-height:66px;line-height:1.5}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* a field that wants the whole line while keeping the grid's spacing */
+.fgrid.one{grid-template-columns:1fr}
 
 .toggle{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
 .toggle input{position:absolute;opacity:0;pointer-events:none}
