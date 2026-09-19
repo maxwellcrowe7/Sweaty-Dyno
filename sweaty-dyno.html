@@ -6965,7 +6965,7 @@ function render(db) {
         <div class="fr-go">
           ${db.isAdmin ? `<button class="fr-hand" data-hand="${t.number}"
             aria-label="Hand this franchise over" title="Hand this franchise over">${
-            icon('users')}</button>` : ''}
+            icon('swap')}</button>` : ''}
           ${/* named and marked for the tab they land on */''}
           <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
           <button data-go-drafts="${t.number}">${icon('board')}Drafts</button>
@@ -7020,11 +7020,8 @@ function handOver(db, number) {
           <option value="">&mdash; someone new &mdash;</option>
           ${mgrs.map((m) => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}
         </select></div>
-      <div class="fgrid">
-        <div class="field"><label>Their name</label>
-          <input name="name" placeholder="First name" value="${esc(suggested.split(/\s+/)[0] || '')}"></div>
-        <div class="field"><label>Full name</label><input name="fullName" placeholder="First Last"></div>
-      </div>
+      <div class="field"><label>Their name</label>
+        <input name="fullName" placeholder="First Last"></div>
       <div class="fgrid">
         <div class="field"><label>Sleeper username</label>
           <input name="sleeper" value="${esc(suggested)}" placeholder="their Sleeper handle"></div>
@@ -7038,23 +7035,25 @@ function handOver(db, number) {
         points do.</p>`,
     onConfirm: async (d) => {
       const from = Number(d.from);
+      // one name in, everything else off it: the league calls people by their
+      // first name, and the id is that name lowercased
+      const full = String(d.fullName || '').trim();
+      const first = full.split(/\s+/)[0] || '';
       let id = d.who;
       if (!id) {
-        const name = String(d.name || '').trim();
-        if (!name) { toast('Name the incoming manager'); return false; }
-        id = name.toLowerCase().replace(/[^a-z0-9]+/g, '') || `mgr${Date.now()}`;
+        if (!first) { toast('Name the incoming manager'); return false; }
+        id = first.toLowerCase().replace(/[^a-z0-9]+/g, '') || `mgr${Date.now()}`;
       }
       await db.update('managers', (m) => {
         if (!m.managers.some((x) => x.id === id)) {
           m.managers.push({
             id,
-            name: String(d.name || '').trim() || id,
-            aliases: [String(d.name || '').trim(), String(d.fullName || '').trim(),
-              String(d.sleeper || '').trim()].filter(Boolean),
+            name: first || id,
+            aliases: [first, full, String(d.sleeper || '').trim()].filter(Boolean),
             sleeperUserId: null,
             sleeperUsername: String(d.sleeper || '').trim() || null,
             usernameConfirmed: false,
-            fullName: String(d.fullName || '').trim() || String(d.name || '').trim() || id,
+            fullName: full || first || id,
           });
         }
         const team = m.teams.find((x) => x.number === number);
