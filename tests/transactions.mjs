@@ -197,7 +197,7 @@ eq('and clears the violations with them', db.lockBreaks(2025).length, 0);
 
 const withCond = V.render(db, { tradeTab: 'trades' });
 // the settlement rides inside the deal it completed rather than standing alone
-eq('the settlement is captioned with its own date', /Settled Dec 20, 2025/.test(withCond), true);
+eq('the settlement carries its own date', /Dec 20, 2025/.test(withCond), true);
 eq('and is not a second card in the list',
    (withCond.match(/data-trade="settler"/g) || []).length, 1);
 eq('nested, not free-standing', /trade nested[^"]*" data-trade="settler"/.test(withCond), true);

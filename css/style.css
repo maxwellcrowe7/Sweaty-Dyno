@@ -748,13 +748,10 @@ table.dt th.sticky{width:1%}
 .lock-break{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding-top:8px;
   border-top:1px dashed var(--red);color:var(--red);font-size:12px}
 .lock-break svg{width:14px;height:14px;flex:none;margin-top:1px}
-/* The settlement rides inside the deal it completes: indented, quieter, and
-   captioned with the date it actually went through -- which can be a season
-   later than the trade that filed it. */
-.settle-wrap{padding:10px 13px 12px;background:rgba(61,220,151,.05);border-top:1px solid var(--line-soft)}
-.settle-lbl{display:flex;align-items:center;gap:7px;margin-bottom:8px;
-  font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mint);font-weight:700}
-.settle-lbl svg{width:13px;height:13px}
+/* The settlement rides inside the deal it completes: indented and quieter, with
+   its own date -- which can be a season later than the trade that filed it --
+   and no caption, since the header above already says the condition was met. */
+.settle-wrap{padding:11px 13px 12px;background:rgba(61,220,151,.05);border-top:1px solid var(--line-soft)}
 .trade.nested{border-color:color-mix(in oklab,var(--mint) 25%,var(--line));background:var(--bg-2)}
 .trade.nested .trade-hd{background:transparent}
 .trade.nested .who b{font-size:12.5px}

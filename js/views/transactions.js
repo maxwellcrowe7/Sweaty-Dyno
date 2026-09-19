@@ -61,7 +61,6 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
       nested ? ' nested' : ''}" data-trade="${esc(t.id)}">
     <div class="trade-hd">
       <div class="trade-meta">
-        ${nested ? `<span class="chip mint">Settled</span>` : ''}
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
         <div style="flex:1"></div>
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
@@ -89,10 +88,9 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
         ${mine.length === 1 ? 'A locked asset moved anyway' : `${mine.length} locked assets moved anyway`}:
         ${esc(mine.map((b) => lockLabel(db, b.lock)).join(', '))}</div>` : ''}
     </div>` : ''}
-    ${settler ? `<div class="settle-wrap">
-      <div class="settle-lbl">${icon('check')} Settled ${esc(fmtDate(settler.date, { year: true }))}</div>
-      ${tradeCard(db, settler, null, [], true)}
-    </div>` : ''}
+    ${/* The nested card carries its own date, and the header above already says
+         the condition was met -- a caption and a chip would say it twice more. */''}
+    ${settler ? `<div class="settle-wrap">${tradeCard(db, settler, null, [], true)}</div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
       <div class="lbl">Note</div>${esc(t.note)}</div>` : ''}
   </div>`;
