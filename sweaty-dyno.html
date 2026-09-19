@@ -861,7 +861,11 @@ table.dt th.sticky{width:1%}
 /* The trigger stays put and the chips flow out beside it, wrapping onto the
    line below. The palette reserves the height that open state needs, so
    nothing around it moves when the chips appear. */
-.ab-pal{display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-height:46px;margin-top:1px}
+/* aligned to the top of the reserved block, so the trigger sits in the same
+   place whether the chips are out or not */
+.ab-pal{display:flex;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;
+  gap:4px;min-height:46px;margin-top:3px}
+.ab-pal > *{align-self:center}
 .ab-plus{display:inline-flex;align-items:center;gap:5px;flex:none;
   padding:3px 10px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.02em;
@@ -901,10 +905,14 @@ table.dt th.sticky{width:1%}
   letter-spacing:.06em;font-variant-numeric:tabular-nums;
 }
 .lbl-count.full{color:var(--heat)}
+/* one line-height for all three, and a date input stripped of the extra chrome
+   Safari gives it -- otherwise Deadline stands taller than the Status select
+   beside it */
 .field input,.field select,.field textarea{
   background-color:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
-  padding:10px 12px;font-size:15px; width:100%;
+  padding:10px 12px;font-size:15px;line-height:1.4;width:100%;
 }
+.field input[type=date]{-webkit-appearance:none;appearance:none;min-height:0}
 .field select{padding-right:30px;background-position:right 11px center}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
 /* a field that does not apply yet: present, so the form keeps its shape, but
