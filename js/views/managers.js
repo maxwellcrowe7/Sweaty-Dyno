@@ -9,6 +9,10 @@ import { esc, icon, teamColor, openModal, toast } from '../util.js';
 /* When the manager whose row this is took it on -- which depends on the season
    being viewed, the same way the name does. Dating the row from the open-ended
    entry instead showed Andrew's row starting the year Matt takes over. */
+/* Which rows are open on a phone -- module scope, so a repaint does not shut
+   them. On a desktop everything is always out and this does nothing. */
+const OPEN = new Set();
+
 const since = (t, season) => [...t.ownership]
   .filter((o) => o.fromSeason <= season && (o.toSeason == null || o.toSeason >= season))
   .sort((a, b) => b.fromSeason - a.fromSeason)[0]?.fromSeason
@@ -37,7 +41,8 @@ export function render(db) {
       const flag = db.rosterStatus(t.number);
       // a franchise that has only ever had one owner has no history to tell
       const past = t.ownership.length > 1 ? t.ownership : [];
-      return `<div class="fr" style="--tc:${teamColor(t.number)}">
+      return `<div class="fr${OPEN.has(t.number) ? ' open' : ''}" data-fr="${t.number}"
+        style="--tc:${teamColor(t.number)}">
         <div class="fr-no">${String(t.number).padStart(2, '0')}</div>
         <div class="fr-who">
           <b>${esc(t.fullName)}</b>
@@ -58,6 +63,8 @@ export function render(db) {
         <div class="fr-rings">${rings
           .map((his) => icon('crown', his ? '' : 'past')).join('')}</div>
         <div class="fr-since">since ${since(t, db.season)}</div>
+        ${/* phones only: the links live behind a tap so ten managers fit a screen */''}
+        <span class="fr-caret">${icon('chev')}</span>
         <div class="fr-go">
           ${db.isAdmin ? `<button class="fr-hand" data-hand="${t.number}"
             aria-label="Hand this franchise over" title="Hand this franchise over">${
@@ -166,6 +173,16 @@ function handOver(db, number) {
 }
 
 export function mount(root, db, go) {
+  /* A row opens on a phone, where the links are folded away; on a desktop they
+     are always out, so a tap there means nothing. */
+  const narrow = () => !window.matchMedia('(min-width:621px)').matches;
+  root.querySelectorAll('[data-fr]').forEach((row) => row.addEventListener('click', (e) => {
+    if (!narrow() || e.target.closest('button')) return;
+    const n = Number(row.dataset.fr);
+    OPEN.has(n) ? OPEN.delete(n) : OPEN.add(n);
+    row.classList.toggle('open', OPEN.has(n));
+  }));
+
   /* The rest of the app is season-scoped and manager-blind; this is the one page
      that knows people, so it is the natural way in to their pages. */
   root.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () =>

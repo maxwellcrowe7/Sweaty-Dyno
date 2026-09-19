@@ -1484,12 +1484,24 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 }
 .fr-hist em{font-style:normal;opacity:.7;margin-left:3px}
 .fr-hist i{font-style:normal;opacity:.5}
+/* the caret is a phone affordance; on a desktop nothing is folded away */
+.fr-caret{display:none}
 @media (max-width:620px){
-  .fr{grid-template-columns:32px minmax(0,1fr) auto;gap:8px;padding:9px 11px}
-  .fr-since{display:none}
-  .fr-go{grid-column:2 / -1;margin-top:2px}
-  .fr-who{flex-wrap:wrap;gap:2px 8px}
+  /* A row is number, name, rings and since -- and the links fold behind a tap,
+     so ten managers still fit one screen. */
+  .fr{grid-template-columns:30px minmax(0,1fr) auto auto 13px;gap:7px;padding:9px 10px;cursor:pointer}
+  .fr-since{display:block;font-size:10.5px}
+  .fr-rings{min-width:0}
+  .fr-rings svg{width:14px;height:14px}
+  .fr-who{flex-wrap:wrap;gap:1px 7px}
   .fr-who b{font-size:14px}
+  .fr-sl{font-size:11px}
+  .fr-caret{display:flex;align-items:center;color:var(--ink-3)}
+  .fr-caret svg{width:13px;height:13px;transition:transform .16s}
+  .fr.open .fr-caret svg{transform:rotate(90deg)}
+  .fr-go{display:none;grid-column:1 / -1;margin-top:5px;flex-wrap:wrap}
+  .fr.open .fr-go{display:flex}
+  .fr-hist{grid-column:1 / -1}
 }
 
 /* ---------- accordions ---------- */
@@ -6922,6 +6934,10 @@ const { esc, icon, teamColor, openModal, toast } = __M["js/util.js"];
 /* When the manager whose row this is took it on -- which depends on the season
    being viewed, the same way the name does. Dating the row from the open-ended
    entry instead showed Andrew's row starting the year Matt takes over. */
+/* Which rows are open on a phone -- module scope, so a repaint does not shut
+   them. On a desktop everything is always out and this does nothing. */
+const OPEN = new Set();
+
 const since = (t, season) => [...t.ownership]
   .filter((o) => o.fromSeason <= season && (o.toSeason == null || o.toSeason >= season))
   .sort((a, b) => b.fromSeason - a.fromSeason)[0]?.fromSeason
@@ -6949,7 +6965,8 @@ function render(db) {
       const flag = db.rosterStatus(t.number);
       // a franchise that has only ever had one owner has no history to tell
       const past = t.ownership.length > 1 ? t.ownership : [];
-      return `<div class="fr" style="--tc:${teamColor(t.number)}">
+      return `<div class="fr${OPEN.has(t.number) ? ' open' : ''}" data-fr="${t.number}"
+        style="--tc:${teamColor(t.number)}">
         <div class="fr-no">${String(t.number).padStart(2, '0')}</div>
         <div class="fr-who">
           <b>${esc(t.fullName)}</b>
@@ -6970,6 +6987,8 @@ function render(db) {
         <div class="fr-rings">${rings
           .map((his) => icon('crown', his ? '' : 'past')).join('')}</div>
         <div class="fr-since">since ${since(t, db.season)}</div>
+        ${/* phones only: the links live behind a tap so ten managers fit a screen */''}
+        <span class="fr-caret">${icon('chev')}</span>
         <div class="fr-go">
           ${db.isAdmin ? `<button class="fr-hand" data-hand="${t.number}"
             aria-label="Hand this franchise over" title="Hand this franchise over">${
@@ -7077,6 +7096,16 @@ function handOver(db, number) {
   });
 }
 function mount(root, db, go) {
+  /* A row opens on a phone, where the links are folded away; on a desktop they
+     are always out, so a tap there means nothing. */
+  const narrow = () => !window.matchMedia('(min-width:621px)').matches;
+  root.querySelectorAll('[data-fr]').forEach((row) => row.addEventListener('click', (e) => {
+    if (!narrow() || e.target.closest('button')) return;
+    const n = Number(row.dataset.fr);
+    OPEN.has(n) ? OPEN.delete(n) : OPEN.add(n);
+    row.classList.toggle('open', OPEN.has(n));
+  }));
+
   /* The rest of the app is season-scoped and manager-blind; this is the one page
      that knows people, so it is the natural way in to their pages. */
   root.querySelectorAll('[data-hand]').forEach((b) => b.addEventListener('click', () =>

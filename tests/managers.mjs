@@ -79,4 +79,9 @@ eq('and it is the one league.json names',
 const back = V.render(db, {});
 eq('no money on the directory', /Paid in|Net<|Empire<\/div>/.test(back), false);
 
+// the links are in the markup either way; a phone folds them behind a tap
+const row = V.render(db, {});
+eq('every row can be opened', (row.match(/data-fr="/g) || []).length, db.teams().length);
+eq('and carries a caret to say so', (row.match(/fr-caret/g) || []).length, db.teams().length);
+
 print(fail ? `\n${fail} FAILURE(S)` : '\nFranchise directory passed.');

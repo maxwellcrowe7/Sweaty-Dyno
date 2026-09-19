@@ -1466,12 +1466,24 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 }
 .fr-hist em{font-style:normal;opacity:.7;margin-left:3px}
 .fr-hist i{font-style:normal;opacity:.5}
+/* the caret is a phone affordance; on a desktop nothing is folded away */
+.fr-caret{display:none}
 @media (max-width:620px){
-  .fr{grid-template-columns:32px minmax(0,1fr) auto;gap:8px;padding:9px 11px}
-  .fr-since{display:none}
-  .fr-go{grid-column:2 / -1;margin-top:2px}
-  .fr-who{flex-wrap:wrap;gap:2px 8px}
+  /* A row is number, name, rings and since -- and the links fold behind a tap,
+     so ten managers still fit one screen. */
+  .fr{grid-template-columns:30px minmax(0,1fr) auto auto 13px;gap:7px;padding:9px 10px;cursor:pointer}
+  .fr-since{display:block;font-size:10.5px}
+  .fr-rings{min-width:0}
+  .fr-rings svg{width:14px;height:14px}
+  .fr-who{flex-wrap:wrap;gap:1px 7px}
   .fr-who b{font-size:14px}
+  .fr-sl{font-size:11px}
+  .fr-caret{display:flex;align-items:center;color:var(--ink-3)}
+  .fr-caret svg{width:13px;height:13px;transition:transform .16s}
+  .fr.open .fr-caret svg{transform:rotate(90deg)}
+  .fr-go{display:none;grid-column:1 / -1;margin-top:5px;flex-wrap:wrap}
+  .fr.open .fr-go{display:flex}
+  .fr-hist{grid-column:1 / -1}
 }
 
 /* ---------- accordions ---------- */
