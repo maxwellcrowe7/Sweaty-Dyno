@@ -257,6 +257,16 @@ export function render(db) {
       <div class="field"><label>Current season</label>
         <select data-cfg="currentSeason">${db.seasons.map((s) =>
           `<option value="${s}" ${s === L.currentSeason ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      ${/* a role, marked on the Managers tab -- not a permission, which the
+           database decides */''}
+      <div class="field"><label>Commissioner</label>
+        <select data-cfg="commissioner">
+          <option value="">&mdash;</option>
+          ${db.get('managers').managers.slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((m) => `<option value="${esc(m.id)}" ${
+              m.id === L.commissioner ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
+        </select></div>
     </div>
     <button class="btn" data-save-cfg>${icon('check')} Save settings</button>
   </div></div>
@@ -570,6 +580,7 @@ export function mount(root, db) {
       L.empireContribution[S] = +g('empireContribution') || 0;
       L.empireThreshold = +g('empireThreshold') || 0;
       L.currentSeason = +g('currentSeason');
+      L.commissioner = g('commissioner') || null;
     });
     toast('Settings saved');
   });
