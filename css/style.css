@@ -792,21 +792,30 @@ table.dt th.sticky{width:1%}
 /* the empty state: the section is worth keeping even with nothing in it */
 .lock-none{display:flex;align-items:center;gap:9px;color:var(--ink-3);font-size:13px}
 .lock-none svg{width:15px;height:15px;color:var(--violet);opacity:.7;flex:none}
-/* The standing list of what is frozen: a card each, the way a pickup is, since
-   these are separate promises rather than rows of one table. */
-.row.lock-row{
-  display:flex;align-items:baseline;gap:9px;
-  border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
-  padding:11px 14px;
+/* What is frozen, grouped under the condition that froze it: the deal and the
+   release date belong to all of them, so the header says them once and each row
+   carries only the asset and its holder. */
+.lk-group{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+  overflow:hidden;margin-bottom:10px}
+.lk-hd{
+  display:flex;align-items:baseline;gap:9px;width:100%;text-align:left;
+  padding:9px 13px;background:var(--surface-2);border-bottom:1px solid var(--line-soft);
+  cursor:pointer;
 }
-.lock-row .lk{color:var(--violet);display:flex;align-self:center;flex:none}
-.lock-row .lk svg{width:15px;height:15px}
+.lk-hd:hover{background:var(--surface-3)}
+.lk-deal{font-size:13.5px;font-weight:600}
+.lk-date{font-size:12px;color:var(--ink-3)}
+.lk-until{margin-left:auto;font-size:12px;color:var(--violet)}
+.lk-go{width:13px;height:13px;align-self:center;color:var(--ink-3);flex:none}
+.lk-hd:hover .lk-go{color:var(--heat)}
+.lk-item{display:flex;align-items:baseline;gap:9px;padding:8px 13px}
+.lk-item + .lk-item{border-top:1px solid var(--line-soft)}
+.lk{color:var(--violet);display:flex;align-self:center;flex:none}
+.lk svg{width:14px;height:14px}
 .lk-name{font-size:13.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lk-who{margin-left:auto;display:flex;align-items:baseline;gap:5px;font-size:13.5px;white-space:nowrap}
-.lk-who b{font-weight:600;color:var(--ink-2)}
-.lk-who span{font-size:12px;color:var(--ink-3)}
-.lock-row.broke{border-color:color-mix(in oklab,var(--red) 45%,var(--line))}
-.lock-row.broke .lk-name{color:var(--red)}
+.lk-holder{margin-left:auto;font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+.lk-item.broke .lk-name{color:var(--red)}
+.lk-item.broke .lk{color:var(--red)}
 /* Building the promised return the way the card draws it: a column per
    manager, empty until you add to it. The menu merges "what kind" with "which
    one" -- FAAB, a position, a round -- so the row that appears carries only

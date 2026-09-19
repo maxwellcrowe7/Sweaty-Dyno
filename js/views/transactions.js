@@ -286,24 +286,35 @@ export function render(db, state = {}) {
        empty and says so, rather than leaving you to wonder whether it is empty
        or whether you are on the wrong tab. */''}
   ${tab !== 'trades' ? '' : `
-    ${/* one card per asset, like a pickup: they are separate promises, and a
-         shared table made a handful of them read as one block */''}
+    ${/* Grouped by the condition that froze them: the deal and the release date
+         are shared by every lock under it, so they are said once in the header,
+         and each row carries only what differs -- the asset and who holds it.
+         The arrow jumps to the trade, which is the question this list is
+         usually being asked. */''}
     <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
     ${!locked.length ? `<div class="card"><div class="card-bd lock-none">
       ${icon('lock')} Nothing is locked right now</div></div>`
-    : `<div class="wv-list">
-      ${locked.map((l) => {
-        const broke = breaks.find((b) => b.lock === l);
-        return `<div class="row lock-row${broke ? ' broke' : ''}">
-          <span class="lk">${icon('lock')}</span>
-          <div class="lk-name">${esc(lockLabel(db, l))}</div>
-          <div class="lk-who"><b>${esc(db.team(l.heldBy)?.manager || '?')}</b>${
-            l.condition.deadline
-              ? `<span>&ndash; until ${esc(fmtDate(l.condition.deadline, { year: true }))}</span>` : ''}</div>
-          ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
-        </div>`;
-      }).join('')}
-    </div>`}`}
+    : [...new Map(locked.map((l) => [l.condition.id, l.condition])).values()].map((c) => {
+      const mine = locked.filter((l) => l.condition.id === c.id);
+      const names = (c.trade?.sides || []).map((sd) => db.team(sd.team)?.manager || '?').join(' &harr; ');
+      return `<div class="lk-group">
+        <button class="lk-hd" data-jump-trade="${esc(c.tradeId)}">
+          <span class="lk-deal">${names}</span>
+          <span class="lk-date">${esc(fmtDate(c.trade?.date, { year: true }))}</span>
+          ${c.deadline ? `<span class="lk-until">until ${esc(fmtDate(c.deadline, { year: true }))}</span>` : ''}
+          ${icon('chev', 'lk-go')}
+        </button>
+        ${mine.map((l) => {
+          const broke = breaks.find((b) => b.lock === l);
+          return `<div class="lk-item${broke ? ' broke' : ''}">
+            <span class="lk">${icon('lock')}</span>
+            <span class="lk-name">${esc(lockLabel(db, l))}</span>
+            ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
+            <span class="lk-holder">${esc(db.team(l.heldBy)?.manager || '?')}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('')}`}
 
   ${list}
   `;
@@ -316,6 +327,15 @@ export function mount(root, db, go, setState) {
     setState({ tradeTab: b.dataset.tab, tradeKind: 'all' })));
   root.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () =>
     setState({ tradeKind: b.dataset.kind })));
+
+  /* the lock list's whole job is telling you which deal froze something */
+  root.querySelectorAll('[data-jump-trade]').forEach((b) => b.addEventListener('click', () => {
+    const card = root.querySelector(`.trade[data-trade="${CSS.escape(b.dataset.jumpTrade)}"]`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('flash');
+    setTimeout(() => card.classList.remove('flash'), 1400);
+  }));
   root.querySelector('[data-mgr]')?.addEventListener('change', (e) =>
     setState({ tradeMgr: e.target.value }));
 

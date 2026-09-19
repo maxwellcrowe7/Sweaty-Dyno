@@ -209,6 +209,13 @@ eq('the condition hangs off its trade', db.conditionFor('origin')?.id, 'c1');
 }
 eq('and an untagged trade has none', db.conditionFor('elsewhere'), null);
 eq('every lock is live while it is open', db.lockedAssets(2025).length, 3);
+// the standing list groups them under the deal that froze them
+{
+  const h = V.render(db, { tradeTab: 'trades' });
+  eq('one header per condition', (h.match(/class="lk-hd"/g) || []).length, 1);
+  eq('and a row for each asset under it', (h.match(/class="lk-item/g) || []).length, 3);
+  eq('the header points back at the trade', /data-jump-trade="origin"/.test(h), true);
+}
 // locks are marked on the promised return and nowhere else
 {
   const h = V.render(db, { tradeTab: 'trades' });
