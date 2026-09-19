@@ -803,8 +803,11 @@ table.dt th.sticky{width:1%}
    his assets on the darker ground beneath */
 .ab-grid{display:grid;grid-template-columns:1fr;gap:10px}
 @media (min-width:620px){
-  .ab-grid{grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);
-    border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  /* minmax(0,1fr), not 1fr: a column whose content refuses to wrap would
+     otherwise widen itself and squeeze the other one */
+  .ab-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:1px;
+    background:var(--line-soft);border:1px solid var(--line);
+    border-radius:var(--r);overflow:hidden}
 }
 .ab-col{background:var(--surface);padding-bottom:10px;border-radius:var(--r)}
 @media (min-width:620px){ .ab-col{border-radius:0} }
@@ -837,19 +840,19 @@ table.dt th.sticky{width:1%}
   .ab-kill{opacity:0;transition:opacity .14s}
   .ab-row:hover .ab-kill,.ab-kill:focus-visible{opacity:1}
 }
-/* The palette is one line tall whether it is showing a plus or the chips it
-   hides, so opening it cannot change the height of anything. The chips scroll
-   sideways in the rare column too narrow to hold them. */
-.ab-pal{display:flex;align-items:center;height:22px;margin-top:1px}
-.ab-plus{display:grid;place-items:center;width:22px;height:22px;flex:none;
+/* The palette reserves the height its open state needs, so the chips can wrap
+   onto a second line without anything around them moving. Closed, the plus
+   sits centred in that reserved space. */
+.ab-pal{display:flex;align-items:center;min-height:44px;margin-top:1px}
+/* the global button reset covers colour and border but not padding, so an icon
+   button needs this to put its glyph in the middle */
+.ab-plus{display:grid;place-items:center;width:22px;height:22px;flex:none;padding:0;
   border-radius:999px;border:1px solid var(--line);background:var(--surface-2);
-  color:var(--ink-2);cursor:pointer}
+  color:var(--ink-2);cursor:pointer;line-height:0}
 .ab-plus:hover{border-color:var(--heat);color:var(--heat)}
-.ab-plus svg{width:13px;height:13px}
+.ab-plus svg{width:13px;height:13px;display:block}
 .ab-pal.open .ab-plus{display:none}
-.ab-chips{display:none;align-items:center;gap:4px;min-width:0;overflow-x:auto;
-  scrollbar-width:none;-webkit-overflow-scrolling:touch}
-.ab-chips::-webkit-scrollbar{display:none}
+.ab-chips{display:none;align-items:center;flex-wrap:wrap;gap:4px;min-width:0}
 .ab-pal.open .ab-chips{display:flex}
 .ab-chips button{flex:none;padding:2px 7px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface-2);font-size:10.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
