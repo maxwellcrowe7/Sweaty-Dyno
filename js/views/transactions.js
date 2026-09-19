@@ -18,11 +18,11 @@ const assetRow = (db, raw, showFrom, locked = false) => {
   // a pick or a pile of FAAB has no club; a player carries his, as on a pickup
   const club = pick || a.faab != null ? null : db.nflTeam(a.label);
   return `<li>
-    ${locked ? `<span class="lk-mark" title="Locked until the condition resolves">${icon('lock')}</span>` : ''}
     ${a.faab != null ? `<span class="pos-chip pos-none">$</span>`
       : pick ? `<span class="pos-chip pos-none">PK</span>` : posChip(db.position(a.label))}
     <span class="${pick ? 'pk' : ''}">${esc(label)}</span>
     ${club && club !== '--' ? `<span class="nfl">&ndash; ${esc(club)}</span>` : ''}
+    ${locked ? `<span class="lk-mark" title="Locked until the condition resolves">${icon('lock')}</span>` : ''}
     ${from ? `<span class="from">from ${esc(from.manager)}</span>` : ''}
   </li>`;
 };
