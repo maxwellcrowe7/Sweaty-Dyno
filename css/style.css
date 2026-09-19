@@ -599,7 +599,7 @@ table.dt th.sticky{width:1%}
 .trade{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
 .trade + .trade{margin-top:10px}
 .trade-hd{
-  position:relative;display:flex;align-items:center;min-height:36px;
+  position:relative;display:flex;align-items:center;min-height:42px;
   background:var(--surface-2);border-bottom:1px solid var(--line-soft);
 }
 /* the date rides on top of the name row rather than under it: one header row,
@@ -618,12 +618,12 @@ table.dt th.sticky{width:1%}
    so the two differ by about a pixel. Aligning the bottoms is what actually
    drops it onto the name's line. The team number keeps its own centring, being
    a box rather than a word. */
-.who{display:flex;align-items:flex-end;gap:8px;padding:7px 13px}
+.who{display:flex;align-items:flex-end;gap:8px;padding:10px 13px 9px}
 .who .tnum{align-self:center}
 .who .arrow{padding-bottom:1px}
 .trade-side .who{padding:0 13px 7px}
 .trade-side ul{padding:0 13px}
-.who b{font-size:13.5px}
+.who b{font-size:15px}
 .who .arrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .trade-side ul{margin:0;list-style:none;display:flex;flex-direction:column;gap:5px}
 /* baseline so the club sits on the player's line, as it does on a pickup; the
@@ -754,11 +754,11 @@ table.dt th.sticky{width:1%}
 .settle-wrap{margin-top:9px}
 .trade.nested{border-color:color-mix(in oklab,var(--violet) 28%,var(--line));background:var(--bg-2)}
 .trade.nested .trade-meta{padding-top:5px}
-.trade.nested .who{padding:5px 11px}
+.trade.nested .who{padding:7px 11px 6px}
 .trade.nested .trade-side{padding:8px 0}
 .trade.nested .trade-side ul{padding:0 11px}
 .trade.nested .trade-hd{background:transparent}
-.trade.nested .who b{font-size:12.5px}
+.trade.nested .who b{font-size:13.5px}
 .trade.nested .trade-side li{font-size:12.5px}
 /* the standing list of what is frozen right now */
 /* the empty state: the section is worth keeping even with nothing in it */
