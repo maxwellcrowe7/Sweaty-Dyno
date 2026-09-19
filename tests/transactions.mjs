@@ -196,6 +196,23 @@ eq('settling releases the locks', db.lockedAssets(2025).length, 0);
 eq('and clears the violations with them', db.lockBreaks(2025).length, 0);
 
 const withCond = V.render(db, { tradeTab: 'trades' });
-eq('the settling trade says so', /Settles the/.test(withCond), true);
+// the settlement rides inside the deal it completed rather than standing alone
+eq('the settlement is captioned with its own date', /Settled Dec 20, 2025/.test(withCond), true);
+eq('and is not a second card in the list',
+   (withCond.match(/data-trade="settler"/g) || []).length, 1);
+eq('nested, not free-standing', /trade nested[^"]*" data-trade="settler"/.test(withCond), true);
+
+// a condition can pay out in the next offseason and still belong to this deal
+await db.update('trades', (t) => {
+  t.trades.push({ id: 'late', season: 2026, date: '2026-03-01',
+    sides: [{ team: 5, receives: [{ label: 'Late Pick' }] }, { team: 1, receives: [] }] });
+  t.conditions[0].settledBy = 'late';
+});
+db.season = 2026;
+eq('the settlement does not surface in the season it landed in',
+   /data-trade="late"/.test(V.render(db, { tradeTab: 'trades' })), false);
+db.season = 2025;
+eq('it shows inside the original deal instead',
+   /data-trade="late"/.test(V.render(db, { tradeTab: 'trades' })), true);
 
 print(fail ? `\n${fail} FAILURE(S)` : '\nTransactions passed.');

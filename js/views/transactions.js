@@ -43,10 +43,13 @@ const lockLabel = (db, l) => (l.kind === 'player' ? l.label
   : `${l.season} ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'][l.round] || `${l.round}th`}${
     l.origin && db.team(l.origin) ? ` (${db.team(l.origin).manager})` : ''}`);
 
-const tradeCard = (db, t, cond = null, breaks = []) => {
+const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
   const st = cond ? db.conditionStatus(cond) : null;
   const mine = breaks.filter((b) => b.lock.condition.id === cond?.id);
-  const settling = cond?.settledBy ? null : db.conditions(null).find((c) => c.settledBy === t.id);
+  // the trade that discharged this condition rides inside this card rather than
+  // sitting in the list as an unexplained second deal
+  const settler = cond?.settledBy
+    ? db.get('trades').trades.find((x) => x.id === cond.settledBy) : null;
   // Two-team deals are self-describing: what I get is what you gave. Three-way
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
@@ -54,12 +57,14 @@ const tradeCard = (db, t, cond = null, breaks = []) => {
   const who = (s) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
     <span class="arrow">gets</span></div>`;
 
-  return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}" data-trade="${esc(t.id)}">
+  return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
+      nested ? ' nested' : ''}" data-trade="${esc(t.id)}">
     <div class="trade-hd">
       <div class="trade-meta">
+        ${nested ? `<span class="chip mint">Settled</span>` : ''}
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
         <div style="flex:1"></div>
-        ${db.isAdmin ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
+        ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
           aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
         <span class="d">${fmtDate(t.date, { year: true })}</span>
       </div>
@@ -78,15 +83,15 @@ const tradeCard = (db, t, cond = null, breaks = []) => {
           : st.key === 'due'
             ? `${icon('alert')} Deadline passed &mdash; say what happened`
             : `${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome || st.label)}`}
-        ${cond.settledBy ? ` &middot; settled by the ${esc(fmtDate(
-          db.get('trades').trades.find((x) => x.id === cond.settledBy)?.date, { year: true }))} trade` : ''}
       </div>
       ${mine.length ? `<div class="lock-break">${icon('alert')}
         ${mine.length === 1 ? 'A locked asset moved anyway' : `${mine.length} locked assets moved anyway`}:
         ${esc(mine.map((b) => lockLabel(db, b.lock)).join(', '))}</div>` : ''}
     </div>` : ''}
-    ${settling ? `<div class="cond settles">${icon('check')}
-      Settles the ${esc(fmtDate(settling.trade?.date, { year: true }))} condition</div>` : ''}
+    ${settler ? `<div class="settle-wrap">
+      <div class="settle-lbl">${icon('check')} Settled ${esc(fmtDate(settler.date, { year: true }))}</div>
+      ${tradeCard(db, settler, null, [], true)}
+    </div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
       <div class="lbl">Note</div>${esc(t.note)}</div>` : ''}
   </div>`;
@@ -150,13 +155,18 @@ export function render(db, state = {}) {
   const condFor = (t) => conditional.find((c) => c.tradeId === t.id) || null;
   const locked = db.lockedAssets(S);
   const breaks = db.lockBreaks(S);
+  /* A settling trade belongs to the deal it completes, not to the list. It is
+     hidden wherever it would otherwise appear -- including the following season,
+     which is where it lands when a condition takes until the next offseason to
+     pay out -- and rides inside the original card instead. */
+  const settlers = new Set(db.conditions(null).map((c) => c.settledBy).filter(Boolean));
 
   // a manager filter narrows WHOSE transactions you see; a trade he was in is
   // still shown whole, because a one-sided trade card would be a lie
   const mine = (t) => !mgr || t.sides.some((x) => x.team === mgr);
   const myMove = (w) => !mgr || w.team === mgr;
 
-  const tradeRows = trades.filter(mine).filter((t) => kind === 'all'
+  const tradeRows = trades.filter((t) => !settlers.has(t.id)).filter(mine).filter((t) => kind === 'all'
     || (kind === 'conditional' ? condFor(t) : !condFor(t)));
   const moveRows = waivers.filter(myMove).filter((w) => kind === 'all'
     || (kind === 'fa' ? w.type === 'free_agent' : w.type !== 'free_agent'));
@@ -303,6 +313,9 @@ export function mount(root, db, go, setState) {
 
     // a candidate settlement: a later trade involving anyone from this one
     const people = new Set(trade.sides.map((x) => x.team));
+    // Any later trade between these managers, whatever season it lands in: a
+    // condition agreed in November can easily pay out in the next offseason,
+    // and it still belongs to the deal that created it.
     const after = db.get('trades').trades
       .filter((x) => x.id !== id && (x.date || '') >= (trade.date || '')
         && x.sides.some((sd) => people.has(sd.team)))
@@ -338,7 +351,9 @@ export function mount(root, db, go, setState) {
             <option value="">&mdash;</option>
             ${after.map((x) => `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
               esc(fmtDate(x.date, { year: true }))} &middot; ${
-              esc(x.sides.map((sd) => db.team(sd.team)?.manager || '?').join(' / '))}</option>`).join('')}</select></div>
+              esc(x.sides.map((sd) => db.team(sd.team)?.manager || '?').join(' / '))}${
+              db.seasonOf(x.date) !== (trade.season ?? db.seasonOf(trade.date))
+                ? ` (${db.seasonOf(x.date)})` : ''}</option>`).join('')}</select></div>
         </div>
         <div class="field"><label>What happened</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>`,
       onConfirm: async (d) => {
