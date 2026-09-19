@@ -77,20 +77,24 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
         ${cond.locks.map((l) => `<span class="lock-chip">${icon('lock')}${esc(lockLabel(db, l))}
           <em>${esc(db.team(l.heldBy)?.manager || '?')}</em></span>`).join('')}
       </div>` : ''}
-      <div class="out">
-        ${st.key === 'open'
-          ? `${icon('clock')} Resolves by ${esc(cond.deadlineLabel || fmtDate(cond.deadline, { year: true }))}`
-          : st.key === 'due'
-            ? `${icon('alert')} Deadline passed &mdash; say what happened`
-            : `${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome || st.label)}`}
-      </div>
+      ${/* "Condition met" plus the wording above usually says what happened --
+           "met" already implies Max made the finals. The note is for the times
+           it does not, so an empty one prints nothing. */''}
+      ${st.key === 'open'
+        ? `<div class="out">${icon('clock')} Resolves by ${
+          esc(cond.deadlineLabel || fmtDate(cond.deadline, { year: true }))}</div>`
+        : st.key === 'due'
+          ? `<div class="out">${icon('alert')} Deadline passed &mdash; say what happened</div>`
+          : cond.outcome
+            ? `<div class="out">${icon(st.key === 'met' ? 'check' : 'x')} ${esc(cond.outcome)}</div>`
+            : ''}
       ${mine.length ? `<div class="lock-break">${icon('alert')}
         ${mine.length === 1 ? 'A locked asset moved anyway' : `${mine.length} locked assets moved anyway`}:
         ${esc(mine.map((b) => lockLabel(db, b.lock)).join(', '))}</div>` : ''}
+      ${/* the settlement sits on the condition's own ground -- it belongs to the
+           condition, and a second colour around it only said so again */''}
+      ${settler ? `<div class="settle-wrap">${tradeCard(db, settler, null, [], true)}</div>` : ''}
     </div>` : ''}
-    ${/* The nested card carries its own date, and the header above already says
-         the condition was met -- a caption and a chip would say it twice more. */''}
-    ${settler ? `<div class="settle-wrap">${tradeCard(db, settler, null, [], true)}</div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
       <div class="lbl">Note</div>${esc(t.note)}</div>` : ''}
   </div>`;
