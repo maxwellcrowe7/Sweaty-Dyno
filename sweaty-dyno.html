@@ -5220,9 +5220,10 @@ function mount(root, db, go, setState) {
 
     // a candidate settlement: a later trade involving anyone from this one
     const people = new Set(trade.sides.map((x) => x.team));
-    // Any later trade between these managers, whatever season it lands in: a
-    // condition agreed in November can easily pay out in the next offseason,
-    // and it still belongs to the deal that created it.
+    /* Any later trade involving one or both of these managers, whatever season
+       it lands in: a condition agreed in November can easily pay out in the
+       next offseason, and it still belongs to the deal that created it. A deal
+       between two other managers cannot settle this one, so it is not offered. */
     const after = db.get('trades').trades
       .filter((x) => x.id !== id && (x.date || '') >= (trade.date || '')
         && x.sides.some((sd) => people.has(sd.team)))
@@ -5257,15 +5258,11 @@ function mount(root, db, go, setState) {
               `<option value="${v}" ${(c?.status || 'open') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
           <div class="field"><label>Settled by</label><select name="settledBy">
             <option value="">&mdash;</option>
-            ${[['Between these managers', after.filter((x) => x.sides.some((sd) => people.has(sd.team)))],
-               ['Every other later trade', after.filter((x) => !x.sides.some((sd) => people.has(sd.team)))]]
-              .filter(([, list]) => list.length)
-              .map(([label, list]) => `<optgroup label="${label}">${list.map((x) =>
-                `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
-                esc(fmtDate(x.date, { year: true }))} &middot; ${
-                esc(x.sides.map((sd) => db.team(sd.team)?.manager || '?').join(' / '))}${
-                db.seasonOf(x.date) !== (trade.season ?? db.seasonOf(trade.date))
-                  ? ` (${db.seasonOf(x.date)})` : ''}</option>`).join('')}</optgroup>`).join('')}</select></div>
+            ${after.map((x) => `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
+              esc(fmtDate(x.date, { year: true }))} &middot; ${
+              esc(x.sides.map((sd) => db.team(sd.team)?.manager || '?').join(' / '))}${
+              db.seasonOf(x.date) !== (trade.season ?? db.seasonOf(trade.date))
+                ? ` (${db.seasonOf(x.date)})` : ''}</option>`).join('')}</select></div>
         </div>
         <div class="field"><label>What happened</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>`,
       onConfirm: async (d) => {
