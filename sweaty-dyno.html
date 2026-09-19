@@ -5526,7 +5526,11 @@ function mount(root, db, go, setState) {
     const settled = m.root.querySelector('[data-settled-field]');
     const syncSettled = () => {
       const on = status.value === 'met';
-      settled.querySelector('select').disabled = !on;
+      const sel = settled.querySelector('select');
+      // and it lets go of what it was holding, rather than greying out over a
+      // trade that is still selected underneath
+      if (!on) sel.value = '';
+      sel.disabled = !on;
       settled.classList.toggle('off', !on);
     };
     status.addEventListener('change', syncSettled);
