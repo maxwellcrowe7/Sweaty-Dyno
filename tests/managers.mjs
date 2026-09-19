@@ -43,6 +43,11 @@ store.managers.teams.find((x) => x.number === 4).ownership = [
 await db.init();
 eq('a franchise that changed hands says so', /fr-hist/.test(V.render(db, {})), true);
 
+// the commissioner is named once, on his own row
+eq('the commissioner is marked', (h.match(/fr-comm/g) || []).length, 1);
+eq('and it is the one league.json names',
+   rowOf(db.teams().find((t) => t.managerId === db.league.commissioner).number).includes('fr-comm'), true);
+
 // the figures that belong to other tabs are not repeated here
 const back = V.render(db, {});
 eq('no money on the directory', /Paid in|Net<|Empire<\/div>/.test(back), false);

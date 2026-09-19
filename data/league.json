@@ -118,5 +118,7 @@
       "end": "2030-12-31"
     }
   },
-  "_seasonWindowsNote": "A transaction is filed under the season whose window its date falls in. preseasonEnd is the last offseason day -- FAAB is a separate $100 either side of it, and in-season starts the day after. Editable in Admin -> Season windows."
+  "_seasonWindowsNote": "A transaction is filed under the season whose window its date falls in. preseasonEnd is the last offseason day -- FAAB is a separate $100 either side of it, and in-season starts the day after. Editable in Admin -> Season windows.",
+  "commissioner": "max",
+  "_commissionerNote": "Manager id from managers.json. Marks the row on the Managers tab; role, not permissions -- who can write is decided by the Supabase sign-in."
 }

@@ -10,6 +10,7 @@ const since = (t) => Math.min(...t.ownership.map((o) => o.fromSeason));
 
 export function render(db) {
   const mg = db.get('managers');
+  const comm = db.league.commissioner;
   const teams = db.teams().slice().sort((a, b) => a.number - b.number);
   const finishes = db.get('bank').finishes || [];
 
@@ -28,6 +29,8 @@ export function render(db) {
         <div class="fr-no">${String(t.number).padStart(2, '0')}</div>
         <div class="fr-who">
           <b>${esc(t.fullName)}</b>
+          ${/* a role, said once, quietly -- it is one row in ten */''}
+          ${t.managerId === comm ? '<span class="fr-comm">Commissioner</span>' : ''}
           ${t.sleeper ? `<span class="fr-sl">@${esc(t.sleeper)}</span>` : ''}
         </div>
         <div class="fr-since">since ${since(t)}</div>
