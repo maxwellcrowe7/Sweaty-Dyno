@@ -34,13 +34,15 @@ export function render(db) {
           ${t.managerId === comm
             ? '<span class="fr-comm" title="Commissioner" aria-label="Commissioner">C</span>' : ''}
         </div>
-        <div class="fr-since">since ${since(t)}</div>
+        ${/* rings first, so "since" holds one column down the page */''}
         <div class="fr-rings">${rings
           ? Array.from({ length: rings }, () => icon('crown')).join('')
           : ''}</div>
+        <div class="fr-since">since ${since(t)}</div>
         <div class="fr-go">
-          <button data-go-trades="${t.number}">Trades</button>
-          <button data-go-stats="${t.number}">Stats</button>
+          ${/* named and marked for the tab they land on */''}
+          <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
+          <button data-go-stats="${t.number}">${icon('chart')}Stats</button>
         </div>
         ${past.length ? `<div class="fr-hist">${past.map((o) => {
           const m = db.managerById(o.managerId);

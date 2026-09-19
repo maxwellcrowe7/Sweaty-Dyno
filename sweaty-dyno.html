@@ -1438,13 +1438,16 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
   background:rgba(255,107,44,.12);border:1px solid rgba(255,107,44,.38);
 }
 .fr-since{font-size:11.5px;color:var(--ink-3);white-space:nowrap}
-.fr-rings{display:flex;gap:2px;color:var(--gold)}
+/* a fixed lane, so a franchise with no title does not shift "since" left */
+.fr-rings{display:flex;justify-content:flex-end;gap:2px;min-width:20px;color:var(--gold)}
 .fr-rings svg{width:16px;height:16px}
 .fr-go{display:flex;gap:6px}
 .fr-go button{
+  display:inline-flex;align-items:center;gap:5px;
   padding:3px 10px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface-2);font-size:11px;font-weight:600;color:var(--ink-3);cursor:pointer;
 }
+.fr-go svg{width:12px;height:12px;flex:none}
 .fr-go button:hover{border-color:var(--heat);color:var(--heat)}
 /* only a franchise that has changed hands has this line at all */
 .fr-hist{
@@ -6836,13 +6839,15 @@ function render(db) {
           ${t.managerId === comm
             ? '<span class="fr-comm" title="Commissioner" aria-label="Commissioner">C</span>' : ''}
         </div>
-        <div class="fr-since">since ${since(t)}</div>
+        ${/* rings first, so "since" holds one column down the page */''}
         <div class="fr-rings">${rings
           ? Array.from({ length: rings }, () => icon('crown')).join('')
           : ''}</div>
+        <div class="fr-since">since ${since(t)}</div>
         <div class="fr-go">
-          <button data-go-trades="${t.number}">Trades</button>
-          <button data-go-stats="${t.number}">Stats</button>
+          ${/* named and marked for the tab they land on */''}
+          <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
+          <button data-go-stats="${t.number}">${icon('chart')}Stats</button>
         </div>
         ${past.length ? `<div class="fr-hist">${past.map((o) => {
           const m = db.managerById(o.managerId);
