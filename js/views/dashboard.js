@@ -168,7 +168,7 @@ export function render(db) {
       <div class="trade-hd"><span class="chip ${s.chip}">${s.label}</span>
         <span class="d">${fmtDate(c.trade?.date, { year: true })}</span></div>
       <div class="cond"><div class="lbl">Condition</div>${esc(c.text)}
-        ${c.deadlineLabel ? `<div class="out">Resolves by ${esc(c.deadlineLabel)}</div>` : ''}</div>
+        ${c.deadline ? `<div class="out">${icon('clock')} ${esc(fmtDate(c.deadline, { year: true }))}</div>` : ''}</div>
     </div>`;
   }).join('')}` : ''}
 

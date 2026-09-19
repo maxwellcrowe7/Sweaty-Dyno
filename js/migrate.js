@@ -104,7 +104,6 @@ export function migrate(data) {
       tradeId: c.settledTradeId || null,
       text: c.condition || '',
       deadline: c.deadline || null,
-      deadlineLabel: c.deadlineLabel || null,
       status: c.status === 'met' ? 'met' : c.status === 'expired' ? 'void' : 'open',
       locks: [],
       settledBy: null,
@@ -113,6 +112,8 @@ export function migrate(data) {
     }));
   }
   if (d.trades) delete d.trades.conditionalTrades;
+  // a deadline says when on its own; the label beside it only repeated it
+  for (const c of d.trades?.conditions || []) delete c.deadlineLabel;
 
   return d;
 }

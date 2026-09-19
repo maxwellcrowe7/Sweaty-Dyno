@@ -166,7 +166,7 @@ await db.update('trades', (t) => {
   t.conditions = [{
     id: 'c1', season: 2025, tradeId: 'origin',
     text: 'If Star Player finishes top 5, Noah sends a 2027 2nd.',
-    deadline: '2099-12-28', deadlineLabel: 'End of the playoffs', status: 'open',
+    deadline: '2099-12-28', status: 'open',
     locks: [
       { kind: 'player', label: 'Frozen Guy', heldBy: 1 },
       { kind: 'pick', season: 2027, round: 2, origin: 1, heldBy: 1 },

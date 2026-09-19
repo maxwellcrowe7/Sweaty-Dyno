@@ -81,8 +81,8 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
            "met" already implies Max made the finals. The note is for the times
            it does not, so an empty one prints nothing. */''}
       ${st.key === 'open'
-        ? `<div class="out">${icon('clock')} Resolves by ${
-          esc(cond.deadlineLabel || fmtDate(cond.deadline, { year: true }))}</div>`
+        ? (cond.deadline ? `<div class="out">${icon('clock')} ${
+          esc(fmtDate(cond.deadline, { year: true }))}</div>` : '')
         : st.key === 'due'
           ? `<div class="out">${icon('alert')} Deadline passed &mdash; say what happened</div>`
           : cond.outcome
@@ -268,8 +268,8 @@ export function render(db, state = {}) {
           <span class="lk">${icon('lock')}</span>
           <div class="grow">
             <div class="t">${esc(lockLabel(db, l))}</div>
-            <div class="s">held by ${esc(db.team(l.heldBy)?.manager || '?')} &middot; until ${
-              esc(l.condition.deadlineLabel || fmtDate(l.condition.deadline, { year: true }) || 'the condition resolves')}</div>
+            <div class="s">held by ${esc(db.team(l.heldBy)?.manager || '?')}${
+              l.condition.deadline ? ` &middot; until ${esc(fmtDate(l.condition.deadline, { year: true }))}` : ''}</div>
           </div>
           ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
         </div>`;
@@ -335,10 +335,8 @@ export function mount(root, db, go, setState) {
       body: `
         <div class="field"><label>If&hellip; then&hellip;</label>
           <textarea name="text" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.text || '')}</textarea></div>
-        <div class="fgrid">
-          <div class="field"><label>Deadline</label><input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
-          <div class="field"><label>Deadline label</label><input name="deadlineLabel" value="${esc(c?.deadlineLabel || '')}" placeholder="End of the playoffs"></div>
-        </div>
+        <div class="field"><label>Deadline</label>
+          <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
 
         <div class="section-title">Locked until it resolves</div>
         <div class="lock-pick">
@@ -413,7 +411,6 @@ export function mount(root, db, go, setState) {
             tradeId: id,
             text: body,
             deadline: d.deadline || null,
-            deadlineLabel: d.deadlineLabel.trim() || null,
             status: d.status,
             locks,
             settledBy: d.settledBy || null,
