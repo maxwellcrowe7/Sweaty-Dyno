@@ -848,6 +848,13 @@ table.dt th.sticky{width:1%}
   border-radius:var(--r-sm);color:var(--ink-3)}
 .ab-kill svg{width:13px;height:13px}
 .ab-kill:hover{color:var(--red);background:color-mix(in oklab,var(--red) 14%,transparent)}
+/* the remove button keeps its space so the row never shifts, and shows itself
+   when you are over the row it would remove. No hover on a touch screen, so
+   there it stays visible. */
+@media (hover:hover){
+  .ab-kill{opacity:0;transition:opacity .14s}
+  .ab-row:hover .ab-kill,.ab-kill:focus-visible{opacity:1}
+}
 /* the chooser: one row of chips, grouped by what they make */
 .ab-menu{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:7px 0 2px;
   padding:8px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line)}
