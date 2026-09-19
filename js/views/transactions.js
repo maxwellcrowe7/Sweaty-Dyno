@@ -221,10 +221,16 @@ export function render(db, state = {}) {
   const pieces = tradeRows.reduce((a, t) =>
     a + t.sides.filter((x) => !mgr || x.team === mgr).reduce((n, x) => n + x.receives.length, 0), 0);
 
+  /* Filtered to one manager, his side leads every card -- so the column down
+     the left of the page is his return, deal after deal, instead of jumping
+     sides depending on who happened to be listed first. */
+  const facing = (t) => (!mgr ? t
+    : { ...t, sides: [...t.sides].sort((a, b) => (b.team === mgr) - (a.team === mgr)) });
+
   const who = mgr ? ` for ${db.team(mgr)?.manager || `T${mgr}`}` : '';
   const group = (p) => tab === 'trades'
     ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
-       ${p.rows.map((t) => tradeCard(db, t, condFor(t), breaks)).join('')}`
+       ${p.rows.map((t) => tradeCard(db, facing(t), condFor(t), breaks)).join('')}`
     : `<div class="section-title">${p.title}
          <span class="sub-n">${money(spent(p.key))} spent</span></div>
        <div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`;

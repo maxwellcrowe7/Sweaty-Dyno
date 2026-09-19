@@ -148,6 +148,8 @@ eq('every trade is listed', [has(all, 'P1'), has(all, 'P3')], [true, true]);
 const mine = V.render(db, { tradeTab: 'trades', tradeMgr: '6' });
 eq('a manager filter drops the deals he was not in', has(mine, 'P1'), false);
 eq('but keeps the whole card of the one he was', [has(mine, 'P3'), has(mine, 'P4')], [true, true]);
+// filtered, his side leads the card so the left column reads as his return
+eq('the filtered manager is on the left', mine.indexOf('P4') < mine.indexOf('P3'), true);
 // the counts moved off the pills and into the summary, where they are split by
 // phase -- one trade, and it was in-season
 eq('and the summary counts follow him', /In-season<\/span>/.test(mine), true);
