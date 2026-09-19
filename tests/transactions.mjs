@@ -144,7 +144,9 @@ eq('both phases head their own group', [has(all, '>Preseason'), has(all, '>In-se
   const bare = V.render(db, { tradeTab: 'trades' });
   eq('an empty season still shows both groups',
      [has(bare, '>Preseason'), has(bare, '>In-season')], [true, true]);
-  eq('each counting nothing', (bare.match(/sub-n dim">0</g) || []).length, 2);
+  // Locked assets counts zero too, so look at the phase headings themselves
+  eq('each counting nothing',
+     (bare.match(/>(Preseason|In-season)<span class="sub-n dim">0</g) || []).length, 2);
   db.season = 2025;
 }
 eq('every trade is listed', [has(all, 'P1'), has(all, 'P3')], [true, true]);
