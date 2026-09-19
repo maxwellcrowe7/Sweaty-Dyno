@@ -843,10 +843,11 @@ table.dt th.sticky{width:1%}
 /* The trigger stays put and the chips flow out beside it, wrapping onto the
    line below. The palette reserves the height that open state needs, so
    nothing around it moves when the chips appear. */
-/* aligned to the top of the reserved block, so the trigger sits in the same
-   place whether the chips are out or not */
+/* No reserved block any more: the modal body holds its own height and scrolls,
+   so the column can be as short as its contents and simply grow when the chips
+   come out. */
 .ab-pal{display:flex;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;
-  gap:4px;min-height:46px;margin-top:9px}
+  gap:4px;margin-top:9px}
 /* the chips are children of .ab-chips, which is display:contents -- they take
    part in this flex line but are not selectable as its children, so both lists
    need centring for the separators to sit level with the chips */
