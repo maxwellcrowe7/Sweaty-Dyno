@@ -73,7 +73,8 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
     <div class="trade-body">${t.sides.map((s) => side(db, s, showFrom, banded, who)).join('')}</div>
     ${cond ? `<div class="cond">
       <div class="lbl">Condition</div>${esc(cond.text)}
-      ${cond.locks?.length ? `<div class="locks">
+      ${/* a resolved condition freezes nothing: the chips go with it */''}
+      ${cond.locks?.length && ['open', 'due'].includes(st.key) ? `<div class="locks">
         ${cond.locks.map((l) => `<span class="lock-chip">${icon('lock')}${esc(lockLabel(db, l))}
           <em>${esc(db.team(l.heldBy)?.manager || '?')}</em></span>`).join('')}
       </div>` : ''}
@@ -251,11 +252,15 @@ export function render(db, state = {}) {
     </div>`).join('')}
   </div>
 
-  ${/* Only while something is frozen: a standing list is the thing to check
-       before waving a trade through, and it should vanish when nothing is. */''}
-  ${tab === 'trades' && locked.length ? `
-    <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
-    <div class="card"><div class="card-bd flush"><div class="rows">
+  ${/* The list you check before waving a trade through -- so it stays put when
+       empty and says so, rather than leaving you to wonder whether it is empty
+       or whether you are on the wrong tab. */''}
+  ${tab !== 'trades' ? '' : `
+    <div class="section-title">Locked assets${
+      locked.length ? `<span class="sub-n dim">${locked.length}</span>` : ''}</div>
+    ${!locked.length ? `<div class="card"><div class="card-bd lock-none">
+      ${icon('lock')} Nothing is locked right now</div></div>`
+    : `<div class="card"><div class="card-bd flush"><div class="rows">
       ${locked.map((l) => {
         const broke = breaks.find((b) => b.lock === l);
         return `<div class="row lock-row${broke ? ' broke' : ''}">
@@ -268,7 +273,7 @@ export function render(db, state = {}) {
           ${broke ? `<span class="chip red">${broke.how === 'dropped' ? 'Dropped' : 'Traded'} anyway</span>` : ''}
         </div>`;
       }).join('')}
-    </div></div></div>` : ''}
+    </div></div></div>`}`}
 
   ${list}
   `;

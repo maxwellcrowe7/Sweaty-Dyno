@@ -760,6 +760,9 @@ table.dt th.sticky{width:1%}
 .trade.nested .who b{font-size:12.5px}
 .trade.nested .trade-side li{font-size:12.5px}
 /* the standing list of what is frozen right now */
+/* the empty state: the section is worth keeping even with nothing in it */
+.lock-none{display:flex;align-items:center;gap:9px;color:var(--ink-3);font-size:13px}
+.lock-none svg{width:15px;height:15px;color:var(--violet);opacity:.7;flex:none}
 .lock-row .lk{color:var(--violet);display:flex}
 .lock-row .lk svg{width:15px;height:15px}
 .lock-row.broke .t{color:var(--red)}
