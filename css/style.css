@@ -846,7 +846,7 @@ table.dt th.sticky{width:1%}
 /* aligned to the top of the reserved block, so the trigger sits in the same
    place whether the chips are out or not */
 .ab-pal{display:flex;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;
-  gap:4px;min-height:46px;margin-top:3px}
+  gap:4px;min-height:46px;margin-top:9px}
 .ab-pal > *{align-self:center}
 .ab-plus{display:inline-flex;align-items:center;gap:5px;flex:none;
   padding:3px 10px;border-radius:999px;border:1px solid var(--line);
@@ -894,7 +894,11 @@ table.dt th.sticky{width:1%}
   background-color:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:10px 12px;font-size:15px;line-height:1.4;width:100%;
 }
+/* An explicit height, because a date input keeps an intrinsic minimum of its
+   own that appearance:none does not remove -- with border-box these are then
+   the same 44px whatever the control is. */
 .field input[type=date]{-webkit-appearance:none;appearance:none;min-height:0}
+.field input:not([type=checkbox]),.field select{height:44px}
 .field select{padding-right:30px;background-position:right 11px center}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
 /* a field that does not apply yet: present, so the form keeps its shape, but
