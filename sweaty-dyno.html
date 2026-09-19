@@ -855,17 +855,16 @@ table.dt th.sticky{width:1%}
   .ab-kill{opacity:0;transition:opacity .14s}
   .ab-row:hover .ab-kill,.ab-kill:focus-visible{opacity:1}
 }
-/* The chooser takes the button's place rather than stacking under it, and its
-   options run in one strip -- both so that opening it barely changes how tall
-   the modal is. */
-.ab-menu{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:0}
-.ab-menu[hidden]{display:none}
+/* The palette: always present, so using it never resizes anything. Quiet until
+   you go near it, since it is a tool rather than a value. */
+.ab-menu{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:0;opacity:.72}
+.ab-menu:hover{opacity:1}
+.ab-add-lbl{display:inline-flex;color:var(--ink-3);margin-right:1px}
+.ab-add-lbl svg{width:13px;height:13px}
 .ab-menu button{padding:2px 8px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface-2);font-size:11px;font-weight:600;color:var(--ink-2);cursor:pointer}
 .ab-menu button:hover{border-color:var(--heat);color:var(--heat)}
 .ab-menu-lbl{width:1px;height:13px;padding:0;background:var(--line);margin:0 3px}
-.ab-add{padding:1px 8px;font-size:11px;gap:4px;border-radius:999px}
-.ab-add svg{width:11px;height:11px}
 
 /* ---------- guillotine ---------- */
 .guillo{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border-radius:var(--r);overflow:hidden}
@@ -5358,9 +5357,11 @@ function mount(root, db, go, setState) {
     const colHtml = (team) => `<div class="ab-col" data-col data-team="${team}">
       <div class="ab-who">${teamTag(db.team(team))}<span class="arrow">gets</span></div>
       <div class="ab-list" data-list></div>
-      <button type="button" class="btn sm ghost ab-add" data-add>${icon('plus')} Asset</button>
-      ${/* the chooser opens under the button that asked for it */''}
-      <div class="ab-menu" data-menu hidden>
+      ${/* The palette is always here rather than behind a button: it is small,
+           it says what a column can hold, and nothing on screen moves when you
+           use it. A button that opened this was resizing the modal. */''}
+      <div class="ab-menu">
+        <span class="ab-add-lbl">${icon('plus')}</span>
         <button type="button" data-new="faab">FAAB</button>
         <span class="ab-menu-lbl" aria-hidden="true"></span>
         ${POS.map((pz) => `<button type="button" data-new="pos:${pz}">${pz}</button>`).join('')}
@@ -5471,10 +5472,6 @@ function mount(root, db, go, setState) {
     });
 
     /* Rows are built as they are chosen rather than sitting there empty. */
-    const shutMenus = () => m.root.querySelectorAll('[data-col]').forEach((x) => {
-      x.querySelector('[data-menu]').hidden = true;
-      x.querySelector('[data-add]').hidden = false;
-    });
     let seq = 0;
     const rowHtml = (team, kind, spec, a) => {
       const i = seq++;
@@ -5501,8 +5498,6 @@ function mount(root, db, go, setState) {
     };
     const addRow = (col, kind, spec, a) => {
       col.querySelector('[data-list]').insertAdjacentHTML('beforeend', rowHtml(col.dataset.team, kind, spec, a));
-      col.querySelector('[data-menu]').hidden = true;
-      col.querySelector('[data-add]').hidden = false;
       col.querySelector('[data-list] .ab-row:last-child input:not([type=hidden])')?.focus();
     };
 
@@ -5512,15 +5507,6 @@ function mount(root, db, go, setState) {
         addRow(col, a.faab != null ? 'faab' : a.pick ? 'pick' : 'player',
           a.pick ? a.pick.round : (a.pos || 'RB'), a);
       }
-      col.querySelector('[data-add]').addEventListener('click', (e) => {
-        e.stopPropagation();
-        const menu = col.querySelector('[data-menu]');
-        const open = menu.hidden;
-        shutMenus();
-        menu.hidden = !open;
-        // the chooser stands where the button was, so the modal barely moves
-        col.querySelector('[data-add]').hidden = !menu.hidden;
-      });
       col.querySelectorAll('[data-new]').forEach((opt) => opt.addEventListener('click', () => {
         const [kind, spec] = opt.dataset.new.split(':');
         addRow(col, kind === 'rd' ? 'pick' : kind === 'pos' ? 'player' : 'faab', spec);
@@ -5544,10 +5530,7 @@ function mount(root, db, go, setState) {
 
     m.root.addEventListener('click', (e) => {
       const kill = e.target.closest?.('[data-del-row]');
-      if (kill) { kill.closest('.ab-row').remove(); return; }
-      // clicking anywhere but inside a chooser closes it; Escape already closes
-      // the whole modal, so it needs nothing of its own here
-      if (!e.target.closest?.('[data-menu]')) shutMenus();
+      if (kill) kill.closest('.ab-row').remove();
     });
   }));
 }
