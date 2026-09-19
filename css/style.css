@@ -781,27 +781,33 @@ table.dt th.sticky{width:1%}
 .lock-row .lk svg{width:15px;height:15px}
 .lock-row.broke .t{color:var(--red)}
 /* Building the promised return the way the card draws it: a column per
-   manager, the assets he receives stacked underneath. The column says who, so
-   a row only has to say what -- and only the fields that kind needs are shown,
-   hidden rather than absent so a row never reflows as you change it. */
+   manager, empty until you add to it. The menu merges "what kind" with "which
+   one" -- FAAB, a position, a round -- so the row that appears carries only
+   the field that choice still leaves open. */
 .ab-grid{display:grid;grid-template-columns:1fr;gap:10px}
 @media (min-width:620px){ .ab-grid{grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);
   border:1px solid var(--line);border-radius:var(--r)} }
-.ab-col{background:var(--surface);padding:10px 11px 9px}
+.ab-col{background:var(--surface);padding:10px 11px 10px}
 .ab-who{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
 .ab-who .tnum{align-self:center}
-.ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px}
-.ab-row[hidden]{display:none}
-.ab-row > select{width:80px;flex:none}
-.ab-row .f{display:none;align-items:center;gap:6px;flex:1;min-width:0}
-.ab-row[data-kind="player"] .f-player,
-.ab-row[data-kind="pick"] .f-pick,
-.ab-row[data-kind="faab"] .f-faab{display:flex;flex-wrap:wrap}
-.ab-row .f-player select{width:68px;flex:none}
-.ab-row .f-player input{flex:1 1 96px;min-width:96px}
-.ab-row .f-pick select{flex:1 1 62px;min-width:62px}
-.ab-row .f-faab input{width:96px}
-.ab-add{margin-top:2px;padding:3px 9px;font-size:11.5px}
+.ab-row{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.ab-row input[type=number]{width:92px}
+.ab-row input:not([type=hidden]){flex:1;min-width:0}
+.ab-row select{flex:1;min-width:0}
+.ab-kill{display:grid;place-items:center;width:22px;height:22px;flex:none;
+  border-radius:var(--r-sm);color:var(--ink-3)}
+.ab-kill svg{width:13px;height:13px}
+.ab-kill:hover{color:var(--red);background:color-mix(in oklab,var(--red) 14%,transparent)}
+/* the chooser: one row of chips, grouped by what they make */
+.ab-menu{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:7px 0 2px;
+  padding:8px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line)}
+.ab-menu[hidden]{display:none}
+.ab-menu button{padding:4px 9px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);font-size:11.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.ab-menu button:hover{border-color:var(--heat);color:var(--heat)}
+.ab-menu-lbl{width:100%;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-3);margin-top:3px}
+.ab-add{padding:3px 9px;font-size:11.5px}
 
 /* ---------- guillotine ---------- */
 .guillo{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border-radius:var(--r);overflow:hidden}
