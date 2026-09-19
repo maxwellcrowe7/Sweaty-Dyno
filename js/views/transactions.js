@@ -368,11 +368,11 @@ export function mount(root, db, go, setState) {
       body: `
         <div class="field"><label>If&hellip; then&hellip;</label>
           <textarea name="text" placeholder="If Max reaches the finals, the 2026 3rd converts to Noah's.">${esc(c?.text || '')}</textarea></div>
-        <div class="section-title">Promised return</div>
-        <div class="ab-grid">${parties.map(colHtml).join('')}</div>
+        ${/* one flat list of labelled fields: the modal is short enough that
+             section headings were dividing five things into three groups */''}
+        <div class="field"><label>Promised return</label>
+          <div class="ab-grid">${parties.map(colHtml).join('')}</div></div>
 
-        ${/* the deadline is part of where this stands, not part of the terms */''}
-        <div class="section-title">Outcome</div>
         <div class="fgrid">
           <div class="field"><label>Status</label><select name="status" data-status>
             ${[['open', 'Open'], ['met', 'Condition met'], ['void', 'Not met']].map(([v, t]) =>
