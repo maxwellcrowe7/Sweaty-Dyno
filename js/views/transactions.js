@@ -79,8 +79,9 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
         <div style="flex:1"></div>
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
           aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
-        <span class="d">${t.date ? esc(fmtDate(t.date, { year: true }))
-          : nested === 'void' ? '' : '<em class="pending">expected</em>'}</span>
+        ${/* a trade that has not happened has no date, and the colour already
+             says it is a promise rather than a record */''}
+        ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}
       </div>
       ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
     </div>

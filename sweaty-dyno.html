@@ -782,9 +782,6 @@ table.dt th.sticky{width:1%}
 .trade.nested.is-met{border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.05)}
 .trade.nested.is-void{border-color:rgba(255,77,94,.4);background:rgba(255,77,94,.05)}
 .trade.nested.is-void .who b,.trade.nested.is-void .trade-side li{opacity:.65}
-/* a trade that has not happened yet has no date to show */
-.trade.nested .pending{font-style:normal;font-size:10.5px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .trade.nested .trade-meta{padding-top:5px}
 .trade.nested .who{padding:7px 11px 6px}
 .trade.nested .trade-side{padding:8px 0}
@@ -5026,8 +5023,9 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
         <div style="flex:1"></div>
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
           aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
-        <span class="d">${t.date ? esc(fmtDate(t.date, { year: true }))
-          : nested === 'void' ? '' : '<em class="pending">expected</em>'}</span>
+        ${/* a trade that has not happened has no date, and the colour already
+             says it is a promise rather than a record */''}
+        ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}
       </div>
       ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
     </div>

@@ -160,7 +160,7 @@ await db.update('trades', (t) => {
 });
 const promised = V.render(db, { tradeTab: 'trades' });
 eq('an open condition shows what it promises', /2027 2nd/.test(promised), true);
-eq('marked as not yet happened', /expected<\/em>/.test(promised), true);
+eq('with no date, since it has not happened', /o-expected"[\s\S]{0,400}?class="d"/.test(promised), false);
 eq('and tinted for open', /nested is-open/.test(promised), true);
 // the follow-up reads in the same manager order as the deal above it
 eq('the promised side lines up with the parent',

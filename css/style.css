@@ -764,9 +764,6 @@ table.dt th.sticky{width:1%}
 .trade.nested.is-met{border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.05)}
 .trade.nested.is-void{border-color:rgba(255,77,94,.4);background:rgba(255,77,94,.05)}
 .trade.nested.is-void .who b,.trade.nested.is-void .trade-side li{opacity:.65}
-/* a trade that has not happened yet has no date to show */
-.trade.nested .pending{font-style:normal;font-size:10.5px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .trade.nested .trade-meta{padding-top:5px}
 .trade.nested .who{padding:7px 11px 6px}
 .trade.nested .trade-side{padding:8px 0}
