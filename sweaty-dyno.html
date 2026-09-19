@@ -5390,7 +5390,9 @@ function mount(root, db, go, setState) {
             <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
         </div>
         <div class="fgrid one">
-          <div class="field"><label>Settled by</label><select name="settledBy">
+          ${/* a noun, because the value is a trade: "Completion trade: --" reads
+               where "Settled by: --" sounds like a missing name */''}
+          <div class="field"><label>Completion trade</label><select name="settledBy">
             <option value="">&mdash;</option>
             ${after.map((x) => `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
               esc(fmtDate(x.date, { year: true }))} &middot; ${
