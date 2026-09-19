@@ -90,8 +90,10 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
       <p class="cond-line"><span class="lbl">Condition</span>${esc(cond.text)}</p>
       ${/* a resolved condition freezes nothing: the chips go with it */''}
       ${cond.locks?.length && ['open', 'due'].includes(st.key) ? `<div class="locks">
-        ${cond.locks.map((l) => `<span class="lock-chip">${icon('lock')}${esc(lockLabel(db, l))}
-          <em>${esc(db.team(l.heldBy)?.manager || '?')}</em></span>`).join('')}
+        ${/* the holder is in the Locked assets list above, and on a two-team
+             deal the asset itself usually names him */''}
+        ${cond.locks.map((l) => `<span class="lock-chip"
+          title="${esc(db.team(l.heldBy)?.manager || '')}">${icon('lock')}${esc(lockLabel(db, l))}</span>`).join('')}
       </div>` : ''}
       ${/* "Condition met" plus the wording above usually says what happened --
            "met" already implies Max made the finals. The note is for the times

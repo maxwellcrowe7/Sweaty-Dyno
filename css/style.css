@@ -746,7 +746,6 @@ table.dt th.sticky{width:1%}
   background:rgba(156,140,250,.1);border:1px solid color-mix(in oklab,var(--violet) 35%,var(--line));
   font-size:11.5px;color:var(--ink-2)}
 .lock-chip svg{width:12px;height:12px;color:var(--violet)}
-.lock-chip em{font-style:normal;color:var(--ink-3)}
 /* The tripwire: the app cannot stop a frozen asset from moving, only notice. */
 .lock-break{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding-top:8px;
   border-top:1px dashed var(--red);color:var(--red);font-size:12px}
