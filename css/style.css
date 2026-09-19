@@ -738,13 +738,29 @@ table.dt th.sticky{width:1%}
   /* the phase columns shrink before the labels do */
   /* the label takes only what it needs and never wraps -- a two-line "Free
      Agents" made its row taller than the one above it */
-  .sum-row{grid-template-columns:auto 1fr 1fr 1fr;gap:6px;padding:10px 11px}
-  .sum-row b{white-space:nowrap;font-size:15px}
-  .sum-row > div + div{padding-left:6px}
-  .sum-row em,.sum-row i{font-size:19px}
-  .sum-row s{font-size:15px}
-  .sum-row > div{gap:5px}
-  .sum-row.hd{padding:9px 13px 4px}
+  /* three columns of "30 / $333" do not fit a phone at desktop sizes -- the row
+     was running off the edge. Everything comes down a step and the columns
+     share what is left equally. */
+  .sum-row{grid-template-columns:minmax(0,auto) repeat(3,minmax(0,1fr));gap:4px;padding:9px 10px}
+  .sum-row b{white-space:nowrap;font-size:13.5px}
+  .sum-row > div + div{padding-left:4px}
+  .sum-row em,.sum-row i{font-size:16px;letter-spacing:0}
+  .sum-row s{font-size:12px}
+  .sum-row > div{gap:3px}
+  .sum-row.hd{padding:8px 10px 3px}
+  .sum-row.hd span{font-size:8.5px;letter-spacing:.04em}
+  /* the lock header carries four things; they come down a step to share a line */
+  .lk-hd{gap:7px;padding:8px 11px}
+  .lk-deal{font-size:12.5px}
+  .lk-date,.lk-until{font-size:11px}
+  .lk-item{padding:7px 11px;gap:7px}
+  .lk-name{font-size:12.5px}
+  .lk-holder{font-size:12px}
+  .lk-holder em{font-size:10px}
+  /* a promised return stacks like the trade above it, so its columns get the
+     same single-column treatment */
+  .ab-col{border-radius:var(--r)}
+  .trade.nested .trade-side{padding:7px 0}
   .sum-row.hd span{letter-spacing:.06em}
   /* wrapped onto its own line, the rule above it means nothing */
   .pill-sep{display:none}
