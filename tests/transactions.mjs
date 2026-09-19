@@ -139,6 +139,12 @@ const has = (h, s) => h.includes(s);
 const all = V.render(db, { tradeTab: 'trades' });
 eq('both phases head their own group', [has(all, '>Preseason'), has(all, '>In-season')], [true, true]);
 eq('every trade is listed', [has(all, 'P1'), has(all, 'P3')], [true, true]);
+// a link from the Managers tab arrives as ?mgr=, and the picker must show it
+{
+  const linked = V.render(db, { tradeTab: 'trades', params: { mgr: '5' } });
+  eq('a linked manager filters the list', /data-trade="b"/.test(linked), false);
+  eq('and the picker says so', /value="5" selected/.test(linked), true);
+}
 const mine = V.render(db, { tradeTab: 'trades', tradeMgr: '6' });
 eq('a manager filter drops the deals he was not in', has(mine, 'P1'), false);
 eq('but keeps the whole card of the one he was', [has(mine, 'P3'), has(mine, 'P4')], [true, true]);

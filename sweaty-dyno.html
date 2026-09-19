@@ -5371,7 +5371,10 @@ function render(db, state = {}) {
 
   return `
   <div class="view-hd"><h2>Transactions</h2>
-    <div class="hd-picks">${mgrPicker(db, S, state.tradeMgr || '')}${seasonPicker(db)}</div></div>
+    ${/* the picker shows the filter that is actually in force, however it got
+         there -- a link from Managers arrives as ?mgr= and used to filter the
+         list while the control still read All */''}
+    <div class="hd-picks">${mgrPicker(db, S, mgr ?? '')}${seasonPicker(db)}</div></div>
 
   ${/* the sub-filter shares the tabs' line, a rule's width away: near enough to
        read as attached to them, separate enough not to be mistaken for more of
