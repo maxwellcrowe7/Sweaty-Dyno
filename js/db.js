@@ -845,7 +845,7 @@ class Store {
     if (c.status === 'void') return { key: 'void', label: 'Not met', chip: 'red' };
     if (c.deadline && c.deadline < today())
       return { key: 'due', label: 'Needs a decision', chip: 'gold' };
-    return { key: 'open', label: 'Open', chip: 'gold' };
+    return { key: 'open', label: 'Open', chip: 'blue' };
   }
 
   /** Conditions for a season, newest first, with their trade attached. */

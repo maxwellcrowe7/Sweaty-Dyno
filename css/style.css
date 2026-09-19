@@ -243,6 +243,7 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .chip.mint{color:var(--mint);border-color:rgba(61,220,151,.3);background:rgba(61,220,151,.09)}
 .chip.gold{color:var(--gold);border-color:rgba(245,196,81,.32);background:rgba(245,196,81,.10)}
 .chip.violet{color:var(--violet);border-color:rgba(156,140,250,.32);background:rgba(156,140,250,.10)}
+.chip.blue{color:var(--blue);border-color:rgba(90,200,250,.32);background:rgba(90,200,250,.10)}
 .chip.red{color:var(--red);border-color:rgba(255,77,94,.32);background:rgba(255,77,94,.10)}
 /* podium places -- silver cool enough to read against gold, bronze warm but
    clear of --heat so it never looks like the minigame accent */
@@ -754,7 +755,18 @@ table.dt th.sticky{width:1%}
    violet ground -- it carries its own date, and needs no colour of its own to
    say what it is. */
 .settle-wrap{margin-top:9px}
+/* The follow-up, coloured by where the condition stands: blue while it is only
+   promised, gold once the deadline has passed and it needs a ruling, green when
+   it actually happened, red when it never will. */
 .trade.nested{border-color:color-mix(in oklab,var(--violet) 28%,var(--line));background:var(--bg-2)}
+.trade.nested.is-open{border-color:rgba(90,200,250,.4);background:rgba(90,200,250,.05)}
+.trade.nested.is-due{border-color:rgba(245,196,81,.42);background:rgba(245,196,81,.05)}
+.trade.nested.is-met{border-color:rgba(61,220,151,.4);background:rgba(61,220,151,.05)}
+.trade.nested.is-void{border-color:rgba(255,77,94,.4);background:rgba(255,77,94,.05)}
+.trade.nested.is-void .who b,.trade.nested.is-void .trade-side li{opacity:.65}
+/* a trade that has not happened yet has no date to show */
+.trade.nested .pending{font-style:normal;font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .trade.nested .trade-meta{padding-top:5px}
 .trade.nested .who{padding:7px 11px 6px}
 .trade.nested .trade-side{padding:8px 0}

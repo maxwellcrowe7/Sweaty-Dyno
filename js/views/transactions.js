@@ -48,8 +48,14 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
   const mine = breaks.filter((b) => b.lock.condition.id === cond?.id);
   // the trade that discharged this condition rides inside this card rather than
   // sitting in the list as an unexplained second deal
+  /* What the condition promises, and then what actually discharged it. The
+     expected return is hand-entered so the follow-up is visible from the day
+     the deal is struck -- Sleeper has no idea it is coming. Once the real trade
+     lands and is linked, it supersedes the sketch. */
   const settler = cond?.settledBy
     ? db.get('trades').trades.find((x) => x.id === cond.settledBy) : null;
+  const promised = !settler && cond?.expected?.length
+    ? { id: `${t.id}-expected`, date: null, sides: cond.expected } : null;
   // Two-team deals are self-describing: what I get is what you gave. Three-way
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
@@ -58,14 +64,15 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
     <span class="arrow">gets</span></div>`;
 
   return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
-      nested ? ' nested' : ''}" data-trade="${esc(t.id)}">
+      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}">
     <div class="trade-hd">
       <div class="trade-meta">
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
         <div style="flex:1"></div>
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
           aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
-        <span class="d">${fmtDate(t.date, { year: true })}</span>
+        <span class="d">${t.date ? esc(fmtDate(t.date, { year: true }))
+          : `<em class="pending">${nested === 'void' ? 'never happened' : 'expected'}</em>`}</span>
       </div>
       ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
     </div>
@@ -93,7 +100,9 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false) => {
         ${esc(mine.map((b) => lockLabel(db, b.lock)).join(', '))}</div>` : ''}
       ${/* the settlement sits on the condition's own ground -- it belongs to the
            condition, and a second colour around it only said so again */''}
-      ${settler ? `<div class="settle-wrap">${tradeCard(db, settler, null, [], true)}</div>` : ''}
+      ${settler || promised ? `<div class="settle-wrap">
+        ${tradeCard(db, settler || promised, null, [], st.key)}
+      </div>` : ''}
     </div>` : ''}
     ${t.note && !cond ? `<div class="cond note">
       <p class="cond-line"><span class="lbl">Note</span>${esc(t.note)}</p></div>` : ''}
@@ -338,6 +347,15 @@ export function mount(root, db, go, setState) {
         <div class="field"><label>Deadline</label>
           <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
 
+        <div class="section-title">Expected return</div>
+        <div class="field"><label>What changes hands if it happens &mdash;
+          one per line, <span class="dimmer">asset @ manager who receives it</span></label>
+          <textarea name="expected" placeholder="2027 2nd (Max) @ Noah">${esc(
+            (c?.expected || []).flatMap((sd) => sd.receives.map((a) =>
+              `${a.pick ? `${a.pick.season} ${ORD[a.pick.round] || `${a.pick.round}th`}${
+                a.pick.origin && db.team(a.pick.origin) ? ` (${db.team(a.pick.origin).manager})` : ''}`
+                : a.label} @ ${db.team(sd.team)?.manager || sd.team}`)).join('\n'))}</textarea></div>
+
         <div class="section-title">Locked assets</div>
         <div class="lock-pick">
           ${inTrade.map((l, i) => `<label class="lk-opt">
@@ -368,6 +386,7 @@ export function mount(root, db, go, setState) {
         /* Manager by name, alias or team number -- and a line that cannot be read
            is an error, not something to drop on the floor. Skipping them
            silently was indistinguishable from the whole box not saving. */
+        const bad = [];
         const byName = (n) => {
           const q = String(n).trim().toLowerCase();
           if (!q) return null;
@@ -377,17 +396,43 @@ export function mount(root, db, go, setState) {
             || db.teams().find((x) => x.manager.toLowerCase().startsWith(q));
           return t?.number ?? null;
         };
+        const readLines = (src, what) => {
+          const out = [];
+          String(src || '').split('\n').forEach((line, n) => {
+            if (!line.trim()) return;
+            const at = line.lastIndexOf('@');
+            if (at < 0) return bad.push(`${what} line ${n + 1}: add "@ manager"`);
+            const asset = line.slice(0, at).trim();
+            const owner = line.slice(at + 1).trim();
+            const team = byName(owner);
+            if (!asset) return bad.push(`${what} line ${n + 1}: no asset before the @`);
+            if (!team) return bad.push(`${what} line ${n + 1}: no manager called "${esc(owner)}"`);
+            const m = asset.match(/^(\d{4})\s+(\d)(?:st|nd|rd|th)(?:\s*\(([^)]+)\))?$/i);
+            out.push(m
+              ? { team, label: `${m[1]} ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'][Number(m[2])] || `${m[2]}th`}`,
+                  pick: { season: Number(m[1]), round: Number(m[2]), origin: m[3] ? byName(m[3]) : null } }
+              : { team, label: asset });
+          });
+          return out;
+        };
+
+        // what the condition promises, grouped into sides the card can draw
+        const want = readLines(d.expected, 'Expected return');
+        const expected = [...new Map(want.map((x) => [x.team, x.team])).keys()].map((team) => ({
+          team,
+          receives: want.filter((x) => x.team === team).map(({ team: _t, ...a }) => a),
+        }));
+
         const parsed = [];
-        const bad = [];
         String(d.extra || '').split('\n').forEach((line, n) => {
           if (!line.trim()) return;
           const at = line.lastIndexOf('@');
-          if (at < 0) return bad.push(`Line ${n + 1}: add "@ manager" &mdash; ${esc(line.trim())}`);
+          if (at < 0) return bad.push(`Locked line ${n + 1}: add "@ manager" &mdash; ${esc(line.trim())}`);
           const asset = line.slice(0, at).trim();
           const owner = line.slice(at + 1).trim();
           const heldBy = byName(owner);
-          if (!asset) return bad.push(`Line ${n + 1}: no asset before the @`);
-          if (!heldBy) return bad.push(`Line ${n + 1}: no manager called "${esc(owner)}"`);
+          if (!asset) return bad.push(`Locked line ${n + 1}: no asset before the @`);
+          if (!heldBy) return bad.push(`Locked line ${n + 1}: no manager called "${esc(owner)}"`);
           const m = asset.match(/^(\d{4})\s+(\d)(?:st|nd|rd|th)(?:\s*\(([^)]+)\))?$/i);
           parsed.push(m
             ? { kind: 'pick', season: Number(m[1]), round: Number(m[2]), origin: m[3] ? byName(m[3]) : null, heldBy }
@@ -413,6 +458,7 @@ export function mount(root, db, go, setState) {
             deadline: d.deadline || null,
             status: d.status,
             locks,
+            expected,
             settledBy: d.settledBy || null,
             settledOn: d.status === 'open' ? null : (db.get('trades').trades.find((x) => x.id === d.settledBy)?.date || null),
             outcome: d.outcome.trim() || null,

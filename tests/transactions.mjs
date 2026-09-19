@@ -149,6 +149,23 @@ eq('his one trade is counted once', (mine.match(/<em>1<\/em>/g) || []).length >=
 const fa = V.render(db, { tradeTab: 'waivers', tradeKind: 'fa' });
 eq('free agents only means free agents only', [has(fa, 'Free agent'), has(fa, '$10')], [true, false]);
 
+/* ---- the promised follow-up, visible before it exists ---- */
+await db.update('trades', (t) => {
+  t.trades = [{ id: 'o', season: 2025, date: '2025-08-01',
+    sides: [{ team: 1, receives: [{ label: 'Star' }] }, { team: 5, receives: [] }] }];
+  t.waivers = [];
+  t.conditions = [{ id: 'c0', season: 2025, tradeId: 'o', text: 'If Star finishes top 5.',
+    deadline: '2099-01-01', status: 'open', locks: [], settledBy: null, outcome: null,
+    expected: [{ team: 5, receives: [{ label: '2027 2nd', pick: { season: 2027, round: 2, origin: 1 } }] }] }];
+});
+const promised = V.render(db, { tradeTab: 'trades' });
+eq('an open condition shows what it promises', /2027 2nd/.test(promised), true);
+eq('marked as not yet happened', /expected<\/em>/.test(promised), true);
+eq('and tinted for open', /nested is-open/.test(promised), true);
+await db.update('trades', (t) => { t.conditions[0].status = 'void'; });
+eq('a dead condition says it never happened',
+   /never happened<\/em>/.test(V.render(db, { tradeTab: 'trades' })), true);
+
 /* ---- conditions: tag, lock, break, settle ---- */
 await db.update('trades', (t) => {
   t.trades = [
