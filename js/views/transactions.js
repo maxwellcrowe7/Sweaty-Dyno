@@ -90,8 +90,10 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, marks = null
       <div class="trade-meta">
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
         <div style="flex:1"></div>
+        ${/* the same affordance either way, but it says which one it is */''}
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
-          aria-label="Condition on this trade" title="Condition on this trade">${icon('pencil')}</button>` : ''}
+          aria-label="${cond ? 'Edit the condition' : 'Make this conditional'}"
+          title="${cond ? 'Edit the condition' : 'Make this conditional'}">${icon('pencil')}</button>` : ''}
         ${/* a trade that has not happened has no date, and the colour already
              says it is a promise rather than a record */''}
         ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}
@@ -366,9 +368,13 @@ export function mount(root, db, go, setState) {
       .sort((x, y) => (y.date || '').localeCompare(x.date || ''));
 
     const m = openModal({
-      title: 'Condition',
+      title: c ? 'Condition' : 'Make this conditional',
       confirm: 'Save',
       closeButtons: false,
+      // the way back: emptying the terms also removed a condition, but nothing
+      // said so -- this does
+      extra: c ? `<button type="button" class="btn danger" data-cond-remove>${
+        icon('x')} Remove condition</button>` : '',
       // the palette opens and rows come and go: the frame holds still and the
       // content scrolls inside it
       fixedHeight: true,
@@ -529,6 +535,14 @@ export function mount(root, db, go, setState) {
     };
     status.addEventListener('change', syncSettled);
     syncSettled();
+
+    m.root.querySelector('[data-cond-remove]')?.addEventListener('click', async () => {
+      await db.update('trades', (t) => {
+        t.conditions = (t.conditions || []).filter((x) => x.id !== c.id);
+      });
+      toast('Condition removed');
+      m.close();
+    });
 
     m.root.addEventListener('click', (e) => {
       const kill = e.target.closest?.('[data-del-row]');

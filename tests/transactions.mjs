@@ -199,6 +199,14 @@ await db.update('trades', (t) => {
   }];
 });
 eq('the condition hangs off its trade', db.conditionFor('origin')?.id, 'c1');
+// the pencil names the action it performs, which differs by state
+{
+  db.cloud = { signedIn: true };            // the pencil is a commissioner's
+  const h = V.render(db, { tradeTab: 'trades' });
+  eq('a conditional trade offers to edit it', /title="Edit the condition"/.test(h), true);
+  eq('a plain one offers to make it conditional', /title="Make this conditional"/.test(h), true);
+  db.cloud = null;
+}
 eq('and an untagged trade has none', db.conditionFor('elsewhere'), null);
 eq('every lock is live while it is open', db.lockedAssets(2025).length, 3);
 // locks are marked on the promised return and nowhere else
