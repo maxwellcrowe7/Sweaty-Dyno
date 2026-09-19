@@ -874,9 +874,13 @@ class Store {
 
   /** A lock and a traded asset are the same thing when this says so. */
   sameAsset(lock, asset) {
-    if (lock.kind === 'player') return !asset.pick && lock.label === asset.label;
-    return Boolean(asset.pick) && asset.pick.season === lock.season
-      && asset.pick.round === lock.round && asset.pick.origin === lock.origin;
+    if (lock.kind === 'pick') {
+      return Boolean(asset.pick) && asset.pick.season === lock.season
+        && asset.pick.round === lock.round && asset.pick.origin === lock.origin;
+    }
+    // FAAB is fungible: any amount owed matches any amount moving
+    if (lock.kind === 'faab') return asset.faab != null;
+    return !asset.pick && asset.faab == null && lock.label === asset.label;
   }
 
   /**

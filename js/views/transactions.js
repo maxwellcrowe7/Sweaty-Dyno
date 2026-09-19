@@ -41,9 +41,13 @@ const side = (db, s, showFrom, banded, who, marks = null) => `
   </div>`;
 
 /* A lock, written the way it reads: "Kareem Hunt, held by Max". */
-const lockLabel = (db, l) => (l.kind === 'player' ? l.label
-  : `${l.season} ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'][l.round] || `${l.round}th`}${
-    l.origin && db.team(l.origin) ? ` (${db.team(l.origin).manager})` : ''}`);
+const lockLabel = (db, l) => {
+  if (l.kind === 'pick') {
+    return `${l.season} ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'][l.round] || `${l.round}th`}${
+      l.origin && db.team(l.origin) ? ` (${db.team(l.origin).manager})` : ''}`;
+  }
+  return l.label;
+};
 
 const tradeCard = (db, t, cond = null, breaks = [], nested = false, marks = null) => {
   const st = cond ? db.conditionStatus(cond) : null;
@@ -320,7 +324,7 @@ export function mount(root, db, go, setState) {
      promised return is built asset by asset rather than typed as text, and the
      locks fall out of it: whatever is owed is frozen in the hands of whoever
      owes it, so there is nothing separate to keep in step. */
-  const POS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+  const POS = ['QB', 'RB', 'WR', 'TE'];
   const ORD = ['', '1st', '2nd', '3rd'];
   const ROWS = 4;
 
@@ -416,11 +420,15 @@ export function mount(root, db, go, setState) {
            whoever owes it, which on a two-team deal is simply the other side. */
         const locks = want.map((w) => {
           const heldBy = parties.find((t) => t !== w.to) ?? w.to;
-          return w.asset.pick
-            ? { kind: 'pick', season: w.asset.pick.season, round: w.asset.pick.round,
-                origin: w.asset.pick.origin, heldBy }
-            : { kind: 'player', label: w.asset.label, heldBy };
-        }).filter((l) => l.kind !== 'player' || !/FAAB/i.test(l.label));
+          if (w.asset.pick) {
+            return { kind: 'pick', season: w.asset.pick.season, round: w.asset.pick.round,
+              origin: w.asset.pick.origin, heldBy };
+          }
+          // FAAB is locked too: a trade that spends it can be blocked, even
+          // though a waiver bid that overruns it can only be unwound afterwards
+          if (w.asset.faab != null) return { kind: 'faab', amount: w.asset.faab, label: w.asset.label, heldBy };
+          return { kind: 'player', label: w.asset.label, heldBy };
+        });
 
         await db.update('trades', (t) => {
           t.conditions ||= [];

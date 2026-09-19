@@ -206,6 +206,11 @@ eq('every lock is live while it is open', db.lockedAssets(2025).length, 3);
   const h = V.render(db, { tradeTab: 'trades' });
   const nest = h.slice(h.indexOf('settle-wrap'));
   eq('the promised row is padlocked', /lk-mark/.test(nest), true);
+  // FAAB owed is locked as well: a trade that spends it can be blocked
+  eq('FAAB counts as an asset a lock can name',
+     db.sameAsset({ kind: 'faab', amount: 10 }, { label: '$10 FAAB', faab: 10 }), true);
+  eq('and a player lock does not match a pile of cash',
+     db.sameAsset({ kind: 'player', label: '$10 FAAB' }, { label: '$10 FAAB', faab: 10 }), false);
   eq('and the deal above it is not', /lk-mark/.test(h.slice(0, h.indexOf('settle-wrap'))), false);
 }
 
