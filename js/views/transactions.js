@@ -454,6 +454,7 @@ export function mount(root, db, go, setState) {
     });
 
     /* Rows are built as they are chosen rather than sitting there empty. */
+    const shutMenus = () => m.root.querySelectorAll('[data-menu]').forEach((x) => { x.hidden = true; });
     let seq = 0;
     const rowHtml = (team, kind, spec, a) => {
       const i = seq++;
@@ -490,9 +491,12 @@ export function mount(root, db, go, setState) {
         addRow(col, a.faab != null ? 'faab' : a.pick ? 'pick' : 'player',
           a.pick ? a.pick.round : (a.pos || 'RB'), a);
       }
-      col.querySelector('[data-add]').addEventListener('click', () => {
+      col.querySelector('[data-add]').addEventListener('click', (e) => {
+        e.stopPropagation();
         const menu = col.querySelector('[data-menu]');
-        menu.hidden = !menu.hidden;
+        const open = menu.hidden;
+        shutMenus();
+        menu.hidden = !open;
       });
       col.querySelectorAll('[data-new]').forEach((opt) => opt.addEventListener('click', () => {
         const [kind, spec] = opt.dataset.new.split(':');
@@ -501,7 +505,10 @@ export function mount(root, db, go, setState) {
     });
     m.root.addEventListener('click', (e) => {
       const kill = e.target.closest?.('[data-del-row]');
-      if (kill) kill.closest('.ab-row').remove();
+      if (kill) { kill.closest('.ab-row').remove(); return; }
+      // clicking anywhere but inside a chooser closes it; Escape already closes
+      // the whole modal, so it needs nothing of its own here
+      if (!e.target.closest?.('[data-menu]')) shutMenus();
     });
   }));
 }
