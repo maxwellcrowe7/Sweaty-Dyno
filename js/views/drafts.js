@@ -2,8 +2,12 @@ import { esc, icon, empty, seasonPicker } from '../util.js';
 
 /* Which hauls are open -- module scope so a repaint does not close them. */
 const HAUL_OPEN = new Set();
+/* Which manager the board is picking out, likewise. */
+let FOCUS = null;
 
-export function render(db) {
+export function render(db, state = {}) {
+  // ?team=6 arrives from the Managers tab and lights that column up on landing
+  const focus = FOCUS ?? (Number(state.params?.team) || null);
   const seasons = db.draftSeasons();
   if (!seasons.length) return empty('No drafts yet', 'Rookie draft boards will appear here.', 'board');
   // One shared season for the whole app -- no private year here any more, which
@@ -63,11 +67,15 @@ export function render(db) {
     <div class="card-hd"><h3>Draft board</h3><div class="spacer"></div>
       <span class="chip heat">${icon('swap')} traded</span></div>
     <div class="card-bd flush">
-      <div class="board"><div class="board-grid" style="--cols:${cols}">
+      ${/* picking a manager out of the board: his column head and every pick he
+           actually made light up, the rest fall back. A pick he traded for sits
+           in someone else's column, and lights up there. */''}
+      <div class="board"><div class="board-grid${focus ? ' focused' : ''}" style="--cols:${cols}">
         ${/* just the name: the slot number is already the back half of every pick
              number in the column below it */''}
-        ${d.order.map((n) => `<div class="board-head">${
-          esc(tOf(n)?.manager ?? 'T' + n)}</div>`).join('')}
+        ${d.order.map((n) => `<button class="board-head${n === focus ? ' on' : ''}"
+          data-focus-team="${n}" aria-pressed="${n === focus}">${
+          esc(tOf(n)?.manager ?? 'T' + n)}</button>`).join('')}
         ${Array.from({ length: d.rounds }, (_, r) =>
           d.order.map((_, s) => {
             const p = d.picks.find((x) => x.round === r + 1 && x.slot === s + 1);
@@ -78,7 +86,8 @@ export function render(db) {
             const parts = String(p.player).trim().split(/\s+/);
             const first = parts.length > 1 ? parts[0] : '';
             const last = parts.length > 1 ? parts.slice(1).join(' ') : p.player;
-            return `<div class="pick${pos ? ` tint-${esc(pos)}` : ''}${p.traded ? ' traded' : ''}">
+            return `<div class="pick${pos ? ` tint-${esc(pos)}` : ''}${p.traded ? ' traded' : ''}${
+              p.pickedBy === focus ? ' on' : ''}" data-by="${p.pickedBy}">
               <div class="body">
                 <span class="no">${p.pick}</span>
                 <span class="nm">${first ? `<b>${esc(first)}</b>` : ''}<i>${esc(last)}</i></span>
@@ -121,6 +130,22 @@ export function render(db) {
 }
 
 export function mount(root) {
+  /* Toggled in place rather than through a repaint: the board is a wide
+     scroller, and a repaint would throw away where you had scrolled to. */
+  root.querySelectorAll('[data-focus-team]').forEach((h) => h.addEventListener('click', () => {
+    const n = Number(h.dataset.focusTeam);
+    FOCUS = FOCUS === n ? null : n;
+    const grid = h.closest('.board-grid');
+    grid.classList.toggle('focused', FOCUS != null);
+    grid.querySelectorAll('[data-focus-team]').forEach((x) => {
+      const on = Number(x.dataset.focusTeam) === FOCUS;
+      x.classList.toggle('on', on);
+      x.setAttribute('aria-pressed', String(on));
+    });
+    grid.querySelectorAll('.pick[data-by]').forEach((c) =>
+      c.classList.toggle('on', Number(c.dataset.by) === FOCUS));
+  }));
+
   root.querySelectorAll('[data-haul]').forEach((hd) => {
     const n = Number(hd.dataset.haul);
     const fire = () => {

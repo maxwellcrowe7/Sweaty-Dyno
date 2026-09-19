@@ -25,6 +25,9 @@ const h = V.render(db, {});
 eq('a row for every franchise', (h.match(/class="fr"/g) || []).length, db.teams().length);
 eq('each one offers a way into their trades',
    (h.match(/data-go-trades="/g) || []).length, db.teams().length);
+eq('and into their draft board and their season',
+   [(h.match(/data-go-drafts="/g) || []).length, (h.match(/data-go-stats="/g) || []).length],
+   [db.teams().length, db.teams().length]);
 
 // a crown for a title, and nothing for a franchise that has not won one
 const champ = (db.get('bank').finishes || []).find((f) => f.place === 1);

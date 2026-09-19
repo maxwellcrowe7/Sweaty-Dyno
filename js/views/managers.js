@@ -42,6 +42,7 @@ export function render(db) {
         <div class="fr-go">
           ${/* named and marked for the tab they land on */''}
           <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
+          <button data-go-drafts="${t.number}">${icon('board')}Drafts</button>
           <button data-go-stats="${t.number}">${icon('chart')}Stats</button>
         </div>
         ${past.length ? `<div class="fr-hist">${past.map((o) => {
@@ -72,6 +73,8 @@ export function mount(root, db, go) {
      that knows people, so it is the natural way in to their pages. */
   root.querySelectorAll('[data-go-trades]').forEach((b) => b.addEventListener('click', () =>
     go('trades', { mgr: b.dataset.goTrades })));
+  root.querySelectorAll('[data-go-drafts]').forEach((b) => b.addEventListener('click', () =>
+    go('drafts', { team: b.dataset.goDrafts })));
   root.querySelectorAll('[data-go-stats]').forEach((b) => b.addEventListener('click', () =>
     go('stats', { team: b.dataset.goStats })));
 }

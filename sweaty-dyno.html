@@ -552,12 +552,20 @@ table.dt th.sticky{width:1%}
 /* Name only, no slot number and no team stripe -- the pick numbers underneath
    carry the slot, so the header can be a thin label instead of a card. */
 .board-head{
-  display:flex;align-items:center;justify-content:center;min-width:0;
+  display:flex;align-items:center;justify-content:center;min-width:0;width:100%;
   padding:5px 6px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--line);
-  font-size:11.5px;font-weight:700;
+  font-size:11.5px;font-weight:700;color:var(--ink);cursor:pointer;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+.board-head:hover{border-color:var(--heat)}
+/* Picking one manager out of the board: his head and the picks he made hold
+   their colour, everything else falls back far enough to read as background
+   without disappearing. */
+.board-grid.focused .board-head:not(.on){opacity:.3}
+.board-grid.focused .pick:not(.on){opacity:.16}
+.board-head.on{border-color:var(--heat);color:var(--heat);background:rgba(255,107,44,.1)}
+.board-grid.focused .pick.on{box-shadow:0 0 0 1px var(--heat)}
 .pick{
   min-width:0;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--line);
@@ -5008,7 +5016,11 @@ const { esc, icon, empty, seasonPicker } = __M["js/util.js"];
 
 /* Which hauls are open -- module scope so a repaint does not close them. */
 const HAUL_OPEN = new Set();
-function render(db) {
+/* Which manager the board is picking out, likewise. */
+let FOCUS = null;
+function render(db, state = {}) {
+  // ?team=6 arrives from the Managers tab and lights that column up on landing
+  const focus = FOCUS ?? (Number(state.params?.team) || null);
   const seasons = db.draftSeasons();
   if (!seasons.length) return empty('No drafts yet', 'Rookie draft boards will appear here.', 'board');
   // One shared season for the whole app -- no private year here any more, which
@@ -5068,11 +5080,15 @@ function render(db) {
     <div class="card-hd"><h3>Draft board</h3><div class="spacer"></div>
       <span class="chip heat">${icon('swap')} traded</span></div>
     <div class="card-bd flush">
-      <div class="board"><div class="board-grid" style="--cols:${cols}">
+      ${/* picking a manager out of the board: his column head and every pick he
+           actually made light up, the rest fall back. A pick he traded for sits
+           in someone else's column, and lights up there. */''}
+      <div class="board"><div class="board-grid${focus ? ' focused' : ''}" style="--cols:${cols}">
         ${/* just the name: the slot number is already the back half of every pick
              number in the column below it */''}
-        ${d.order.map((n) => `<div class="board-head">${
-          esc(tOf(n)?.manager ?? 'T' + n)}</div>`).join('')}
+        ${d.order.map((n) => `<button class="board-head${n === focus ? ' on' : ''}"
+          data-focus-team="${n}" aria-pressed="${n === focus}">${
+          esc(tOf(n)?.manager ?? 'T' + n)}</button>`).join('')}
         ${Array.from({ length: d.rounds }, (_, r) =>
           d.order.map((_, s) => {
             const p = d.picks.find((x) => x.round === r + 1 && x.slot === s + 1);
@@ -5083,7 +5099,8 @@ function render(db) {
             const parts = String(p.player).trim().split(/\s+/);
             const first = parts.length > 1 ? parts[0] : '';
             const last = parts.length > 1 ? parts.slice(1).join(' ') : p.player;
-            return `<div class="pick${pos ? ` tint-${esc(pos)}` : ''}${p.traded ? ' traded' : ''}">
+            return `<div class="pick${pos ? ` tint-${esc(pos)}` : ''}${p.traded ? ' traded' : ''}${
+              p.pickedBy === focus ? ' on' : ''}" data-by="${p.pickedBy}">
               <div class="body">
                 <span class="no">${p.pick}</span>
                 <span class="nm">${first ? `<b>${esc(first)}</b>` : ''}<i>${esc(last)}</i></span>
@@ -5125,6 +5142,22 @@ function render(db) {
   `;
 }
 function mount(root) {
+  /* Toggled in place rather than through a repaint: the board is a wide
+     scroller, and a repaint would throw away where you had scrolled to. */
+  root.querySelectorAll('[data-focus-team]').forEach((h) => h.addEventListener('click', () => {
+    const n = Number(h.dataset.focusTeam);
+    FOCUS = FOCUS === n ? null : n;
+    const grid = h.closest('.board-grid');
+    grid.classList.toggle('focused', FOCUS != null);
+    grid.querySelectorAll('[data-focus-team]').forEach((x) => {
+      const on = Number(x.dataset.focusTeam) === FOCUS;
+      x.classList.toggle('on', on);
+      x.setAttribute('aria-pressed', String(on));
+    });
+    grid.querySelectorAll('.pick[data-by]').forEach((c) =>
+      c.classList.toggle('on', Number(c.dataset.by) === FOCUS));
+  }));
+
   root.querySelectorAll('[data-haul]').forEach((hd) => {
     const n = Number(hd.dataset.haul);
     const fire = () => {
@@ -6847,6 +6880,7 @@ function render(db) {
         <div class="fr-go">
           ${/* named and marked for the tab they land on */''}
           <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
+          <button data-go-drafts="${t.number}">${icon('board')}Drafts</button>
           <button data-go-stats="${t.number}">${icon('chart')}Stats</button>
         </div>
         ${past.length ? `<div class="fr-hist">${past.map((o) => {
@@ -6876,6 +6910,8 @@ function mount(root, db, go) {
      that knows people, so it is the natural way in to their pages. */
   root.querySelectorAll('[data-go-trades]').forEach((b) => b.addEventListener('click', () =>
     go('trades', { mgr: b.dataset.goTrades })));
+  root.querySelectorAll('[data-go-drafts]').forEach((b) => b.addEventListener('click', () =>
+    go('drafts', { team: b.dataset.goDrafts })));
   root.querySelectorAll('[data-go-stats]').forEach((b) => b.addEventListener('click', () =>
     go('stats', { team: b.dataset.goStats })));
 }
