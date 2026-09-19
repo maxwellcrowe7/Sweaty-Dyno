@@ -340,7 +340,8 @@ export function mount(root, db, go, setState) {
             <span>${esc(text(l))}</span><em>${esc(held(l))}</em></label>`).join('')}
         </div>
         <div class="field"><label>Other assets &mdash; one per line, <span class="dimmer">asset @ manager</span></label>
-          <textarea name="extra" placeholder="Kareem Hunt @ Max&#10;2026 3rd (Alex) @ Max">${esc(extra)}</textarea></div>
+          <textarea name="extra" placeholder="Kareem Hunt @ Max&#10;2026 3rd (Alex) @ Max">${esc(extra)}</textarea>
+          <div class="lock-err" data-lock-err hidden></div></div>
 
         <div class="section-title">Outcome</div>
         <div class="fgrid">
@@ -349,27 +350,53 @@ export function mount(root, db, go, setState) {
               `<option value="${v}" ${(c?.status || 'open') === v ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
           <div class="field"><label>Settled by</label><select name="settledBy">
             <option value="">&mdash;</option>
-            ${after.map((x) => `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
-              esc(fmtDate(x.date, { year: true }))} &middot; ${
-              esc(x.sides.map((sd) => db.team(sd.team)?.manager || '?').join(' / '))}${
-              db.seasonOf(x.date) !== (trade.season ?? db.seasonOf(trade.date))
-                ? ` (${db.seasonOf(x.date)})` : ''}</option>`).join('')}</select></div>
+            ${[['Between these managers', after.filter((x) => x.sides.some((sd) => people.has(sd.team)))],
+               ['Every other later trade', after.filter((x) => !x.sides.some((sd) => people.has(sd.team)))]]
+              .filter(([, list]) => list.length)
+              .map(([label, list]) => `<optgroup label="${label}">${list.map((x) =>
+                `<option value="${esc(x.id)}" ${c?.settledBy === x.id ? 'selected' : ''}>${
+                esc(fmtDate(x.date, { year: true }))} &middot; ${
+                esc(x.sides.map((sd) => db.team(sd.team)?.manager || '?').join(' / '))}${
+                db.seasonOf(x.date) !== (trade.season ?? db.seasonOf(trade.date))
+                  ? ` (${db.seasonOf(x.date)})` : ''}</option>`).join('')}</optgroup>`).join('')}</select></div>
         </div>
         <div class="field"><label>What happened</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>`,
       onConfirm: async (d) => {
         const body = d.text.trim();
         // parse "2026 3rd (Alex) @ Max" and "Kareem Hunt @ Max"
-        const byName = (n) => db.teams().find((t) => t.manager.toLowerCase() === String(n).trim().toLowerCase())?.number ?? null;
+        /* Manager by name, alias or team number -- and a line that cannot be read
+           is an error, not something to drop on the floor. Skipping them
+           silently was indistinguishable from the whole box not saving. */
+        const byName = (n) => {
+          const q = String(n).trim().toLowerCase();
+          if (!q) return null;
+          const t = db.teams().find((x) => x.manager.toLowerCase() === q)
+            || db.teams().find((x) => (x.fullName || '').toLowerCase() === q)
+            || db.teams().find((x) => String(x.number) === q.replace(/^t/, ''))
+            || db.teams().find((x) => x.manager.toLowerCase().startsWith(q));
+          return t?.number ?? null;
+        };
         const parsed = [];
-        for (const line of String(d.extra || '').split('\n')) {
-          const [asset, owner] = line.split('@');
-          if (!asset?.trim() || !owner?.trim()) continue;
+        const bad = [];
+        String(d.extra || '').split('\n').forEach((line, n) => {
+          if (!line.trim()) return;
+          const at = line.lastIndexOf('@');
+          if (at < 0) return bad.push(`Line ${n + 1}: add "@ manager" &mdash; ${esc(line.trim())}`);
+          const asset = line.slice(0, at).trim();
+          const owner = line.slice(at + 1).trim();
           const heldBy = byName(owner);
-          if (!heldBy) { toast(`No manager called "${owner.trim()}"`); return false; }
-          const m = asset.trim().match(/^(\d{4})\s+(\d)(?:st|nd|rd|th)(?:\s*\(([^)]+)\))?$/i);
+          if (!asset) return bad.push(`Line ${n + 1}: no asset before the @`);
+          if (!heldBy) return bad.push(`Line ${n + 1}: no manager called "${esc(owner)}"`);
+          const m = asset.match(/^(\d{4})\s+(\d)(?:st|nd|rd|th)(?:\s*\(([^)]+)\))?$/i);
           parsed.push(m
             ? { kind: 'pick', season: Number(m[1]), round: Number(m[2]), origin: m[3] ? byName(m[3]) : null, heldBy }
-            : { kind: 'player', label: asset.trim(), heldBy });
+            : { kind: 'player', label: asset, heldBy });
+        });
+        if (bad.length) {
+          const box = document.querySelector('[data-lock-err]');
+          if (box) { box.innerHTML = bad.join('<br>'); box.hidden = false; }
+          toast('Check the locked assets');
+          return false;
         }
         const locks = [...inTrade.filter((l, i) => d[`lk${i}`]), ...parsed];
 
