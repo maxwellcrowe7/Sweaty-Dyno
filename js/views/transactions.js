@@ -371,10 +371,8 @@ export function mount(root, db, go, setState) {
         <div class="field"><label>Deadline</label>
           <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
 
-        <div class="section-title">What changes hands if it happens</div>
+        <div class="section-title">Promised return</div>
         <div class="ab-grid">${parties.map(colHtml).join('')}</div>
-        <p class="s dimmer" style="margin:2px 0 0">Everything listed here is locked in the
-          sender's hands until the condition resolves.</p>
 
         <div class="section-title">Outcome</div>
         <div class="fgrid">
