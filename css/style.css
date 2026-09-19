@@ -846,8 +846,10 @@ table.dt th.sticky{width:1%}
 /* No reserved block any more: the modal body holds its own height and scrolls,
    so the column can be as short as its contents and simply grow when the chips
    come out. */
+/* a wider row gap than column gap: wrapped chips need air between the lines
+   that the chips on one line do not need between themselves */
 .ab-pal{display:flex;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;
-  gap:4px;margin-top:9px}
+  gap:7px 4px;margin-top:9px}
 /* the chips are children of .ab-chips, which is display:contents -- they take
    part in this flex line but are not selectable as its children, so both lists
    need centring for the separators to sit level with the chips */
