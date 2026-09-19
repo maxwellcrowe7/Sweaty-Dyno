@@ -862,13 +862,14 @@ table.dt th.sticky{width:1%}
    onto a second line without anything around them moving. Closed, the plus
    sits centred in that reserved space. */
 .ab-pal{display:flex;align-items:center;min-height:44px;margin-top:1px}
-/* the global button reset covers colour and border but not padding, so an icon
-   button needs this to put its glyph in the middle */
-.ab-plus{display:grid;place-items:center;width:22px;height:22px;flex:none;padding:0;
-  border-radius:999px;border:1px solid var(--line);background:var(--surface-2);
-  color:var(--ink-2);cursor:pointer;line-height:0}
+.ab-plus{display:inline-flex;align-items:center;gap:5px;flex:none;
+  padding:3px 10px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.02em;
+  color:var(--ink-2);cursor:pointer}
 .ab-plus:hover{border-color:var(--heat);color:var(--heat)}
-.ab-plus svg{width:13px;height:13px;display:block}
+/* the caret points down at the options it opens */
+.ab-caret{width:12px;height:12px;transform:rotate(90deg);flex:none;color:var(--ink-3)}
+.ab-plus:hover .ab-caret{color:var(--heat)}
 .ab-pal.open .ab-plus{display:none}
 .ab-chips{display:none;align-items:center;flex-wrap:wrap;gap:4px;min-width:0}
 .ab-pal.open .ab-chips{display:flex}
@@ -5372,7 +5373,7 @@ function mount(root, db, go, setState) {
            one-line space -- so the palette can hide without the modal changing
            height when it comes back. */''}
       <div class="ab-pal" data-pal>
-        <button type="button" class="ab-plus" data-pal-open aria-label="Add an asset">${icon('plus')}</button>
+        <button type="button" class="ab-plus" data-pal-open>Add asset${icon('chev', 'ab-caret')}</button>
         <span class="ab-chips">
           <button type="button" data-new="faab">FAAB</button>
           <span class="ab-menu-lbl" aria-hidden="true"></span>

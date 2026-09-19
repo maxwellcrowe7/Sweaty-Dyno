@@ -349,7 +349,7 @@ export function mount(root, db, go, setState) {
            one-line space -- so the palette can hide without the modal changing
            height when it comes back. */''}
       <div class="ab-pal" data-pal>
-        <button type="button" class="ab-plus" data-pal-open aria-label="Add an asset">${icon('plus')}</button>
+        <button type="button" class="ab-plus" data-pal-open>Add asset${icon('chev', 'ab-caret')}</button>
         <span class="ab-chips">
           <button type="button" data-new="faab">FAAB</button>
           <span class="ab-menu-lbl" aria-hidden="true"></span>
