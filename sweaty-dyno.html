@@ -865,7 +865,10 @@ table.dt th.sticky{width:1%}
    place whether the chips are out or not */
 .ab-pal{display:flex;align-items:flex-start;align-content:flex-start;flex-wrap:wrap;
   gap:4px;min-height:46px;margin-top:9px}
-.ab-pal > *{align-self:center}
+/* the chips are children of .ab-chips, which is display:contents -- they take
+   part in this flex line but are not selectable as its children, so both lists
+   need centring for the separators to sit level with the chips */
+.ab-pal > *,.ab-chips > *{align-self:center}
 .ab-plus{display:inline-flex;align-items:center;gap:5px;flex:none;
   padding:3px 10px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.02em;
@@ -916,7 +919,9 @@ table.dt th.sticky{width:1%}
    own that appearance:none does not remove -- with border-box these are then
    the same 44px whatever the control is. */
 .field input[type=date]{-webkit-appearance:none;appearance:none;min-height:0}
-.field input:not([type=checkbox]),.field select{height:44px}
+/* direct children only: the promised-return builder lives inside a field and
+   sizes its own controls */
+.field > input:not([type=checkbox]),.field > select{height:44px}
 .field select{padding-right:30px;background-position:right 11px center}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
 /* a field that does not apply yet: present, so the form keeps its shape, but
