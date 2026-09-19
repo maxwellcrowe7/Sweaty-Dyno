@@ -70,6 +70,20 @@ h1,h2,h3,h4{margin:0; font-family:var(--f-display); font-weight:700; letter-spac
 a{color:inherit}
 button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
 input,select,textarea{font:inherit; color:inherit; font-variant-numeric:tabular-nums}
+/* a number field's spinner is another piece of platform chrome in a white box */
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+/* A native select paints itself: on macOS a white box with its own arrows,
+   whatever background it is given. Drop the platform chrome and draw our own
+   caret, so a dropdown looks like everything else in the tool. The option list
+   itself still belongs to the OS -- that part cannot be styled. */
+select{
+  appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%237C8BA0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');background-repeat:no-repeat;
+  background-position:right 8px center;padding-right:26px;
+}
+select::-ms-expand{display:none}
 table{border-collapse:collapse; width:100%}
 
 .ic{width:18px;height:18px;flex:none;stroke-width:2}
@@ -109,8 +123,9 @@ table{border-collapse:collapse; width:100%}
 .season-pick{display:flex; align-items:center; gap:8px; flex:none}
 .season-pick span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
 .season-pick select{
-  background:var(--surface-2); border:1px solid var(--line); border-radius:999px;
-  padding:3px 8px; font-family:var(--f-display); font-weight:700; font-size:14px; letter-spacing:.03em;
+  background-color:var(--surface-2); border:1px solid var(--line); border-radius:999px;
+  padding:3px 22px 3px 10px; font-family:var(--f-display); font-weight:700; font-size:14px;
+  letter-spacing:.03em; background-position:right 6px center;
 }
 
 /* A page that owns a season control puts it on a header line with the title. */
@@ -791,9 +806,17 @@ table.dt th.sticky{width:1%}
 .ab-who{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
 .ab-who .tnum{align-self:center}
 .ab-row{display:flex;align-items:center;gap:7px;margin-bottom:6px}
-.ab-row input[type=number]{width:92px}
-.ab-row input:not([type=hidden]){flex:1;min-width:0}
-.ab-row select{flex:1;min-width:0}
+/* these controls live outside .field, so they were falling back to the
+   browser's own white box. Same ground, border and ink as every other input,
+   and the select loses its native chrome for a caret drawn in our own grey. */
+.ab-row input:not([type=hidden]),.ab-row select{
+  background-color:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:7px 9px;font-size:13px;color:var(--ink);flex:1;min-width:0;
+}
+.ab-row input::placeholder{color:var(--ink-3)}
+.ab-row input:focus,.ab-row select:focus{outline:none;border-color:var(--heat);
+  box-shadow:0 0 0 3px rgba(255,107,44,.14)}
+.ab-row input[type=number]{flex:none;width:96px}
 .ab-kill{display:grid;place-items:center;width:22px;height:22px;flex:none;
   border-radius:var(--r-sm);color:var(--ink-3)}
 .ab-kill svg{width:13px;height:13px}
@@ -829,9 +852,10 @@ table.dt th.sticky{width:1%}
 }
 .lbl-count.full{color:var(--heat)}
 .field input,.field select,.field textarea{
-  background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
+  background-color:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:10px 12px;font-size:15px; width:100%;
 }
+.field select{padding-right:30px;background-position:right 11px center}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--heat);box-shadow:0 0 0 3px rgba(255,107,44,.14)}
 .field textarea{resize:vertical;min-height:66px;line-height:1.5}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
