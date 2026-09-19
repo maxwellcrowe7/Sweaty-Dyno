@@ -29,9 +29,9 @@ export function render(db) {
         <div class="fr-no">${String(t.number).padStart(2, '0')}</div>
         <div class="fr-who">
           <b>${esc(t.fullName)}</b>
+          ${t.sleeper ? `<span class="fr-sl">@${esc(t.sleeper)}</span>` : ''}
           ${/* a role, said once, quietly -- it is one row in ten */''}
           ${t.managerId === comm ? '<span class="fr-comm">Commissioner</span>' : ''}
-          ${t.sleeper ? `<span class="fr-sl">@${esc(t.sleeper)}</span>` : ''}
         </div>
         <div class="fr-since">since ${since(t)}</div>
         <div class="fr-rings">${rings
