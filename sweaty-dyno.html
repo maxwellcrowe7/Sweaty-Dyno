@@ -798,16 +798,22 @@ table.dt th.sticky{width:1%}
 .lock-row .lk{color:var(--violet);display:flex}
 .lock-row .lk svg{width:15px;height:15px}
 .lock-row.broke .t{color:var(--red)}
-/* picking what a condition freezes */
-.lock-pick{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
-.lk-opt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:var(--r-sm);
-  font-size:13px;cursor:pointer}
-.lk-opt:hover{background:var(--surface-2)}
-.lk-opt em{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--ink-3)}
-/* a line the parser could not read says so, and stays on screen */
-.lock-err{margin-top:7px;padding:8px 10px;border-radius:var(--r-sm);font-size:12px;
-  color:var(--red);background:color-mix(in oklab,var(--red) 12%,transparent);line-height:1.5}
-.lock-err[hidden]{display:none}
+/* Building the promised return asset by asset. Each row is one thing changing
+   hands: who gets it, what kind of thing it is, and the fields that kind needs
+   -- the others are hidden rather than absent, so the row never reflows. */
+.ab-head{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-bottom:5px;
+  font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.ab-row{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:7px}
+.ab-row[hidden]{display:none}
+.ab-row > select{width:110px;flex:none}
+.ab-row .f{display:none;align-items:center;gap:7px;flex:1;min-width:0}
+.ab-row[data-kind="player"] .f-player,
+.ab-row[data-kind="pick"] .f-pick,
+.ab-row[data-kind="faab"] .f-faab{display:flex}
+.ab-row .f-player select{width:82px;flex:none}
+.ab-row .f-player input{flex:1;min-width:120px}
+.ab-row .f-pick select{flex:1;min-width:88px}
+.ab-row .f-faab input{width:110px}
 
 /* ---------- guillotine ---------- */
 .guillo{display:flex;flex-direction:column;gap:1px;background:var(--line-soft);border-radius:var(--r);overflow:hidden}
@@ -4965,7 +4971,8 @@ const assetRow = (db, raw, showFrom, locked = false) => {
   const club = pick || a.faab != null ? null : db.nflTeam(a.label);
   return `<li>
     ${a.faab != null ? `<span class="pos-chip pos-none">$</span>`
-      : pick ? `<span class="pos-chip pos-none">PK</span>` : posChip(db.position(a.label))}
+      : pick ? `<span class="pos-chip pos-none">PK</span>`
+      : posChip(a.pos || db.position(a.label))}
     <span class="${pick ? 'pk' : ''}">${esc(label)}</span>
     ${club && club !== '--' ? `<span class="nfl">&ndash; ${esc(club)}</span>` : ''}
     ${locked ? `<span class="lk-mark" title="Locked until the condition resolves">${icon('lock')}</span>` : ''}
@@ -5258,42 +5265,69 @@ function mount(root, db, go, setState) {
   /* The one hand-entered thing on this page: the strings attached to a deal --
      what was promised, what is frozen until it resolves, and which later trade
      eventually discharged it. Sleeper supplies everything else. */
+  /* The one hand-entered thing on this page: the strings attached to a deal --
+     what was promised, and which later trade eventually discharged it. The
+     promised return is built asset by asset rather than typed as text, and the
+     locks fall out of it: whatever is owed is frozen in the hands of whoever
+     owes it, so there is nothing separate to keep in step. */
+  const POS = ['QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+  const ORD = ['', '1st', '2nd', '3rd'];
+  const ROWS = 6;
+
   root.querySelectorAll('[data-cond-edit]').forEach((b) => b.addEventListener('click', () => {
     const id = b.dataset.condEdit;
     const trade = db.get('trades').trades.find((x) => x.id === id);
     const c = db.conditionFor(id);
-    const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'];
+    const parties = trade.sides.map((sd) => sd.team).filter(Boolean);
+    const years = Array.from({ length: 4 }, (_, i) => (db.seasonOf(trade.date) || db.season) + i);
 
-    // every asset that changed hands in this deal, and who ended up with it
-    const inTrade = trade.sides.flatMap((side) => side.receives.map((raw) => {
-      const a = typeof raw === 'string' ? { label: raw } : raw;
-      return a.pick
-        ? { kind: 'pick', season: a.pick.season, round: a.pick.round, origin: a.pick.origin, heldBy: side.team }
-        : { kind: 'player', label: a.label, heldBy: side.team };
-    })).filter((l) => l.kind === 'player' ? !/FAAB/i.test(l.label) : true);
+    // existing promise, flattened back into rows
+    const rows = (c?.expected || []).flatMap((sd) => sd.receives.map((a) => ({
+      to: sd.team,
+      kind: a.faab != null ? 'faab' : a.pick ? 'pick' : 'player',
+      pos: a.pos || '', name: a.label,
+      yr: a.pick?.season || years[0], rd: a.pick?.round || 1, own: a.pick?.origin || parties[0],
+      amt: a.faab ?? '',
+    })));
+    while (rows.length < ROWS) rows.push(null);
 
-    const same = (x, y) => x.kind === y.kind && x.heldBy === y.heldBy && (x.kind === 'player'
-      ? x.label === y.label
-      : x.season === y.season && x.round === y.round && x.origin === y.origin);
-    const held = (l) => db.team(l.heldBy)?.manager || `T${l.heldBy}`;
-    const text = (l) => (l.kind === 'player' ? l.label
-      : `${l.season} ${ORD[l.round] || `${l.round}th`}${l.origin && db.team(l.origin) ? ` (${db.team(l.origin).manager})` : ''}`);
-    // anything locked that this trade did not move gets written out longhand
-    const extra = (c?.locks || []).filter((l) => !inTrade.some((x) => same(x, l)))
-      .map((l) => `${text(l)} @ ${held(l)}`).join('\n');
+    const mSel = (name, sel) => `<select name="${name}">${db.teams()
+      .filter((t) => parties.includes(t.number) || String(t.number) === String(sel))
+      .map((t) => `<option value="${t.number}" ${String(t.number) === String(sel) ? 'selected' : ''}>${
+        esc(t.manager)}</option>`).join('')}</select>`;
+    const ownSel = (name, sel) => `<select name="${name}">${db.teams()
+      .map((t) => `<option value="${t.number}" ${String(t.number) === String(sel) ? 'selected' : ''}>${
+        esc(t.manager)}</option>`).join('')}</select>`;
 
-    // a candidate settlement: a later trade involving anyone from this one
-    const people = new Set(trade.sides.map((x) => x.team));
-    /* Any later trade involving one or both of these managers, whatever season
-       it lands in: a condition agreed in November can easily pay out in the
-       next offseason, and it still belongs to the deal that created it. A deal
-       between two other managers cannot settle this one, so it is not offered. */
+    const rowHtml = (r, i) => `<div class="ab-row" data-kind="${r?.kind || 'player'}"
+      ${!r && i > 1 ? 'hidden' : ''}>
+      ${mSel(`r${i}to`, r?.to ?? parties[0])}
+      <select name="r${i}kind" data-kind-pick>
+        ${[['player', 'Player'], ['pick', 'Pick'], ['faab', 'FAAB']].map(([v, t]) =>
+          `<option value="${v}" ${(r?.kind || 'player') === v ? 'selected' : ''}>${t}</option>`).join('')}
+      </select>
+      <span class="f f-player">
+        <select name="r${i}pos">${['', ...POS].map((pz) =>
+          `<option value="${pz}" ${(r?.pos || '') === pz ? 'selected' : ''}>${pz || 'Pos'}</option>`).join('')}</select>
+        <input name="r${i}name" placeholder="Player name" value="${esc(r?.kind === 'player' ? r.name : '')}">
+      </span>
+      <span class="f f-pick">
+        <select name="r${i}yr">${years.map((y) =>
+          `<option value="${y}" ${String(r?.yr) === String(y) ? 'selected' : ''}>${y}</option>`).join('')}</select>
+        <select name="r${i}rd">${[1, 2, 3].map((n) =>
+          `<option value="${n}" ${Number(r?.rd) === n ? 'selected' : ''}>${ORD[n]}</option>`).join('')}</select>
+        ${ownSel(`r${i}own`, r?.own ?? parties[0])}
+      </span>
+      <span class="f f-faab"><input type="number" min="0" name="r${i}amt"
+        placeholder="$" value="${esc(r?.kind === 'faab' ? String(r.amt) : '')}"></span>
+    </div>`;
+
     const after = db.get('trades').trades
       .filter((x) => x.id !== id && (x.date || '') >= (trade.date || '')
-        && x.sides.some((sd) => people.has(sd.team)))
+        && x.sides.some((sd) => parties.includes(sd.team)))
       .sort((x, y) => (y.date || '').localeCompare(x.date || ''));
 
-    openModal({
+    const m = openModal({
       title: 'Condition',
       confirm: 'Save',
       closeButtons: false,
@@ -5303,24 +5337,12 @@ function mount(root, db, go, setState) {
         <div class="field"><label>Deadline</label>
           <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
 
-        <div class="section-title">Expected return</div>
-        <div class="field"><label>What changes hands if it happens &mdash;
-          one per line, <span class="dimmer">asset @ manager who receives it</span></label>
-          <textarea name="expected" placeholder="2027 2nd (Max) @ Noah">${esc(
-            (c?.expected || []).flatMap((sd) => sd.receives.map((a) =>
-              `${a.pick ? `${a.pick.season} ${ORD[a.pick.round] || `${a.pick.round}th`}${
-                a.pick.origin && db.team(a.pick.origin) ? ` (${db.team(a.pick.origin).manager})` : ''}`
-                : a.label} @ ${db.team(sd.team)?.manager || sd.team}`)).join('\n'))}</textarea></div>
-
-        <div class="section-title">Locked assets</div>
-        <div class="lock-pick">
-          ${inTrade.map((l, i) => `<label class="lk-opt">
-            <input type="checkbox" name="lk${i}" ${(c?.locks || []).some((x) => same(x, l)) ? 'checked' : ''}>
-            <span>${esc(text(l))}</span><em>${esc(held(l))}</em></label>`).join('')}
-        </div>
-        <div class="field"><label>Other assets &mdash; one per line, <span class="dimmer">asset @ manager</span></label>
-          <textarea name="extra" placeholder="Kareem Hunt @ Max&#10;2026 3rd (Alex) @ Max">${esc(extra)}</textarea>
-          <div class="lock-err" data-lock-err hidden></div></div>
+        <div class="section-title">What changes hands if it happens</div>
+        <div class="ab-head"><span>Goes to</span><span>Asset</span></div>
+        <div data-rows>${rows.map(rowHtml).join('')}</div>
+        <button type="button" class="btn sm" data-add-row>${icon('plus')} Another asset</button>
+        <p class="s dimmer" style="margin:9px 0 0">Everything listed here is locked in the
+          sender's hands until the condition resolves.</p>
 
         <div class="section-title">Outcome</div>
         <div class="fgrid">
@@ -5338,69 +5360,35 @@ function mount(root, db, go, setState) {
         <div class="field"><label>What happened</label><input name="outcome" value="${esc(c?.outcome || '')}"></div>`,
       onConfirm: async (d) => {
         const body = d.text.trim();
-        // parse "2026 3rd (Alex) @ Max" and "Kareem Hunt @ Max"
-        /* Manager by name, alias or team number -- and a line that cannot be read
-           is an error, not something to drop on the floor. Skipping them
-           silently was indistinguishable from the whole box not saving. */
-        const bad = [];
-        const byName = (n) => {
-          const q = String(n).trim().toLowerCase();
-          if (!q) return null;
-          const t = db.teams().find((x) => x.manager.toLowerCase() === q)
-            || db.teams().find((x) => (x.fullName || '').toLowerCase() === q)
-            || db.teams().find((x) => String(x.number) === q.replace(/^t/, ''))
-            || db.teams().find((x) => x.manager.toLowerCase().startsWith(q));
-          return t?.number ?? null;
-        };
-        const readLines = (src, what) => {
-          const out = [];
-          String(src || '').split('\n').forEach((line, n) => {
-            if (!line.trim()) return;
-            const at = line.lastIndexOf('@');
-            if (at < 0) return bad.push(`${what} line ${n + 1}: add "@ manager"`);
-            const asset = line.slice(0, at).trim();
-            const owner = line.slice(at + 1).trim();
-            const team = byName(owner);
-            if (!asset) return bad.push(`${what} line ${n + 1}: no asset before the @`);
-            if (!team) return bad.push(`${what} line ${n + 1}: no manager called "${esc(owner)}"`);
-            const m = asset.match(/^(\d{4})\s+(\d)(?:st|nd|rd|th)(?:\s*\(([^)]+)\))?$/i);
-            out.push(m
-              ? { team, label: `${m[1]} ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th'][Number(m[2])] || `${m[2]}th`}`,
-                  pick: { season: Number(m[1]), round: Number(m[2]), origin: m[3] ? byName(m[3]) : null } }
-              : { team, label: asset });
-          });
-          return out;
-        };
-
-        // what the condition promises, grouped into sides the card can draw
-        const want = readLines(d.expected, 'Expected return');
-        const expected = [...new Map(want.map((x) => [x.team, x.team])).keys()].map((team) => ({
-          team,
-          receives: want.filter((x) => x.team === team).map(({ team: _t, ...a }) => a),
-        }));
-
-        const parsed = [];
-        String(d.extra || '').split('\n').forEach((line, n) => {
-          if (!line.trim()) return;
-          const at = line.lastIndexOf('@');
-          if (at < 0) return bad.push(`Locked line ${n + 1}: add "@ manager" &mdash; ${esc(line.trim())}`);
-          const asset = line.slice(0, at).trim();
-          const owner = line.slice(at + 1).trim();
-          const heldBy = byName(owner);
-          if (!asset) return bad.push(`Locked line ${n + 1}: no asset before the @`);
-          if (!heldBy) return bad.push(`Locked line ${n + 1}: no manager called "${esc(owner)}"`);
-          const m = asset.match(/^(\d{4})\s+(\d)(?:st|nd|rd|th)(?:\s*\(([^)]+)\))?$/i);
-          parsed.push(m
-            ? { kind: 'pick', season: Number(m[1]), round: Number(m[2]), origin: m[3] ? byName(m[3]) : null, heldBy }
-            : { kind: 'player', label: asset, heldBy });
-        });
-        if (bad.length) {
-          const box = document.querySelector('[data-lock-err]');
-          if (box) { box.innerHTML = bad.join('<br>'); box.hidden = false; }
-          toast('Check the locked assets');
-          return false;
+        const want = [];
+        for (let i = 0; i < ROWS; i++) {
+          const kind = d[`r${i}kind`];
+          const to = Number(d[`r${i}to`]);
+          if (kind === 'player') {
+            const name = String(d[`r${i}name`] || '').trim();
+            if (!name) continue;
+            want.push({ to, asset: { label: name, pos: d[`r${i}pos`] || null } });
+          } else if (kind === 'pick') {
+            const yr = Number(d[`r${i}yr`]); const rd = Number(d[`r${i}rd`]); const own = Number(d[`r${i}own`]);
+            want.push({ to, asset: { label: `${yr} ${ORD[rd]}`, pick: { season: yr, round: rd, origin: own } } });
+          } else {
+            const amt = Number(d[`r${i}amt`]);
+            if (!amt) continue;
+            want.push({ to, asset: { label: `$${amt} FAAB`, faab: amt } });
+          }
         }
-        const locks = [...inTrade.filter((l, i) => d[`lk${i}`]), ...parsed];
+        const expected = [...new Set(want.map((w) => w.to))].map((team) => ({
+          team, receives: want.filter((w) => w.to === team).map((w) => w.asset),
+        }));
+        /* The locks are the promise: whatever is owed is frozen in the hands of
+           whoever owes it, which on a two-team deal is simply the other side. */
+        const locks = want.map((w) => {
+          const heldBy = parties.find((t) => t !== w.to) ?? w.to;
+          return w.asset.pick
+            ? { kind: 'pick', season: w.asset.pick.season, round: w.asset.pick.round,
+                origin: w.asset.pick.origin, heldBy }
+            : { kind: 'player', label: w.asset.label, heldBy };
+        }).filter((l) => l.kind !== 'player' || !/FAAB/i.test(l.label));
 
         await db.update('trades', (t) => {
           t.conditions ||= [];
@@ -5423,6 +5411,16 @@ function mount(root, db, go, setState) {
         });
         toast(body ? 'Condition saved' : 'Condition removed');
       },
+    });
+
+    /* the rows are static markup; these two make them behave */
+    m.root.querySelectorAll('[data-kind-pick]').forEach((sel) => sel.addEventListener('change', () => {
+      sel.closest('.ab-row').dataset.kind = sel.value;
+    }));
+    m.root.querySelector('[data-add-row]')?.addEventListener('click', () => {
+      const next = [...m.root.querySelectorAll('.ab-row')].find((r) => r.hidden);
+      if (next) next.hidden = false;
+      if (!m.root.querySelector('.ab-row[hidden]')) m.root.querySelector('[data-add-row]').hidden = true;
     });
   }));
 }
