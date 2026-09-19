@@ -5271,7 +5271,7 @@ function mount(root, db, go, setState) {
         <div class="field"><label>Deadline</label>
           <input name="deadline" type="date" value="${esc(c?.deadline || '')}"></div>
 
-        <div class="section-title">Locked until it resolves</div>
+        <div class="section-title">Locked assets</div>
         <div class="lock-pick">
           ${inTrade.map((l, i) => `<label class="lk-opt">
             <input type="checkbox" name="lk${i}" ${(c?.locks || []).some((x) => same(x, l)) ? 'checked' : ''}>
