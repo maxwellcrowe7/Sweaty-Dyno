@@ -100,17 +100,23 @@ export function render(db, state = {}) {
   const seasonDue = (s) => db.buyIn(s) * teams.length;
 
   const sheet = db.balanceSheet();
+  const best = Math.max(1, ...led.map((t) => t.won));
 
   return `
+  ${/* What a treasurer actually needs, and each fact once: what is held, what
+       two things have a claim on it, and what is therefore left. Buy-ins owed
+       used to sit here, but that number only means anything before a season
+       starts and the grid below says it better. */''}
   <div class="tiles">
-    <div class="tile accent"><div class="k">Should be in the bank</div><div class="v">${money(all.cash)}</div>
+    <div class="tile accent"><div class="k">In the bank</div><div class="v">${money(all.cash)}</div>
       <div class="m">${money(all.collected)} in &minus; ${money(all.disbursed)} out</div></div>
     <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(all.earmarked)}</div>
       <div class="m">${db.empireClaim() ? 'claimed' : 'accruing, unclaimed'}</div></div>
-    <div class="tile mint"><div class="k">Free cash</div><div class="v">${money(all.free)}</div>
-      <div class="m">not spoken for</div></div>
-    <div class="tile ${all.owedNow ? 'red' : ''}"><div class="k">Owed now</div><div class="v">${money(all.owedNow)}</div>
-      <div class="m">through ${db.league.currentSeason}</div></div>
+    <div class="tile ${all.owedOut ? 'gold' : ''}"><div class="k">Owed out</div><div class="v">${money(all.owedOut)}</div>
+      <div class="m">won, not handed over</div></div>
+    <div class="tile ${all.spendable < 0 ? 'red' : 'mint'}"><div class="k">Free cash</div>
+      <div class="v">${money(all.spendable)}</div>
+      <div class="m">after the pot and the prizes</div></div>
   </div>
 
   <div class="section-title">Buy-ins</div>
@@ -194,22 +200,33 @@ export function render(db, state = {}) {
     </div>` : ''}
   </div>
 
+  ${/* The scoreboard, not a statement: buy-ins and prizes each have a section
+       of their own above, so this is the one place that just says who is up.
+       Seasons not yet played are left out, so paying 2027 early does not make
+       a manager look worse than someone who has paid nothing beyond this year. */''}
+  ${''}
   <div class="section-title">Manager ledger</div>
   <div class="card">
     <div class="card-hd"><h3>Lifetime net</h3><div class="spacer"></div>
-      <span class="chip ghost">winnings &minus; buy-ins</span></div>
+      ${Object.entries(CATS).reverse().map(([k, c]) =>
+        `<span class="lg-key"><i class="lg-${k}"></i>${c.label}</span>`).join('')}
+    </div>
     <div class="card-bd flush"><div class="rows">
-      ${led.map((t) => `
-        <div class="row">
+      ${/* every bar is drawn against the biggest haul in the league, not against
+           its own total -- scaled to itself, a $10 winner and a $120 winner both
+           filled the row and the bar said nothing */''}
+      ${led.slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t, i) => `
+        <div class="row led">
+          <span class="led-no">${i + 1}</span>
           <div class="grow">
             <div class="t">${teamTag(t)}</div>
             <div class="s">${money(t.paidIn)} in &middot; ${money(t.won)} won${
               t.awaiting ? ` &middot; <span style="color:var(--gold)">${money(t.awaiting)} to collect</span>` : ''}${
-              t.owesNow ? ` &middot; <span class="neg">${money(t.owesNow)} owed</span>` : ''}</div>
-            <div style="display:flex;gap:3px;margin-top:7px;height:5px;border-radius:99px;overflow:hidden;background:var(--surface-3)">
-              ${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) => `
-                <i style="display:block;height:100%;width:${t.won ? (v / t.won * 100).toFixed(1) : 0}%;background:${
-                  c === 'minigame' ? 'var(--heat)' : c === 'placement' ? 'var(--gold)' : 'var(--violet)'}"></i>`).join('')}
+              t.prepaid ? ` &middot; <span class="dimmer">${money(t.prepaid)} paid ahead</span>` : ''}</div>
+            <div class="led-bar">
+              ${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) =>
+                `<i class="lg-${c}" style="width:${(v / best * 100).toFixed(1)}%"
+                   title="${esc(CATS[c].label)} ${money(v)}"></i>`).join('')}
             </div>
           </div>
           <div class="val ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</div>

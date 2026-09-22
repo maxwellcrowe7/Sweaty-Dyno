@@ -37,7 +37,9 @@ let fail=0; const eq=(l,g,w)=>{const ok=JSON.stringify(g)===JSON.stringify(w);if
 print('— the reported bug: old cloud shape —');
 eq('reading the stale cloud copy', db.live, true);
 const b=db.bank();
-eq('Paid per manager is dollars, not a count', db.ledger().map(t=>t.paidIn), [100,100,100,150,100,100,100,150,100,100]);
+// the ledger counts seasons played; the two who prepaid 2027 carry it separately
+eq('Paid per manager is dollars, not a count', db.ledger().map(t=>t.paidIn), [100,100,100,100,100,100,100,100,100,100]);
+eq('and a season paid early is held aside', db.ledger().map(t=>t.prepaid), [0,0,0,50,0,0,0,50,0,0]);
 eq('collected is $1,100 not $22', b.collected, 1100);
 eq('bank cash unchanged by the migration', b.cash, 780);
 eq('empire pot from accrual, not payout rows', b.earmarked, 300);

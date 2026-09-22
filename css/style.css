@@ -1486,6 +1486,24 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
   .fr-hist{grid-column:1 / -1}
 }
 
+/* ---------- manager ledger ----------
+   A scoreboard: rank, who, what they are up or down, and what the winnings were
+   made of -- with a legend, because a bar of unexplained colours says nothing. */
+.lg-key{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-left:11px}
+.lg-key i{width:8px;height:8px;border-radius:2px}
+i.lg-minigame{background:var(--heat)}
+i.lg-placement{background:var(--gold)}
+i.lg-empire{background:var(--violet)}
+.row.led{align-items:center;gap:11px}
+.led-no{
+  flex:none;width:20px;text-align:center;font-family:var(--f-display);
+  font-size:14px;font-weight:700;color:var(--ink-3);
+}
+.led-bar{display:flex;gap:3px;margin-top:7px;height:5px;border-radius:99px;
+  overflow:hidden;background:var(--surface-3)}
+.led-bar i{display:block;height:100%}
+
 /* ---------- accordions ---------- */
 .acc-hd{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;

@@ -363,7 +363,11 @@ class Store {
       outstanding: Math.max(0, expected - collected),
       owedNow, future: Math.max(0, expected - collected - owedNow),
       disbursed, committed, owedOut: committed - disbursed,
+      // `free` splits the cash in two for the dashboard gauge; `spendable` is
+      // the treasurer's figure -- what is left once the empire set-aside AND
+      // every prize already won are taken off.
       earmarked, cash, free: cash - earmarked,
+      spendable: cash - earmarked - (committed - disbursed),
       byCat, byCatCommitted, teamCount,
     };
   }
@@ -425,7 +429,12 @@ class Store {
     return this.teams().map((t) => {
       const ins = b.payins.filter((p) => p.team === t.number && (season == null || p.season === season));
       const mine = rows.filter((r) => r.team === t.number);
-      const paidIn = ins.reduce((a, p) => a + (Number(p.paid) || 0), 0);
+      /* Only seasons that have actually been played count against a manager:
+         paying 2027 early is organised, not a loss, and counting it would make
+         him look worse than someone who has paid nothing beyond this year. */
+      const played = ins.filter((p) => p.season <= cur);
+      const paidIn = played.reduce((a, p) => a + (Number(p.paid) || 0), 0);
+      const prepaid = ins.filter((p) => p.season > cur).reduce((a, p) => a + (Number(p.paid) || 0), 0);
       const owesNow = (season == null ? this.seasons : [season])
         .filter((s) => s <= cur)
         .reduce((a, s) => a + Math.max(0, this.buyIn(s)
@@ -434,7 +443,7 @@ class Store {
       for (const r of mine) cat[r.category] = (cat[r.category] || 0) + r.amount;
       const won = mine.reduce((a, r) => a + r.amount, 0);
       const awaiting = mine.filter((r) => !r.paid).reduce((a, r) => a + r.amount, 0);
-      return { ...t, paidIn, owes: owesNow, owesNow, won, awaiting, net: won - paidIn, cat };
+      return { ...t, paidIn, prepaid, owes: owesNow, owesNow, won, awaiting, net: won - paidIn, cat };
     });
   }
 
