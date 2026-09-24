@@ -46,4 +46,11 @@ eq('edit pencils back', editable()>0, true);
 print('\n— a reload is an escape hatch —');
 db.setAsGuest(true);
 eq('not persisted anywhere', [localStorage.getItem('sweatydyno:guest'), db._asGuest], [null,true]);
+// paid in full reads green for a manager too, not just the commissioner
+{
+  const B = await import('../js/views/bank.js');
+  const h = B.render(db, {});
+  eq('a guest sees the paid cells marked', /class="n cell-full"/.test(h), true);
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nGuest preview passed.');

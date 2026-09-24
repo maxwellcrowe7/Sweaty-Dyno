@@ -1582,8 +1582,12 @@ th.yr.open .yr-rate{display:block}
 .cell-in:hover{border-color:var(--line)}
 .cell-in:focus{outline:none;background:var(--bg-2);border-color:var(--heat);
   box-shadow:0 0 0 3px rgba(255,107,44,.14);color:var(--ink)}
-td.cell-full .cell-in{color:var(--mint);font-weight:600}
-td.cell-part .cell-in{color:var(--gold);font-weight:600}
+/* on the cell, not the input: a manager reads these as plain text and was
+   seeing none of the colour that tells him at a glance who has paid */
+td.cell-full,td.cell-part{font-weight:600}
+td.cell-full{color:var(--mint)}
+td.cell-part{color:var(--gold)}
+td.cell-full .cell-in,td.cell-part .cell-in{color:inherit;font-weight:inherit}
 table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-top:none}
 
 /* ---------- payout paid state ---------- */
