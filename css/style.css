@@ -1554,18 +1554,29 @@ i.lg-empire{background:var(--violet)}
   border-bottom:1px dotted transparent;
 }
 .yr-btn:hover{color:var(--ink);border-bottom-color:var(--ink-3)}
-th.yr.open .yr-btn{color:var(--heat);border-bottom-color:transparent}
-/* The rate drops over the rows rather than into the header: opening one should
-   not make the header row taller, or every other year shifts to meet it. */
-th.yr{position:relative}
-.yr-rate{
+.pop-host.open .yr-btn{color:var(--heat);border-bottom-color:transparent}
+/* A figure with another one tucked behind it -- a season's buy-in under its
+   year, what was expected under what came in. It drops OVER the rows rather
+   than into the cell, so opening one never changes the shape of the table. */
+.pop-host{position:relative}
+.tot-btn{font:inherit;color:inherit;cursor:pointer;padding:0;
+  border-bottom:1px dotted transparent}
+.tot-btn:hover{border-bottom-color:var(--ink-3)}
+.pop-host.open .tot-btn{color:var(--heat)}
+.pop-box{
   display:none;position:absolute;top:calc(100% - 2px);right:8px;z-index:6;
-  padding:5px 9px;border-radius:var(--r-sm);
+  padding:6px 10px;border-radius:var(--r-sm);text-align:right;white-space:nowrap;
   background:var(--surface-2);border:1px solid var(--heat);
   box-shadow:0 10px 24px rgba(0,0,0,.5);
   font-size:13px;color:var(--ink);font-weight:600;letter-spacing:0;text-transform:none;
 }
-th.yr.open .yr-rate{display:block}
+.pop-host.open .pop-box{display:block}
+/* opened from the last row, it has to go up: the card clips what falls below */
+.pop-host.up .pop-box{top:auto;bottom:calc(100% - 2px)}
+.pop-box em{display:block;font-style:normal;font-size:9.5px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:1px}
+.pop-box b{display:block;margin-top:4px;padding-top:4px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--gold)}
 .rate-in{
   width:52px;text-align:right;background:none;border:0;border-radius:0;padding:0;
   font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);

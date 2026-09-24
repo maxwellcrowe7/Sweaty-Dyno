@@ -53,8 +53,11 @@ eq('the colours are named', ['lg-minigame', 'lg-placement', 'lg-empire']
 
 /* ---- a season's buy-in hides behind its own year ---- */
 eq('no standing rate row', /rate-row/.test(h), false);
-eq('every year opens one', (h.match(/data-yr="/g) || []).length, db.seasons.length);
-eq('and the rate is in there', (h.match(/class="yr-rate"/g) || []).length, db.seasons.length);
-eq('nothing starts open', /th class="n yr open/.test(h), false);
+eq('every year opens one', (h.match(/data-pop="rate:/g) || []).length, db.seasons.length);
+// what was expected hides behind what came in, per season and all time
+eq('no standing expected row', /class="total sub"/.test(h), false);
+eq('every collected figure opens one',
+   (h.match(/data-pop="due:/g) || []).length, db.seasons.length + 1);
+eq('nothing starts open', /pop-host open/.test(h), false);
 
 print(fail ? `\n${fail} FAILURE(S)` : '\nBank ledger passed.');

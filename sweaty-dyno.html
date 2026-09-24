@@ -1572,18 +1572,29 @@ i.lg-empire{background:var(--violet)}
   border-bottom:1px dotted transparent;
 }
 .yr-btn:hover{color:var(--ink);border-bottom-color:var(--ink-3)}
-th.yr.open .yr-btn{color:var(--heat);border-bottom-color:transparent}
-/* The rate drops over the rows rather than into the header: opening one should
-   not make the header row taller, or every other year shifts to meet it. */
-th.yr{position:relative}
-.yr-rate{
+.pop-host.open .yr-btn{color:var(--heat);border-bottom-color:transparent}
+/* A figure with another one tucked behind it -- a season's buy-in under its
+   year, what was expected under what came in. It drops OVER the rows rather
+   than into the cell, so opening one never changes the shape of the table. */
+.pop-host{position:relative}
+.tot-btn{font:inherit;color:inherit;cursor:pointer;padding:0;
+  border-bottom:1px dotted transparent}
+.tot-btn:hover{border-bottom-color:var(--ink-3)}
+.pop-host.open .tot-btn{color:var(--heat)}
+.pop-box{
   display:none;position:absolute;top:calc(100% - 2px);right:8px;z-index:6;
-  padding:5px 9px;border-radius:var(--r-sm);
+  padding:6px 10px;border-radius:var(--r-sm);text-align:right;white-space:nowrap;
   background:var(--surface-2);border:1px solid var(--heat);
   box-shadow:0 10px 24px rgba(0,0,0,.5);
   font-size:13px;color:var(--ink);font-weight:600;letter-spacing:0;text-transform:none;
 }
-th.yr.open .yr-rate{display:block}
+.pop-host.open .pop-box{display:block}
+/* opened from the last row, it has to go up: the card clips what falls below */
+.pop-host.up .pop-box{top:auto;bottom:calc(100% - 2px)}
+.pop-box em{display:block;font-style:normal;font-size:9.5px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:1px}
+.pop-box b{display:block;margin-top:4px;padding-top:4px;border-top:1px solid var(--line);
+  font-size:12px;color:var(--gold)}
 .rate-in{
   width:52px;text-align:right;background:none;border:0;border-radius:0;padding:0;
   font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);
@@ -4278,7 +4289,7 @@ const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 /* Which panels are open. Module-scoped so it survives the re-render that an edit
    triggers — expanding a row, changing a value and watching the row collapse
    would be maddening. Not in the URL: this is transient, not worth linking to. */
-const UI = { seasons: null, lines: new Set(), rate: null };
+const UI = { seasons: null, lines: new Set(), pop: null };
 
 /* ---------- payouts, one collapsible block per season ---------- */
 const label = (db, r, cat) => cat === 'placement'
@@ -4365,6 +4376,18 @@ function render(db, state = {}) {
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
   const seasonDue = (s) => db.buyIn(s) * teams.length;
 
+  /* A total cell with what was expected of it tucked behind. */
+  const due = (key, shown, expected, got) => {
+    const short = Math.max(0, expected - got);
+    // the totals are the last row, so this one opens upward or the card clips it
+    return `<td class="n pop-host up${UI.pop === key ? ' open' : ''}">
+      <button class="tot-btn" data-pop="${key}" aria-expanded="${UI.pop === key}"
+        title="What was expected">${shown}</button>
+      <div class="pop-box">${money(expected)}<em>expected</em>${
+        short ? `<b>${money(short)} to come</b>` : ''}</div>
+    </td>`;
+  };
+
   const sheet = db.balanceSheet();
   const best = Math.max(1, ...led.map((t) => t.won));
 
@@ -4393,13 +4416,13 @@ function render(db, state = {}) {
            stating the rate ten times was answering a question nobody had
            until they had it about one season. */''}
       <thead><tr><th class="sticky">Team</th>
-        ${seasons.map((s) => `<th class="n yr${UI.rate === s ? ' open' : ''}">
-          <button class="yr-btn" data-yr="${s}" aria-expanded="${UI.rate === s}"
+        ${seasons.map((s) => `<th class="n pop-host${UI.pop === `rate:${s}` ? ' open' : ''}">
+          <button class="yr-btn" data-pop="rate:${s}" aria-expanded="${UI.pop === `rate:${s}`}"
             title="${admin ? 'Set' : 'See'} the ${s} buy-in">${s}</button>
-          <div class="yr-rate">${admin
+          <div class="pop-box">${admin
             ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
                  value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-            : money(db.buyIn(s))}</div>
+            : money(db.buyIn(s))}<em>buy-in</em></div>
         </th>`).join('')}
         <th class="n">Paid</th></tr></thead>
       <tbody>
@@ -4418,12 +4441,14 @@ function render(db, state = {}) {
             }).join('')}
             <td class="n" style="font-weight:700">${money(paid)}</td></tr>`;
         }).join('')}
+        ${/* what was expected sits behind what came in: a standing row of it
+             was a second line of totals nobody reads until they are chasing
+             one particular season */''}
         <tr class="total"><td class="sticky">Collected</td>
-          ${seasons.map((s) => `<td class="n">${seasonPaid(s) ? money(seasonPaid(s)) : '<span class="dimmer">&mdash;</span>'}</td>`).join('')}
-          <td class="n">${money(all.collected)}</td></tr>
-        <tr class="total sub"><td class="sticky dim">Expected</td>
-          ${seasons.map((s) => `<td class="n dim">${money(seasonDue(s))}</td>`).join('')}
-          <td class="n dim">${money(all.expected)}</td></tr>
+          ${seasons.map((s) => due(`due:${s}`,
+            seasonPaid(s) ? money(seasonPaid(s)) : '<span class="dimmer">&mdash;</span>',
+            seasonDue(s), seasonPaid(s))).join('')}
+          ${due('due:all', money(all.collected), all.expected, all.collected)}</tr>
       </tbody></table></div></div>
   </div>
 
@@ -4551,23 +4576,24 @@ function mount(root, db, go, setState, params = {}) {
 
   /* Opened in place rather than through a repaint: the table is a wide
      scroller and a repaint would lose where you had scrolled to. */
-  const showRate = () => root.querySelectorAll('th.yr').forEach((th) => {
-    const on = Number(th.querySelector('[data-yr]').dataset.yr) === UI.rate;
-    th.classList.toggle('open', on);
-    th.querySelector('[data-yr]').setAttribute('aria-expanded', String(on));
+  /* Opened in place rather than through a repaint: the table is a wide
+     scroller and a repaint would lose where you had scrolled to. */
+  const showPops = () => root.querySelectorAll('[data-pop]').forEach((b) => {
+    const on = b.dataset.pop === UI.pop;
+    b.closest('.pop-host').classList.toggle('open', on);
+    b.setAttribute('aria-expanded', String(on));
   });
-  root.querySelectorAll('[data-yr]').forEach((b) => b.addEventListener('click', (e) => {
+  root.querySelectorAll('[data-pop]').forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation();
-    const s = Number(b.dataset.yr);
-    UI.rate = UI.rate === s ? null : s;
-    showRate();
-    if (UI.rate === s) root.querySelector('th.yr.open .rate-in')?.focus();
+    UI.pop = UI.pop === b.dataset.pop ? null : b.dataset.pop;
+    showPops();
+    if (UI.pop) root.querySelector('.pop-host.open .rate-in')?.focus();
   }));
   // a popover closes the way a reader expects: click anywhere else
   root._rateShut = (e) => {
-    if (UI.rate == null || e.target.closest?.('.yr-rate') || e.target.closest?.('[data-yr]')) return;
-    UI.rate = null;
-    showRate();
+    if (UI.pop == null || e.target.closest?.('.pop-box') || e.target.closest?.('[data-pop]')) return;
+    UI.pop = null;
+    showPops();
   };
   document.addEventListener('click', root._rateShut);
 
