@@ -11,7 +11,7 @@ const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 /* Which panels are open. Module-scoped so it survives the re-render that an edit
    triggers — expanding a row, changing a value and watching the row collapse
    would be maddening. Not in the URL: this is transient, not worth linking to. */
-const UI = { seasons: null, lines: new Set(), pop: null };
+const UI = { seasons: null, lines: new Set(), pop: null, won: new Set() };
 
 /* ---------- payouts, one collapsible block per season ---------- */
 const label = (db, r, cat) => cat === 'placement'
@@ -76,8 +76,11 @@ function seasonPayouts(db, season, open, admin) {
             ${emp ? `<li class="pay-note">${emp.claimed
               ? `Claimed by ${esc(db.team(emp.team)?.manager ?? '')} in ${emp.season}`
               : `A second title takes it &mdash; ${esc(emp.contenders.map((t) => t.manager).join(', '))}`}</li>`
-            : l.rows.map((r) => `<li${r.team ? '' : ' class="open-prize"'}>
-              <span class="pay-who">${label(db, r, l.category)}</span>
+            : l.rows.map((r) => `<li class="${r.team ? '' : 'open-prize '}${
+              r.won?.length ? 'has-won ' : ''}${UI.won.has(`${season}:${r.team}`) ? 'open' : ''}"
+              ${r.won?.length ? `data-won="${season}:${r.team}"` : ''}>
+              <span class="pay-who">${label(db, r, l.category)}${
+                r.won?.length ? icon('chev', 'won-caret') : ''}</span>
               ${r.won?.length ? `<span class="pay-what">${r.won.map((w) =>
                 `<em>${esc(w.what)} <b>${money(w.amount)}</b></em>`).join('')}</span>` : ''}
               <b>${money(r.amount)}</b>
@@ -338,6 +341,17 @@ export function mount(root, db, go, setState, params = {}) {
     showPops();
   };
   document.addEventListener('click', root._rateShut);
+
+  /* On a phone the prizes a manager won are folded away -- there is no room to
+     spell them out beside his name. On a desktop they are always out, so a tap
+     there means nothing. */
+  root.querySelectorAll('[data-won]').forEach((li) => li.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    if (window.matchMedia('(min-width:621px)').matches) return;
+    const k = li.dataset.won;
+    UI.won.has(k) ? UI.won.delete(k) : UI.won.add(k);
+    li.classList.toggle('open', UI.won.has(k));
+  }));
 
   root.querySelectorAll('[data-rate]').forEach((inp) => {
     const s = inp.dataset.rate;

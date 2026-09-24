@@ -115,6 +115,11 @@ eq('winners name their prizes', mgLine.rows.every((r) => r.won.length > 0), true
 eq('and those prizes add up to the total',
    mgLine.rows.every((r) => r.won.reduce((a, w) => a + w.amount, 0) === r.amount), true);
 
+// on a phone the prizes fold away; the markup carries the handle either way
+eq('a winner with prizes can be opened',
+   (payH.match(/data-won="/g) || []).length, mgLine.rows.length);
+eq('and carries a caret to say so', /won-caret/.test(payH), true);
+
 // a season nobody has played is not a payout card
 eq('no card for a future season', /data-season="2030"/.test(payH), false);
 

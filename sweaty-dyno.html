@@ -1572,6 +1572,21 @@ i.lg-empire{background:var(--violet)}
 .pay-what{display:flex;flex-direction:column;gap:2px;margin-left:auto;text-align:right}
 .pay-what em{font-style:normal;font-size:11px;color:var(--ink-3)}
 .pay-what em b{font-family:inherit;font-size:11px;font-weight:600;color:var(--ink-2);margin-left:5px}
+/* the caret is a phone affordance: there the prizes fold away */
+.won-caret{display:none}
+@media (max-width:620px){
+  .pay-rows{padding-left:16px}
+  .pay-rows li{flex-wrap:wrap;column-gap:9px}
+  .pay-rows li.has-won{cursor:pointer}
+  .pay-who{display:flex;align-items:center;gap:5px}
+  .won-caret{display:block;width:12px;height:12px;flex:none;color:var(--ink-3);transition:transform .16s}
+  .pay-rows li.open .won-caret{transform:rotate(90deg)}
+  /* a whole line of its own, under the name it belongs to */
+  .pay-what{display:none;order:9;width:100%;margin:5px 0 1px;text-align:left}
+  .pay-rows li.open .pay-what{display:flex}
+  .pay-what em{display:flex;justify-content:space-between;gap:12px}
+  .pay-what em b{margin-left:0}
+}
 
 /* A season's buy-in hides behind its own year: the column below already says
    who paid it in full, so the rate is only wanted one season at a time. */
@@ -4376,7 +4391,7 @@ const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 /* Which panels are open. Module-scoped so it survives the re-render that an edit
    triggers — expanding a row, changing a value and watching the row collapse
    would be maddening. Not in the URL: this is transient, not worth linking to. */
-const UI = { seasons: null, lines: new Set(), pop: null };
+const UI = { seasons: null, lines: new Set(), pop: null, won: new Set() };
 
 /* ---------- payouts, one collapsible block per season ---------- */
 const label = (db, r, cat) => cat === 'placement'
@@ -4441,8 +4456,11 @@ function seasonPayouts(db, season, open, admin) {
             ${emp ? `<li class="pay-note">${emp.claimed
               ? `Claimed by ${esc(db.team(emp.team)?.manager ?? '')} in ${emp.season}`
               : `A second title takes it &mdash; ${esc(emp.contenders.map((t) => t.manager).join(', '))}`}</li>`
-            : l.rows.map((r) => `<li${r.team ? '' : ' class="open-prize"'}>
-              <span class="pay-who">${label(db, r, l.category)}</span>
+            : l.rows.map((r) => `<li class="${r.team ? '' : 'open-prize '}${
+              r.won?.length ? 'has-won ' : ''}${UI.won.has(`${season}:${r.team}`) ? 'open' : ''}"
+              ${r.won?.length ? `data-won="${season}:${r.team}"` : ''}>
+              <span class="pay-who">${label(db, r, l.category)}${
+                r.won?.length ? icon('chev', 'won-caret') : ''}</span>
               ${r.won?.length ? `<span class="pay-what">${r.won.map((w) =>
                 `<em>${esc(w.what)} <b>${money(w.amount)}</b></em>`).join('')}</span>` : ''}
               <b>${money(r.amount)}</b>
@@ -4701,6 +4719,17 @@ function mount(root, db, go, setState, params = {}) {
     showPops();
   };
   document.addEventListener('click', root._rateShut);
+
+  /* On a phone the prizes a manager won are folded away -- there is no room to
+     spell them out beside his name. On a desktop they are always out, so a tap
+     there means nothing. */
+  root.querySelectorAll('[data-won]').forEach((li) => li.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    if (window.matchMedia('(min-width:621px)').matches) return;
+    const k = li.dataset.won;
+    UI.won.has(k) ? UI.won.delete(k) : UI.won.add(k);
+    li.classList.toggle('open', UI.won.has(k));
+  }));
 
   root.querySelectorAll('[data-rate]').forEach((inp) => {
     const s = inp.dataset.rate;
