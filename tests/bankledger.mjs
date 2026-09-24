@@ -55,5 +55,6 @@ eq('the colours are named', ['lg-minigame', 'lg-placement', 'lg-empire']
 eq('no standing rate row', /rate-row/.test(h), false);
 eq('every year opens one', (h.match(/data-yr="/g) || []).length, db.seasons.length);
 eq('and the rate is in there', (h.match(/class="yr-rate"/g) || []).length, db.seasons.length);
+eq('nothing starts open', /th class="n yr open/.test(h), false);
 
 print(fail ? `\n${fail} FAILURE(S)` : '\nBank ledger passed.');

@@ -286,16 +286,25 @@ export function mount(root, db, go, setState, params = {}) {
 
   /* Opened in place rather than through a repaint: the table is a wide
      scroller and a repaint would lose where you had scrolled to. */
-  root.querySelectorAll('[data-yr]').forEach((b) => b.addEventListener('click', () => {
+  const showRate = () => root.querySelectorAll('th.yr').forEach((th) => {
+    const on = Number(th.querySelector('[data-yr]').dataset.yr) === UI.rate;
+    th.classList.toggle('open', on);
+    th.querySelector('[data-yr]').setAttribute('aria-expanded', String(on));
+  });
+  root.querySelectorAll('[data-yr]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
     const s = Number(b.dataset.yr);
     UI.rate = UI.rate === s ? null : s;
-    root.querySelectorAll('th.yr').forEach((th) => {
-      const on = Number(th.querySelector('[data-yr]').dataset.yr) === UI.rate;
-      th.classList.toggle('open', on);
-      th.querySelector('[data-yr]').setAttribute('aria-expanded', String(on));
-    });
+    showRate();
     if (UI.rate === s) root.querySelector('th.yr.open .rate-in')?.focus();
   }));
+  // a popover closes the way a reader expects: click anywhere else
+  root._rateShut = (e) => {
+    if (UI.rate == null || e.target.closest?.('.yr-rate') || e.target.closest?.('[data-yr]')) return;
+    UI.rate = null;
+    showRate();
+  };
+  document.addEventListener('click', root._rateShut);
 
   root.querySelectorAll('[data-rate]').forEach((inp) => {
     const s = inp.dataset.rate;
