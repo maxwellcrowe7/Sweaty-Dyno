@@ -51,4 +51,9 @@ eq('best net first', nets[0], Math.max(...db.ledger().map((t) => t.net)));
 eq('the colours are named', ['lg-minigame', 'lg-placement', 'lg-empire']
    .every((k) => h.includes(`lg-key`) && h.includes(k)), true);
 
+/* ---- a season's buy-in hides behind its own year ---- */
+eq('no standing rate row', /rate-row/.test(h), false);
+eq('every year opens one', (h.match(/data-yr="/g) || []).length, db.seasons.length);
+eq('and the rate is in there', (h.match(/class="yr-rate"/g) || []).length, db.seasons.length);
+
 print(fail ? `\n${fail} FAILURE(S)` : '\nBank ledger passed.');

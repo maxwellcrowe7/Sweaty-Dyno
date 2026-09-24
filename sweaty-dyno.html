@@ -1565,17 +1565,20 @@ i.lg-empire{background:var(--violet)}
 .pay-rows li:first-child{border-top:none}
 .pay-rows b{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink)}
 
-/* buy-in rate row — sits directly under the year headers so every figure in
-   this table is visible at once, no expanding required. */
-table.dt tbody tr.rate-row td{
-  background:linear-gradient(rgba(255,255,255,.028),rgba(255,255,255,.028)),var(--surface);
-  border-bottom:1px solid var(--line);
-  padding-top:9px;padding-bottom:9px;
+/* A season's buy-in hides behind its own year: the column below already says
+   who paid it in full, so the rate is only wanted one season at a time. */
+/* top, not middle: an open year makes its cell taller, and centred headers
+   would drift down the row to meet it */
+table.dt thead th{vertical-align:top}
+.yr-btn{
+  font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;padding:0;
+  border-bottom:1px dotted transparent;
 }
-table.dt tbody tr.rate-row td.sticky{
-  font-family:var(--f-display);font-size:11px;font-weight:700;
-  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
-}
+.yr-btn:hover{color:var(--ink);border-bottom-color:var(--ink-3)}
+th.yr.open .yr-btn{color:var(--heat);border-bottom-color:transparent}
+.yr-rate{display:none;margin-top:4px;font-size:12px;color:var(--ink-2);
+  font-weight:600;letter-spacing:0;text-transform:none}
+th.yr.open .yr-rate{display:block}
 .rate-in{
   width:62px;text-align:right;background:none;border:0;border-bottom:1px solid transparent;
   border-radius:0;padding:1px 0 2px;font-size:13px;font-weight:600;
@@ -4268,7 +4271,7 @@ const ORD = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 /* Which panels are open. Module-scoped so it survives the re-render that an edit
    triggers — expanding a row, changing a value and watching the row collapse
    would be maddening. Not in the URL: this is transient, not worth linking to. */
-const UI = { seasons: null, lines: new Set() };
+const UI = { seasons: null, lines: new Set(), rate: null };
 
 /* ---------- payouts, one collapsible block per season ---------- */
 const label = (db, r, cat) => cat === 'placement'
@@ -4378,18 +4381,21 @@ function render(db, state = {}) {
   <div class="section-title">Buy-ins</div>
   <div class="card">
     <div class="card-bd flush"><div class="tw"><table class="dt">
+      ${/* The buy-in for a season lives behind its own year: every figure in the
+           column below already says whether it was paid in full, so a row
+           stating the rate ten times was answering a question nobody had
+           until they had it about one season. */''}
       <thead><tr><th class="sticky">Team</th>
-        ${seasons.map((s) => `<th class="n">${s}</th>`).join('')}
-        <th class="n">Paid</th></tr></thead>
-      <tbody>
-        <tr class="rate-row">
-          <td class="sticky">Buy-in</td>
-          ${seasons.map((s) => `<td class="n">${admin
+        ${seasons.map((s) => `<th class="n yr${UI.rate === s ? ' open' : ''}">
+          <button class="yr-btn" data-yr="${s}" aria-expanded="${UI.rate === s}"
+            title="${admin ? 'Set' : 'See'} the ${s} buy-in">${s}</button>
+          <div class="yr-rate">${admin
             ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
                  value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-            : money(db.buyIn(s))}</td>`).join('')}
-          <td class="n dimmer">&mdash;</td>
-        </tr>
+            : money(db.buyIn(s))}</div>
+        </th>`).join('')}
+        <th class="n">Paid</th></tr></thead>
+      <tbody>
         ${teams.map((t) => {
           const paid = seasons.reduce((a, s) => a + paidFor(t.number, s), 0);
           return `<tr><td class="sticky">${teamTag(t)}</td>
@@ -4535,6 +4541,19 @@ function mount(root, db, go, setState, params = {}) {
         toast(`${db.team(team).manager} ${season}: ${val ? money(val) : 'cleared'}`);
       });
   });
+
+  /* Opened in place rather than through a repaint: the table is a wide
+     scroller and a repaint would lose where you had scrolled to. */
+  root.querySelectorAll('[data-yr]').forEach((b) => b.addEventListener('click', () => {
+    const s = Number(b.dataset.yr);
+    UI.rate = UI.rate === s ? null : s;
+    root.querySelectorAll('th.yr').forEach((th) => {
+      const on = Number(th.querySelector('[data-yr]').dataset.yr) === UI.rate;
+      th.classList.toggle('open', on);
+      th.querySelector('[data-yr]').setAttribute('aria-expanded', String(on));
+    });
+    if (UI.rate === s) root.querySelector('th.yr.open .rate-in')?.focus();
+  }));
 
   root.querySelectorAll('[data-rate]').forEach((inp) => {
     const s = inp.dataset.rate;

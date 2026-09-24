@@ -1547,17 +1547,20 @@ i.lg-empire{background:var(--violet)}
 .pay-rows li:first-child{border-top:none}
 .pay-rows b{font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink)}
 
-/* buy-in rate row — sits directly under the year headers so every figure in
-   this table is visible at once, no expanding required. */
-table.dt tbody tr.rate-row td{
-  background:linear-gradient(rgba(255,255,255,.028),rgba(255,255,255,.028)),var(--surface);
-  border-bottom:1px solid var(--line);
-  padding-top:9px;padding-bottom:9px;
+/* A season's buy-in hides behind its own year: the column below already says
+   who paid it in full, so the rate is only wanted one season at a time. */
+/* top, not middle: an open year makes its cell taller, and centred headers
+   would drift down the row to meet it */
+table.dt thead th{vertical-align:top}
+.yr-btn{
+  font:inherit;color:inherit;letter-spacing:inherit;cursor:pointer;padding:0;
+  border-bottom:1px dotted transparent;
 }
-table.dt tbody tr.rate-row td.sticky{
-  font-family:var(--f-display);font-size:11px;font-weight:700;
-  letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);
-}
+.yr-btn:hover{color:var(--ink);border-bottom-color:var(--ink-3)}
+th.yr.open .yr-btn{color:var(--heat);border-bottom-color:transparent}
+.yr-rate{display:none;margin-top:4px;font-size:12px;color:var(--ink-2);
+  font-weight:600;letter-spacing:0;text-transform:none}
+th.yr.open .yr-rate{display:block}
 .rate-in{
   width:62px;text-align:right;background:none;border:0;border-bottom:1px solid transparent;
   border-radius:0;padding:1px 0 2px;font-size:13px;font-weight:600;
