@@ -15,7 +15,7 @@ const UI = { seasons: null, lines: new Set(), pop: null };
 
 /* ---------- payouts, one collapsible block per season ---------- */
 const label = (db, r, cat) => cat === 'placement'
-  ? `${ORD[(r.place || 1) - 1]} &mdash; ${esc(db.team(r.team)?.manager ?? '')}`
+  ? `${ORD[(r.place || 1) - 1]}${r.team ? ` &mdash; ${esc(db.team(r.team).manager)}` : ''}`
   : esc(db.team(r.team)?.manager ?? '');
 
 function seasonPayouts(db, season, open, admin) {
@@ -24,7 +24,9 @@ function seasonPayouts(db, season, open, admin) {
      closes nobody is owed anything, so the figure is the slate and the places
      it will pay. "To pay" waits for the season to be over. */
   const over = db.seasonOver(season);
-  const total = lines.reduce((a, l) => a + l.scheduled, 0);
+  const emp = db.empireOutlook(season);
+  const total = lines.reduce((a, l) => a + (l.category === 'empire'
+    ? (emp.claimed || emp.live ? emp.pot : 0) : l.scheduled), 0);
   const paid = lines.reduce((a, l) => a + l.paidTotal, 0);
   const owed = over ? total - paid : 0;
 
@@ -40,44 +42,52 @@ function seasonPayouts(db, season, open, admin) {
     <div class="acc-bd">
       ${lines.map((l) => {
         const c = CATS[l.category];
-        const can = l.rows.length > 0;
-        // Say WHY a category is empty. "Nothing yet" hid a missing payout scale
-        // behind wording that looked like a season simply had no results.
+        const emp = l.category === 'empire' ? db.empireOutlook(season) : null;
+        // the empire pot is only on the table once somebody could finish the
+        // season holding it -- in year one nobody could
+        const pot = emp ? (emp.claimed || emp.live ? emp.pot : 0) : l.scheduled;
+        const can = l.rows.length > 0 || (emp && emp.live && !emp.claimed);
+
         let sub;
-        if (!over && l.scheduled) {
-          sub = 'at stake';                       // a plan, not a result, yet
-        } else if (can) {
+        if (emp) {
+          sub = emp.claimed ? 'Claimed'
+            : emp.live ? `${emp.contenders.length} could claim it`
+            : 'Nobody can claim it this season';
+        } else if (!l.scheduled) {
+          sub = l.category === 'placement' ? 'No payout amounts set for any place' : 'Nothing set aside yet';
+        } else if (l.decided === l.rows.length && l.rows.length) {
           sub = l.paidCount === l.rows.length ? 'All paid' : `${l.paidCount} of ${l.rows.length} paid`;
-        } else if (l.category === 'empire') {
-          sub = 'Not claimed — nothing to pay out';
-        } else if (l.category === 'placement') {
-          const finished = (db.get('bank').finishes || []).some((f) => f.season === season);
-          const scaled = Object.keys(db.placementScale(season)).length > 0;
-          sub = !scaled ? 'No payout amounts set for any place'
-              : !finished ? 'Final standings not recorded yet'
-              : 'Nobody finished in a paying place';
+        } else if (l.decided) {
+          sub = `${l.decided} of ${l.rows.length} decided`;
         } else {
-          sub = 'Nothing yet';
+          sub = 'at stake';
         }
+
         return `<div class="pay-line${can ? ' can' : ''}${UI.lines.has(`${season}:${l.category}`) ? ' open' : ''}">
           <button class="pay-hd" ${can ? `data-line="${season}:${l.category}"` : 'disabled'}>
             ${can ? icon('chev', 'acc-caret') : '<span style="width:18px;flex:none"></span>'}
             <span class="chip ${c.chip}">${c.label}</span>
             <div class="grow"><div class="s">${sub}</div></div>
-            ${can && l.paidCount < l.rows.length ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
-            <div class="pay-val${!l.scheduled ? ' zero'
-              : over && l.paidTotal === l.scheduled ? ' won' : ''}">${money(l.scheduled)}</div>
+            ${over && can && l.paidCount < l.decided ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
+            <div class="pay-val${!pot ? ' zero'
+              : over && l.paidTotal === pot ? ' won' : ''}">${money(pot)}</div>
           </button>
-          ${can ? `<ul class="pay-rows">
-            ${l.rows.map((r) => `<li>
+          ${!can ? '' : `<ul class="pay-rows">
+            ${emp ? `<li class="pay-note">${emp.claimed
+              ? `Claimed by ${esc(db.team(emp.team)?.manager ?? '')} in ${emp.season}`
+              : `A second title takes it &mdash; ${esc(emp.contenders.map((t) => t.manager).join(', '))}`}</li>`
+            : l.rows.map((r) => `<li${r.team ? '' : ' class="open-prize"'}>
               <span class="pay-who">${label(db, r, l.category)}</span>
+              ${r.won?.length ? `<span class="pay-what">${r.won.map((w) =>
+                `<em>${esc(w.what)} <b>${money(w.amount)}</b></em>`).join('')}</span>` : ''}
               <b>${money(r.amount)}</b>
-              ${admin
+              ${!r.team ? '<span class="paid-tag">Open</span>'
+                : admin
                 ? `<button class="paid-btn${r.paid ? ' on' : ''}" data-paid="${season}:${l.category}:${r.team}"
                      aria-pressed="${r.paid}">${r.paid ? icon('check') : ''}<span>${r.paid ? 'Paid' : 'Mark paid'}</span></button>`
                 : `<span class="paid-tag${r.paid ? ' on' : ''}">${r.paid ? 'Paid' : 'Unpaid'}</span>`}
             </li>`).join('')}
-          </ul>` : ''}
+          </ul>`}
         </div>`;
       }).join('')}
     </div>
@@ -96,7 +106,9 @@ export function render(db, state = {}) {
   // every season that has started gets a card, so the current one is there to
   // act on rather than appearing only once somebody has won something
   const started = seasons.filter((s) => s <= db.league.currentSeason);
-  const withRows = seasons.filter((s) => db.payoutLines(s).some((l) => l.rows.length));
+  // a decided result, not a prize on offer -- the placement scale gives every
+  // season rows, so this would otherwise hand a card to 2030
+  const withRows = seasons.filter((s) => db.payoutLines(s).some((l) => l.decided));
   const paidSeasons = [...new Set([...started, ...withRows])].sort((a, b) => a - b);
   if (UI.seasons === null)
     UI.seasons = new Set([paidSeasons.at(-1) ?? db.league.currentSeason]);

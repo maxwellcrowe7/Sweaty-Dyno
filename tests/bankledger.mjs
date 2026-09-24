@@ -92,4 +92,30 @@ eq('and owes nothing yet', /to pay/.test(head(open2)), false);
 eq('its figures are at stake', /at stake/.test(card(open2)), true);
 eq('a finished season states results, not stakes', /at stake/.test(card(done)), false);
 
+/* ---- the pot, before anyone has won it ---- */
+const first = db.seasons[0];
+eq('season one could never pay the empire out', db.empireOutlook(first).live, false);
+// a champion can take it with a second title the year after
+const champ = (db.get('bank').finishes || []).find((f) => f.season === first && f.place === 1);
+const next2 = db.empireOutlook(first + 1);
+eq('the year after, its champion can', next2.live, true);
+eq('and he is the one named', next2.contenders.map((c) => c.number), [champ.team]);
+
+// placement is the scale itself, filled in as places are decided
+const openLines = db.payoutLines(open2);
+const pl = openLines.find((l) => l.category === 'placement');
+eq('a row per paying place', pl.rows.length, Object.keys(db.placementScale(open2)).length);
+eq('nobody in them yet', pl.decided, 0);
+const doneLines = db.payoutLines(done).find((l) => l.category === 'placement');
+eq('and filled in once the season is done', doneLines.decided, doneLines.rows.length);
+
+// each minigame winner carries what he won it on
+const mgLine = db.payoutLines(done).find((l) => l.category === 'minigame');
+eq('winners name their prizes', mgLine.rows.every((r) => r.won.length > 0), true);
+eq('and those prizes add up to the total',
+   mgLine.rows.every((r) => r.won.reduce((a, w) => a + w.amount, 0) === r.amount), true);
+
+// a season nobody has played is not a payout card
+eq('no card for a future season', /data-season="2030"/.test(payH), false);
+
 print(fail ? `\n${fail} FAILURE(S)` : '\nBank ledger passed.');

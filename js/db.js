@@ -299,16 +299,39 @@ class Store {
     const empireRows = claim && claim.season === season
       ? [{ team: claim.team, amount: claim.amount, paid: settled('empire', claim.team) }] : [];
 
+    /* The scale IS the structure: every place that pays is a row from the day
+       the season opens, and the finishes only fill in who got there. */
     const scale = this.placementScale(season);
-    const placementRows = (this.get('bank').finishes || [])
-      .filter((f) => f.season === season)
-      .map((f) => ({ team: f.team, place: f.place, amount: Number(scale[String(f.place)]) || 0,
-                     paid: settled('placement', f.team) }))
+    const finishes = (this.get('bank').finishes || []).filter((f) => f.season === season);
+    const placementRows = Object.entries(scale)
+      .map(([place, amount]) => ({ place: Number(place), amount: Number(amount) || 0 }))
       .filter((r) => r.amount > 0)
-      .sort((a, b) => a.place - b.place);
+      .sort((a, b) => a.place - b.place)
+      .map((r) => {
+        const f = finishes.find((x) => x.place === r.place);
+        return { ...r, team: f?.team ?? null, paid: f ? settled('placement', f.team) : false };
+      });
+
+    /* Every prize a manager took, named. The Games tab has these scattered over
+       eighteen weeks; nothing until now added them up per person. */
+    const mgWon = {};
+    const note = (team, amt, what) => {
+      if (!team || !amt) return;
+      (mgWon[team] ||= []).push({ what, amount: amt });
+    };
+    const mgs = this.minigames(season);
+    for (const g of mgs.games || []) {
+      for (const pl of ['1', '2', '3']) {
+        note(g.results?.[pl]?.team, Number(g.payout?.[pl]) || 0,
+          g.phase === 'week' ? `Week ${g.week} — ${g.name}` : g.name);
+      }
+    }
+    const run = this.guillotineRun(season);
+    if (run?.winner) note(run.winner, Number(mgs.guillotine?.payout?.['1']) || 0, 'Guillotine');
 
     const minigameRows = Object.entries(this.minigameWinnings(season))
-      .map(([team, amount]) => ({ team: Number(team), amount, paid: settled('minigame', Number(team)) }))
+      .map(([team, amount]) => ({ team: Number(team), amount, won: mgWon[team] || [],
+                                  paid: settled('minigame', Number(team)) }))
       .sort((a, b) => b.amount - a.amount || a.team - b.team);
 
     /* What the season will pay out, whether or not anyone has won it yet: every
@@ -328,7 +351,9 @@ class Store {
     ].map((l) => ({
       ...l,
       scheduled: scheduled[l.category],
-      total: l.rows.reduce((a, r) => a + r.amount, 0),
+      // a row with nobody in it is a prize on offer, not one awarded
+      total: l.rows.filter((r) => r.team).reduce((a, r) => a + r.amount, 0),
+      decided: l.rows.filter((r) => r.team).length,
       paidTotal: l.rows.filter((r) => r.paid).reduce((a, r) => a + r.amount, 0),
       paidCount: l.rows.filter((r) => r.paid).length,
     }));
@@ -338,7 +363,10 @@ class Store {
   payouts(season = null) {
     const seasons = season == null ? this.seasons : [season];
     return seasons.flatMap((s) => this.payoutLines(s)
-      .flatMap((l) => l.rows.map((r) => ({ ...r, season: s, category: l.category }))));
+      // a placement row with nobody in it is a prize on offer, not a payout:
+      // it belongs to the structure, not to anyone's ledger
+      .flatMap((l) => l.rows.filter((r) => r.team)
+        .map((r) => ({ ...r, season: s, category: l.category }))));
   }
 
   bank(season = null) {
@@ -845,6 +873,44 @@ class Store {
       preseasonEnd: w?.preseasonEnd || `${year}-09-01`,
       end: w?.end || `${year}-12-31`,
     };
+  }
+
+  /**
+   * Can the empire pot actually be claimed in a given season, and by whom?
+   *
+   * Season one could never pay it out: winning gave a manager one title and
+   * twenty points, where the rule wants two titles or one title and fifty. So
+   * the pot is only "at stake" once somebody could finish the season holding
+   * it, which is worth saying rather than showing a figure nobody could win.
+   */
+  empireOutlook(season) {
+    const L = this.league;
+    const claim = this.empireClaim();
+    if (claim && claim.season <= season) {
+      return { pot: claim.amount, claimed: true, season: claim.season,
+               team: claim.team, live: false, contenders: [] };
+    }
+
+    /* Measured against what a manager held ENTERING the season, not what he
+       holds today -- otherwise 2025 looks winnable in hindsight, when in fact
+       nobody could have finished it holding the pot. */
+    const scale = Object.fromEntries((L.empirePointsScale || []).map((x) => [x.place, x.points]));
+    const best = Math.max(0, ...Object.values(scale).map((v) => Number(v) || 0));
+    const titlesNeeded = L.empireTitlesToWin ?? 2;
+    const threshold = L.empireThreshold || Infinity;
+    const prior = (this.get('bank').finishes || []).filter((f) => f.season < season);
+
+    const contenders = this.teams(season).filter((t) => {
+      const mine = prior.filter((f) => f.team === t.number);
+      const titles = mine.filter((f) => f.place === 1).length;
+      const points = mine.reduce((a, f) => a + (Number(scale[f.place]) || 0), 0);
+      // one more title takes it, or the best finish available still leaves him
+      // short of the points he would need alongside a title
+      return titles + 1 >= titlesNeeded || points + best >= threshold;
+    });
+
+    return { pot: this.empirePotBalance(), claimed: false,
+             live: contenders.length > 0, contenders };
   }
 
   /** Has a season's window closed? Nothing is paid out until it has. */
