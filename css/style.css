@@ -1573,10 +1573,9 @@ i.lg-empire{background:var(--violet)}
 .pop-host.open .pop-box{display:block}
 /* opened from the last row, it has to go up: the card clips what falls below */
 .pop-host.up .pop-box{top:auto;bottom:calc(100% - 2px)}
-.pop-box em{display:block;font-style:normal;font-size:9.5px;font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:1px}
-.pop-box b{display:block;margin-top:4px;padding-top:4px;border-top:1px solid var(--line);
-  font-size:12px;color:var(--gold)}
+/* collected of expected, as a fraction -- gold while the two disagree */
+.pop-box i{font-style:normal;color:var(--ink-3);margin:0 2px}
+.pop-box.short{color:var(--gold);border-color:var(--gold)}
 .rate-in{
   width:52px;text-align:right;background:none;border:0;border-radius:0;padding:0;
   font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);

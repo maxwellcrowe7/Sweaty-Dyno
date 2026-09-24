@@ -1591,10 +1591,9 @@ i.lg-empire{background:var(--violet)}
 .pop-host.open .pop-box{display:block}
 /* opened from the last row, it has to go up: the card clips what falls below */
 .pop-host.up .pop-box{top:auto;bottom:calc(100% - 2px)}
-.pop-box em{display:block;font-style:normal;font-size:9.5px;font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:1px}
-.pop-box b{display:block;margin-top:4px;padding-top:4px;border-top:1px solid var(--line);
-  font-size:12px;color:var(--gold)}
+/* collected of expected, as a fraction -- gold while the two disagree */
+.pop-box i{font-style:normal;color:var(--ink-3);margin:0 2px}
+.pop-box.short{color:var(--gold);border-color:var(--gold)}
 .rate-in{
   width:52px;text-align:right;background:none;border:0;border-radius:0;padding:0;
   font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);
@@ -4376,17 +4375,16 @@ function render(db, state = {}) {
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
   const seasonDue = (s) => db.buyIn(s) * teams.length;
 
-  /* A total cell with what was expected of it tucked behind. */
-  const due = (key, shown, expected, got) => {
-    const short = Math.max(0, expected - got);
-    // the totals are the last row, so this one opens upward or the card clips it
-    return `<td class="n pop-host up${UI.pop === key ? ' open' : ''}">
+  /* A total with what was expected of it tucked behind, said as a fraction --
+     the two figures beside each other are the whole story, and the section
+     heading already says what they are. The totals are the last row, so it
+     opens upward or the card clips it. */
+  const due = (key, shown, expected, got) => `
+    <td class="n pop-host up${UI.pop === key ? ' open' : ''}">
       <button class="tot-btn" data-pop="${key}" aria-expanded="${UI.pop === key}"
-        title="What was expected">${shown}</button>
-      <div class="pop-box">${money(expected)}<em>expected</em>${
-        short ? `<b>${money(short)} to come</b>` : ''}</div>
+        title="Collected of expected">${shown}</button>
+      <div class="pop-box${got < expected ? ' short' : ''}">${money(got)}<i>/</i>${money(expected)}</div>
     </td>`;
-  };
 
   const sheet = db.balanceSheet();
   const best = Math.max(1, ...led.map((t) => t.won));
@@ -4422,7 +4420,7 @@ function render(db, state = {}) {
           <div class="pop-box">${admin
             ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
                  value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-            : money(db.buyIn(s))}<em>buy-in</em></div>
+            : money(db.buyIn(s))}</div>
         </th>`).join('')}
         <th class="n">Paid</th></tr></thead>
       <tbody>

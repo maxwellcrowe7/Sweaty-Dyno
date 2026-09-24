@@ -99,17 +99,16 @@ export function render(db, state = {}) {
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
   const seasonDue = (s) => db.buyIn(s) * teams.length;
 
-  /* A total cell with what was expected of it tucked behind. */
-  const due = (key, shown, expected, got) => {
-    const short = Math.max(0, expected - got);
-    // the totals are the last row, so this one opens upward or the card clips it
-    return `<td class="n pop-host up${UI.pop === key ? ' open' : ''}">
+  /* A total with what was expected of it tucked behind, said as a fraction --
+     the two figures beside each other are the whole story, and the section
+     heading already says what they are. The totals are the last row, so it
+     opens upward or the card clips it. */
+  const due = (key, shown, expected, got) => `
+    <td class="n pop-host up${UI.pop === key ? ' open' : ''}">
       <button class="tot-btn" data-pop="${key}" aria-expanded="${UI.pop === key}"
-        title="What was expected">${shown}</button>
-      <div class="pop-box">${money(expected)}<em>expected</em>${
-        short ? `<b>${money(short)} to come</b>` : ''}</div>
+        title="Collected of expected">${shown}</button>
+      <div class="pop-box${got < expected ? ' short' : ''}">${money(got)}<i>/</i>${money(expected)}</div>
     </td>`;
-  };
 
   const sheet = db.balanceSheet();
   const best = Math.max(1, ...led.map((t) => t.won));
@@ -145,7 +144,7 @@ export function render(db, state = {}) {
           <div class="pop-box">${admin
             ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
                  value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-            : money(db.buyIn(s))}<em>buy-in</em></div>
+            : money(db.buyIn(s))}</div>
         </th>`).join('')}
         <th class="n">Paid</th></tr></thead>
       <tbody>

@@ -58,6 +58,8 @@ eq('every year opens one', (h.match(/data-pop="rate:/g) || []).length, db.season
 eq('no standing expected row', /class="total sub"/.test(h), false);
 eq('every collected figure opens one',
    (h.match(/data-pop="due:/g) || []).length, db.seasons.length + 1);
-eq('nothing starts open', /pop-host open/.test(h), false);
+eq('nothing starts open', /pop-host( up)? open/.test(h), false);
+// a season short of its expected total says so in gold
+eq('a shortfall is marked', /pop-box short/.test(h), true);
 
 print(fail ? `\n${fail} FAILURE(S)` : '\nBank ledger passed.');
