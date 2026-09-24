@@ -2878,12 +2878,23 @@ class Store {
       .map(([team, amount]) => ({ team: Number(team), amount, paid: settled('minigame', Number(team)) }))
       .sort((a, b) => b.amount - a.amount || a.team - b.team);
 
+    /* What the season will pay out, whether or not anyone has won it yet: every
+       place the scale pays, and every prize the minigame slate adds up to. The
+       awarded total only catches up once the results are in. */
+    const mg = this.minigameSpend(season);
+    const scheduled = {
+      empire: empireRows.reduce((a, r) => a + r.amount, 0),
+      placement: Object.values(scale).reduce((a, v) => a + (Number(v) || 0), 0),
+      minigame: Math.max(mg.committed, mg.paid),
+    };
+
     return [
       { category: 'empire',    rows: empireRows },
       { category: 'placement', rows: placementRows },
       { category: 'minigame',  rows: minigameRows },
     ].map((l) => ({
       ...l,
+      scheduled: scheduled[l.category],
       total: l.rows.reduce((a, r) => a + r.amount, 0),
       paidTotal: l.rows.filter((r) => r.paid).reduce((a, r) => a + r.amount, 0),
       paidCount: l.rows.filter((r) => r.paid).length,
@@ -3402,6 +3413,9 @@ class Store {
       end: w?.end || `${year}-12-31`,
     };
   }
+
+  /** Has a season's window closed? Nothing is paid out until it has. */
+  seasonOver(season) { return this.seasonWindow(season).end < today(); }
 
   /** The day in-season begins: there is no gap, it is the day after preseason. */
   inSeasonStart(year) {
@@ -4297,9 +4311,13 @@ const label = (db, r, cat) => cat === 'placement'
 
 function seasonPayouts(db, season, open, admin) {
   const lines = db.payoutLines(season);
-  const total = lines.reduce((a, l) => a + l.total, 0);
+  /* What the season pays out, not what has been handed over: until the window
+     closes nobody is owed anything, so the figure is the slate and the places
+     it will pay. "To pay" waits for the season to be over. */
+  const over = db.seasonOver(season);
+  const total = lines.reduce((a, l) => a + l.scheduled, 0);
   const paid = lines.reduce((a, l) => a + l.paidTotal, 0);
-  const owed = total - paid;
+  const owed = over ? total - paid : 0;
 
   return `
   <div class="card acc${open ? ' open' : ''}" style="margin-bottom:10px">
@@ -4317,7 +4335,9 @@ function seasonPayouts(db, season, open, admin) {
         // Say WHY a category is empty. "Nothing yet" hid a missing payout scale
         // behind wording that looked like a season simply had no results.
         let sub;
-        if (can) {
+        if (!over && l.scheduled) {
+          sub = 'at stake';                       // a plan, not a result, yet
+        } else if (can) {
           sub = l.paidCount === l.rows.length ? 'All paid' : `${l.paidCount} of ${l.rows.length} paid`;
         } else if (l.category === 'empire') {
           sub = 'Not claimed — nothing to pay out';
@@ -4336,7 +4356,8 @@ function seasonPayouts(db, season, open, admin) {
             <span class="chip ${c.chip}">${c.label}</span>
             <div class="grow"><div class="s">${sub}</div></div>
             ${can && l.paidCount < l.rows.length ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
-            <div class="pay-val${!l.total ? ' zero' : l.paidTotal === l.total ? ' won' : ''}">${money(l.total)}</div>
+            <div class="pay-val${!l.scheduled ? ' zero'
+              : over && l.paidTotal === l.scheduled ? ' won' : ''}">${money(l.scheduled)}</div>
           </button>
           ${can ? `<ul class="pay-rows">
             ${l.rows.map((r) => `<li>

@@ -311,12 +311,23 @@ class Store {
       .map(([team, amount]) => ({ team: Number(team), amount, paid: settled('minigame', Number(team)) }))
       .sort((a, b) => b.amount - a.amount || a.team - b.team);
 
+    /* What the season will pay out, whether or not anyone has won it yet: every
+       place the scale pays, and every prize the minigame slate adds up to. The
+       awarded total only catches up once the results are in. */
+    const mg = this.minigameSpend(season);
+    const scheduled = {
+      empire: empireRows.reduce((a, r) => a + r.amount, 0),
+      placement: Object.values(scale).reduce((a, v) => a + (Number(v) || 0), 0),
+      minigame: Math.max(mg.committed, mg.paid),
+    };
+
     return [
       { category: 'empire',    rows: empireRows },
       { category: 'placement', rows: placementRows },
       { category: 'minigame',  rows: minigameRows },
     ].map((l) => ({
       ...l,
+      scheduled: scheduled[l.category],
       total: l.rows.reduce((a, r) => a + r.amount, 0),
       paidTotal: l.rows.filter((r) => r.paid).reduce((a, r) => a + r.amount, 0),
       paidCount: l.rows.filter((r) => r.paid).length,
@@ -835,6 +846,9 @@ class Store {
       end: w?.end || `${year}-12-31`,
     };
   }
+
+  /** Has a season's window closed? Nothing is paid out until it has. */
+  seasonOver(season) { return this.seasonWindow(season).end < today(); }
 
   /** The day in-season begins: there is no gap, it is the day after preseason. */
   inSeasonStart(year) {

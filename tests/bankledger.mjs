@@ -62,4 +62,34 @@ eq('nothing starts open', /pop-host( up)? open/.test(h), false);
 // a season short of its expected total says so in gold
 eq('a shortfall is marked', /pop-box short/.test(h), true);
 
+/* ---- payouts show what a season WILL pay, and owe nothing until it ends ---- */
+const open2 = db.seasons.find((y) => !db.seasonOver(y));
+const done = db.seasons.find((y) => db.seasonOver(y));
+const scale = Object.values(db.placementScale(open2)).reduce((a, v) => a + v, 0);
+const lines = db.payoutLines(open2);
+eq('placement is scheduled before anyone finishes',
+   lines.find((l) => l.category === 'placement').scheduled, scale);
+eq('and nothing is awarded yet', lines.find((l) => l.category === 'placement').total, 0);
+eq('minigames are scheduled off the slate',
+   lines.find((l) => l.category === 'minigame').scheduled,
+   Math.max(db.minigameSpend(open2).committed, db.minigameSpend(open2).paid));
+
+const payH = V.render(db, {});
+// each accordion runs from its own header to the next card
+// the chip lives in the accordion header, which ends at its own </button>
+const head = (y) => {
+  const at = payH.indexOf(`data-season="${y}"`);
+  return at < 0 ? '' : payH.slice(at, payH.indexOf('</button>', at));
+};
+const card = (y) => {
+  const at = payH.indexOf(`data-season="${y}"`);
+  if (at < 0) return '';
+  const next = payH.indexOf('<div class="card acc', at);
+  return payH.slice(at, next < 0 ? payH.length : next);
+};
+eq('a season still running is on the page', card(open2).length > 0, true);
+eq('and owes nothing yet', /to pay/.test(head(open2)), false);
+eq('its figures are at stake', /at stake/.test(card(open2)), true);
+eq('a finished season states results, not stakes', /at stake/.test(card(done)), false);
+
 print(fail ? `\n${fail} FAILURE(S)` : '\nBank ledger passed.');

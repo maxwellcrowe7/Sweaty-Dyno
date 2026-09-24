@@ -20,9 +20,13 @@ const label = (db, r, cat) => cat === 'placement'
 
 function seasonPayouts(db, season, open, admin) {
   const lines = db.payoutLines(season);
-  const total = lines.reduce((a, l) => a + l.total, 0);
+  /* What the season pays out, not what has been handed over: until the window
+     closes nobody is owed anything, so the figure is the slate and the places
+     it will pay. "To pay" waits for the season to be over. */
+  const over = db.seasonOver(season);
+  const total = lines.reduce((a, l) => a + l.scheduled, 0);
   const paid = lines.reduce((a, l) => a + l.paidTotal, 0);
-  const owed = total - paid;
+  const owed = over ? total - paid : 0;
 
   return `
   <div class="card acc${open ? ' open' : ''}" style="margin-bottom:10px">
@@ -40,7 +44,9 @@ function seasonPayouts(db, season, open, admin) {
         // Say WHY a category is empty. "Nothing yet" hid a missing payout scale
         // behind wording that looked like a season simply had no results.
         let sub;
-        if (can) {
+        if (!over && l.scheduled) {
+          sub = 'at stake';                       // a plan, not a result, yet
+        } else if (can) {
           sub = l.paidCount === l.rows.length ? 'All paid' : `${l.paidCount} of ${l.rows.length} paid`;
         } else if (l.category === 'empire') {
           sub = 'Not claimed — nothing to pay out';
@@ -59,7 +65,8 @@ function seasonPayouts(db, season, open, admin) {
             <span class="chip ${c.chip}">${c.label}</span>
             <div class="grow"><div class="s">${sub}</div></div>
             ${can && l.paidCount < l.rows.length ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
-            <div class="pay-val${!l.total ? ' zero' : l.paidTotal === l.total ? ' won' : ''}">${money(l.total)}</div>
+            <div class="pay-val${!l.scheduled ? ' zero'
+              : over && l.paidTotal === l.scheduled ? ' won' : ''}">${money(l.scheduled)}</div>
           </button>
           ${can ? `<ul class="pay-rows">
             ${l.rows.map((r) => `<li>
