@@ -520,7 +520,7 @@ table.dt th.sticky{width:1%}
 .banner b{color:var(--heat)}
 
 /* ---------- gauge (dashboard hero) ---------- */
-.gauge-card{position:relative;overflow:hidden;padding:12px 16px 22px;text-align:center}
+.gauge-card{position:relative;overflow:hidden;padding:14px 16px 18px;text-align:center}
 .gauge-card::before{
   content:"";position:absolute;left:50%;top:-40%;transform:translateX(-50%);
   width:340px;height:340px;border-radius:50%;
@@ -528,8 +528,9 @@ table.dt th.sticky{width:1%}
 }
 /* overflow:visible, because an SVG clips to its viewport by default and the
    glow under the arc is a filter that paints past it -- no height guess can
-   settle that, only letting it out */
-.gauge{position:relative;width:230px;max-width:82vw;margin:0 auto;display:block;overflow:visible}
+   settle that, only letting it out. It is pulled up so the arc's foot clears
+   the legend rather than the legend being pulled up to meet it. */
+.gauge{position:relative;width:230px;max-width:82vw;margin:-10px auto 0;display:block;overflow:visible}
 /* 44% of the taller box puts the figure where 52% of the short one did --
    just above the arc's centre */
 .gauge-val{
@@ -537,7 +538,7 @@ table.dt th.sticky{width:1%}
 }
 .gauge-val .big{font-family:var(--f-display);font-size:44px;font-weight:700;line-height:1;letter-spacing:-.01em}
 .gauge-val .lbl{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-top:5px;font-weight:700}
-.gauge-legend{display:flex;justify-content:center;gap:18px;margin-top:-6px;flex-wrap:wrap}
+.gauge-legend{display:flex;justify-content:center;gap:18px;margin-top:8px;flex-wrap:wrap}
 .gauge-legend div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-2)}
 .gauge-legend i{width:8px;height:8px;border-radius:2px;display:block}
 
