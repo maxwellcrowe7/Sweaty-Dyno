@@ -1496,15 +1496,19 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 i.lg-minigame{background:var(--heat)}
 i.lg-placement{background:var(--gold)}
 i.lg-empire{background:var(--violet)}
+/* The haul sits right off the end of its bar -- they are one reading -- and the
+   net is pushed clear of both, being the figure the ledger is actually for. */
 .row.led{display:grid;grid-template-columns:22px 92px minmax(0,1fr) 56px 72px;
   align-items:center;gap:12px;padding:9px 16px}
+.led-won{margin-left:-6px}
+.led-net{margin-left:14px}
 .led-no{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-3);text-align:center}
 .led-who{min-width:0;font-size:14px}
 .led-who .tname{min-width:0}
 /* one track, so the bars are comparable rather than each filling its own row */
 .led-bar{display:flex;gap:2px;height:16px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
 .led-bar i{display:block;height:100%}
-.led-won{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-2);text-align:right}
+.led-won{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-3);text-align:left}
 .led-won.none{color:var(--ink-3);opacity:.5}
 .led-net{font-family:var(--f-display);font-size:19px;font-weight:700;text-align:right}
 .led-net.pos{color:var(--mint)} .led-net.neg{color:var(--red)} .led-net.dim{color:var(--ink-3)}
@@ -1516,7 +1520,9 @@ i.lg-empire{background:var(--violet)}
   .led-no,.led-who,.led-won,.led-net{grid-row:1}
   .led-bar{grid-row:2;grid-column:1 / -1;height:11px;margin-top:1px}
   .led-who{font-size:13px}
-  .led-won{font-size:13px}
+  /* on a phone the two share a line, so they keep their own space */
+  .led-won{font-size:13px;margin-left:0;text-align:right}
+  .led-net{margin-left:0}
   .led-net{font-size:16px}
   /* the legend has nowhere to go beside a title on a phone, so it takes the
      line under it rather than squeezing the title into two */
