@@ -502,7 +502,7 @@ table.dt th.sticky{width:1%}
 .banner b{color:var(--heat)}
 
 /* ---------- gauge (dashboard hero) ---------- */
-.gauge-card{position:relative;overflow:hidden;padding:20px 16px 18px;text-align:center}
+.gauge-card{position:relative;overflow:hidden;padding:12px 16px 22px;text-align:center}
 .gauge-card::before{
   content:"";position:absolute;left:50%;top:-40%;transform:translateX(-50%);
   width:340px;height:340px;border-radius:50%;
