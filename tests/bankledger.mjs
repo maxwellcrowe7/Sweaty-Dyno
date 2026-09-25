@@ -50,6 +50,15 @@ const nets = db.ledger().slice().sort((a, b) => b.net - a.net || b.won - a.won).
 eq('best net first', nets[0], Math.max(...db.ledger().map((t) => t.net)));
 eq('the colours are named', ['lg-minigame', 'lg-placement', 'lg-empire']
    .every((k) => h.includes(`lg-key`) && h.includes(k)), true);
+// one bar per manager, drawn against the biggest haul rather than its own total
+{
+  const best = Math.max(1, ...db.ledger().map((t) => t.won));
+  const top = db.ledger().slice().sort((a, b) => b.won - a.won)[0];
+  eq('a bar for everyone', (h.match(/class="led-bar"/g) || []).length, db.teams().length);
+  eq('the biggest haul fills its track',
+     h.includes(`width:${(top.cat[Object.keys(top.cat)[0]] / best * 100).toFixed(1)}%`), true);
+  eq('and a buy-in paid ahead is not in the score', /paid ahead/.test(h), false);
+}
 
 /* ---- a season's buy-in hides behind its own year ---- */
 eq('no standing rate row', /rate-row/.test(h), false);

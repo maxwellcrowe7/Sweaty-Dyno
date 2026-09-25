@@ -1487,22 +1487,32 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 }
 
 /* ---------- manager ledger ----------
-   A scoreboard: rank, who, what they are up or down, and what the winnings were
-   made of -- with a legend, because a bar of unexplained colours says nothing. */
+   One variable, drawn: how much each manager has won, split by what he won it
+   on, against the biggest haul in the league. Everyone pays the same buy-in, so
+   the net beside it is that figure less a constant. */
 .lg-key{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-left:11px}
 .lg-key i{width:8px;height:8px;border-radius:2px}
 i.lg-minigame{background:var(--heat)}
 i.lg-placement{background:var(--gold)}
 i.lg-empire{background:var(--violet)}
-.row.led{align-items:center;gap:11px}
-.led-no{
-  flex:none;width:20px;text-align:center;font-family:var(--f-display);
-  font-size:14px;font-weight:700;color:var(--ink-3);
-}
-.led-bar{display:flex;gap:3px;margin-top:7px;height:5px;border-radius:99px;
-  overflow:hidden;background:var(--surface-3)}
+.row.led{display:grid;grid-template-columns:22px 92px minmax(0,1fr) 56px 72px;
+  align-items:center;gap:12px;padding:9px 16px}
+.led-no{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-3);text-align:center}
+.led-who{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* one track, so the bars are comparable rather than each filling its own row */
+.led-bar{display:flex;gap:2px;height:16px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
 .led-bar i{display:block;height:100%}
+.led-won{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-2);text-align:right}
+.led-won.none{color:var(--ink-3);opacity:.5}
+.led-net{font-family:var(--f-display);font-size:19px;font-weight:700;text-align:right}
+.led-net.pos{color:var(--mint)} .led-net.neg{color:var(--red)} .led-net.dim{color:var(--ink-3)}
+@media (max-width:620px){
+  /* the bar takes a line of its own; the figures stay on the name's line */
+  .row.led{grid-template-columns:20px minmax(0,1fr) 52px 64px;gap:8px;padding:9px 12px}
+  .led-bar{grid-column:1 / -1;height:12px;margin-top:2px}
+  .led-net{font-size:17px}
+}
 
 /* ---------- accordions ---------- */
 .acc-hd{

@@ -242,11 +242,12 @@ export function render(db, state = {}) {
          table sets money aside and checks that it balances. */''}
   </div>
 
-  ${/* The scoreboard, not a statement: buy-ins and prizes each have a section
-       of their own above, so this is the one place that just says who is up.
-       Seasons not yet played are left out, so paying 2027 early does not make
-       a manager look worse than someone who has paid nothing beyond this year. */''}
-  ${''}
+  ${/* The scoreboard, not a statement. Everyone pays the same buy-in, so net is
+       just winnings less a constant -- there is one real variable here, and the
+       bar is it: how much a manager has won, and what he won it on, drawn
+       against the biggest haul in the league. A manager who has paid a future
+       season early is not counted, because none of that money could have been
+       won back yet, and the buy-in grid above already says who has. */''}
   <div class="section-title">Manager ledger</div>
   <div class="card">
     <div class="card-hd"><h3>Lifetime net</h3><div class="spacer"></div>
@@ -254,24 +255,15 @@ export function render(db, state = {}) {
         `<span class="lg-key"><i class="lg-${k}"></i>${c.label}</span>`).join('')}
     </div>
     <div class="card-bd flush"><div class="rows">
-      ${/* every bar is drawn against the biggest haul in the league, not against
-           its own total -- scaled to itself, a $10 winner and a $120 winner both
-           filled the row and the bar said nothing */''}
       ${led.slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t, i) => `
         <div class="row led">
           <span class="led-no">${i + 1}</span>
-          <div class="grow">
-            <div class="t">${teamTag(t)}</div>
-            <div class="s">${money(t.paidIn)} in &middot; ${money(t.won)} won${
-              t.awaiting ? ` &middot; <span style="color:var(--gold)">${money(t.awaiting)} to collect</span>` : ''}${
-              t.prepaid ? ` &middot; <span class="dimmer">${money(t.prepaid)} paid ahead</span>` : ''}</div>
-            <div class="led-bar">
-              ${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) =>
-                `<i class="lg-${c}" style="width:${(v / best * 100).toFixed(1)}%"
-                   title="${esc(CATS[c].label)} ${money(v)}"></i>`).join('')}
-            </div>
-          </div>
-          <div class="val ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</div>
+          <span class="led-who">${esc(t.manager)}</span>
+          <span class="led-bar">${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) =>
+            `<i class="lg-${c}" style="width:${(v / best * 100).toFixed(1)}%"
+               title="${esc(CATS[c].label)} ${money(v)}"></i>`).join('')}</span>
+          <span class="led-won${t.won ? '' : ' none'}">${money(t.won)}</span>
+          <span class="led-net ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</span>
         </div>`).join('')}
     </div></div>
   </div>
