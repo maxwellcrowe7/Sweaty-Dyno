@@ -215,7 +215,9 @@ export const gauge = (segments, label = '') => {
   }).filter((s) => s.span > 0.4).reverse();   // later segments sit underneath
 
   return `
-  <svg class="gauge" viewBox="0 0 200 168" role="img" aria-label="${esc(label)}">
+  ${/* 186 tall, not 168: the arc dips to y=178 at the bottom of its sweep and
+       the stroke adds 6.5 either side, so a shorter box clipped its foot */''}
+  <svg class="gauge" viewBox="0 0 200 186" role="img" aria-label="${esc(label)}">
     <defs>
       ${Object.entries(GAUGE_INK).map(([k, [a, b]]) =>
         `<linearGradient id="g-${k}" x1="0" y1="0" x2="1" y2="1">
