@@ -47,13 +47,15 @@ eq('and the dial reads the cash on hand', h.includes(`>${money(all.cash)}</div>`
 eq('its legend names the claims',
    ['free', 'in prizes', 'empire pot'].every((k) => h.includes(k)), true);
 eq('buy-ins owed is not up there', /Owed now/.test(h), false);
-// the header says nothing the dial or a section below already says
-eq('the empire pot is not repeated beside its own segment',
-   (h.match(/Empire pot/gi) || []).length, 1);
-eq('nor is the season at stake', /at stake<\/div>/.test(h), false);
+// the header says nothing the dial or a section below already says -- scoped to
+// the hero, since Empire pot and "at stake" both belong to the payouts section
+const hero = h.slice(h.indexOf('<div class="hero">'), h.indexOf('<div class="section-title">Buy-ins'));
+// (twice in the hero: once in the legend, once in the gauge's aria-label)
+eq('nothing is tiled beside the dial', /class="tile/.test(hero), false);
+eq('the season at stake is not up there', /at stake/i.test(hero), false);
 // what is left explains the dial: in, out, what is there
 eq('the flow states the equation',
-   ['Collected', 'Paid out', 'In the bank'].every((k) => h.includes(k)), true);
+   ['Collected', 'Paid out', 'In the bank'].every((k) => hero.includes(k)), true);
 
 /* ---- the scoreboard ranks by net and explains its own bar ---- */
 // the order IS the ranking, so there is no number to print -- check the rows
