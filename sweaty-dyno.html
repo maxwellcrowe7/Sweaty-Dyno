@@ -542,6 +542,25 @@ table.dt th.sticky{width:1%}
 .gauge-legend div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-2)}
 .gauge-legend i{width:8px;height:8px;border-radius:2px;display:block}
 
+/* The equation behind the dial: what came in, what went out, what is left.
+   Rows rather than tiles, because it is a sum and reads down. */
+.flow{display:flex;flex-direction:column;justify-content:center;padding:6px 20px}
+.flow-row{display:grid;grid-template-columns:96px 108px 1fr;align-items:baseline;
+  gap:14px;padding:13px 0}
+.flow-row + .flow-row{border-top:1px solid var(--line-soft)}
+.flow-row .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.flow-row b{font-family:var(--f-display);font-size:26px;font-weight:700;text-align:right;letter-spacing:-.01em}
+.flow-row b.pos{color:var(--mint)} .flow-row b.neg{color:var(--ink-2)}
+.flow-row .m{font-size:11.5px;color:var(--ink-3)}
+.flow-row.sum{border-top:1px solid var(--line)}
+.flow-row.sum b{color:var(--heat)}
+@media (max-width:620px){
+  .flow{padding:2px 14px}
+  .flow-row{grid-template-columns:82px 1fr;gap:6px 12px;padding:11px 0}
+  .flow-row b{font-size:22px;text-align:left}
+  .flow-row .m{grid-column:2;margin-top:-2px}
+}
+
 /* ---------- draft board ---------- */
 /* One rule covers both cases, with no breakpoint and no min-width:max-content
    (which is what used to force the grid wider than its card and push the tenth
@@ -4640,17 +4659,26 @@ function render(db, state = {}) {
       </div>
     </div>
 
-    <div class="tiles">
-      <div class="tile mint"><div class="k">Collected</div><div class="v">${money(all.collected)}</div>
-        <div class="m">every season</div></div>
-      <div class="tile accent"><div class="k">Paid out</div><div class="v">${money(all.disbursed)}</div>
-        <div class="m">to managers</div></div>
-      <div class="tile gold"><div class="k">${db.season} at stake</div>
-        <div class="v">${money(db.payoutLines(db.season).reduce((a, l) => a + (l.category === 'empire'
-          ? (db.empireOutlook(db.season).live ? db.empireOutlook(db.season).pot : 0) : l.scheduled), 0))}</div>
-        <div class="m">prizes this season</div></div>
-      <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(all.earmarked)}</div>
-        <div class="m">${db.empireClaim() ? 'claimed' : 'accruing, unclaimed'}</div></div>
+    ${/* The dial says what is there now; this says how it got there. The empire
+         pot and the season's prizes used to sit here too, but the first is a
+         segment of the dial with its figure in the legend and the second is the
+         payouts card's own header -- both said twice within one screen. */''}
+    <div class="card flow">
+      <div class="flow-row">
+        <span class="k">Collected</span>
+        <b class="pos">${money(all.collected)}</b>
+        <span class="m">every buy-in, every season</span>
+      </div>
+      <div class="flow-row">
+        <span class="k">Paid out</span>
+        <b class="neg">&minus;${money(all.disbursed)}</b>
+        <span class="m">prizes handed to managers</span>
+      </div>
+      <div class="flow-row sum">
+        <span class="k">In the bank</span>
+        <b>${money(all.cash)}</b>
+        <span class="m">${sheetRows.length} season${sheetRows.length === 1 ? '' : 's'} of it</span>
+      </div>
     </div>
   </div>
 

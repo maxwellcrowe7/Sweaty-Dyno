@@ -170,17 +170,26 @@ export function render(db, state = {}) {
       </div>
     </div>
 
-    <div class="tiles">
-      <div class="tile mint"><div class="k">Collected</div><div class="v">${money(all.collected)}</div>
-        <div class="m">every season</div></div>
-      <div class="tile accent"><div class="k">Paid out</div><div class="v">${money(all.disbursed)}</div>
-        <div class="m">to managers</div></div>
-      <div class="tile gold"><div class="k">${db.season} at stake</div>
-        <div class="v">${money(db.payoutLines(db.season).reduce((a, l) => a + (l.category === 'empire'
-          ? (db.empireOutlook(db.season).live ? db.empireOutlook(db.season).pot : 0) : l.scheduled), 0))}</div>
-        <div class="m">prizes this season</div></div>
-      <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(all.earmarked)}</div>
-        <div class="m">${db.empireClaim() ? 'claimed' : 'accruing, unclaimed'}</div></div>
+    ${/* The dial says what is there now; this says how it got there. The empire
+         pot and the season's prizes used to sit here too, but the first is a
+         segment of the dial with its figure in the legend and the second is the
+         payouts card's own header -- both said twice within one screen. */''}
+    <div class="card flow">
+      <div class="flow-row">
+        <span class="k">Collected</span>
+        <b class="pos">${money(all.collected)}</b>
+        <span class="m">every buy-in, every season</span>
+      </div>
+      <div class="flow-row">
+        <span class="k">Paid out</span>
+        <b class="neg">&minus;${money(all.disbursed)}</b>
+        <span class="m">prizes handed to managers</span>
+      </div>
+      <div class="flow-row sum">
+        <span class="k">In the bank</span>
+        <b>${money(all.cash)}</b>
+        <span class="m">${sheetRows.length} season${sheetRows.length === 1 ? '' : 's'} of it</span>
+      </div>
     </div>
   </div>
 

@@ -47,6 +47,13 @@ eq('and the dial reads the cash on hand', h.includes(`>${money(all.cash)}</div>`
 eq('its legend names the claims',
    ['free', 'in prizes', 'empire pot'].every((k) => h.includes(k)), true);
 eq('buy-ins owed is not up there', /Owed now/.test(h), false);
+// the header says nothing the dial or a section below already says
+eq('the empire pot is not repeated beside its own segment',
+   (h.match(/Empire pot/gi) || []).length, 1);
+eq('nor is the season at stake', /at stake<\/div>/.test(h), false);
+// what is left explains the dial: in, out, what is there
+eq('the flow states the equation',
+   ['Collected', 'Paid out', 'In the bank'].every((k) => h.includes(k)), true);
 
 /* ---- the scoreboard ranks by net and explains its own bar ---- */
 // the order IS the ranking, so there is no number to print -- check the rows
