@@ -526,7 +526,10 @@ table.dt th.sticky{width:1%}
   width:340px;height:340px;border-radius:50%;
   background:radial-gradient(circle,rgba(255,107,44,.16),transparent 62%);pointer-events:none;
 }
-.gauge{position:relative;width:230px;max-width:82vw;margin:0 auto;display:block}
+/* overflow:visible, because an SVG clips to its viewport by default and the
+   glow under the arc is a filter that paints past it -- no height guess can
+   settle that, only letting it out */
+.gauge{position:relative;width:230px;max-width:82vw;margin:0 auto;display:block;overflow:visible}
 /* 44% of the taller box puts the figure where 52% of the short one did --
    just above the arc's centre */
 .gauge-val{
