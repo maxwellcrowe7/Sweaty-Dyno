@@ -1523,7 +1523,11 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
    taken off it is a pixel the bar gets */
 .row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 156px;
   align-items:center;gap:8px;padding:9px 20px 9px 16px}
-.led-fig{display:flex;align-items:baseline;justify-content:flex-end;gap:10px;white-space:nowrap}
+/* Two fixed lanes rather than a phrase that hugs right: the nets right-align
+   on one edge and the totals left-align on another, so the gap between them is
+   the same on every row however wide the figures are. */
+.led-fig{display:grid;grid-template-columns:60px 1fr;align-items:baseline;
+  column-gap:10px;white-space:nowrap}
 .led-who{min-width:0;font-size:14px}
 .led-who .tname{min-width:0}
 /* one track, so the bars are comparable rather than each filling its own row.
@@ -1546,9 +1550,9 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .led-bar button em b{font-family:var(--f-display);font-size:13px;letter-spacing:.02em;
   color:var(--ink);margin-left:5px}
 .led-bar button.on em{display:block}
-.led-won{font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--ink-3)}
+.led-won{font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--ink-3);text-align:left}
 .led-won.none{opacity:.55}
-.led-net{font-family:var(--f-display);font-size:19px;font-weight:700}
+.led-net{font-family:var(--f-display);font-size:19px;font-weight:700;text-align:right}
 .led-net.pos{color:var(--mint)} .led-net.neg{color:var(--red)} .led-net.dim{color:var(--ink-3)}
 @media (max-width:620px){
   /* Two rows, not three: the figures stay on the manager's line and only the
