@@ -258,7 +258,9 @@ export function render(db, state = {}) {
       ${led.slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t, i) => `
         <div class="row led">
           <span class="led-no">${i + 1}</span>
-          <span class="led-who">${esc(t.manager)}</span>
+          ${/* the number, not just the name: this ledger belongs to the
+               franchise and survives a change of manager */''}
+          <span class="led-who">${teamTag(t)}</span>
           <span class="led-bar">${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) =>
             `<i class="lg-${c}" style="width:${(v / best * 100).toFixed(1)}%"
                title="${esc(CATS[c].label)} ${money(v)}"></i>`).join('')}</span>

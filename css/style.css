@@ -1499,7 +1499,8 @@ i.lg-empire{background:var(--violet)}
 .row.led{display:grid;grid-template-columns:22px 92px minmax(0,1fr) 56px 72px;
   align-items:center;gap:12px;padding:9px 16px}
 .led-no{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-3);text-align:center}
-.led-who{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.led-who{min-width:0;font-size:14px}
+.led-who .tname{min-width:0}
 /* one track, so the bars are comparable rather than each filling its own row */
 .led-bar{display:flex;gap:2px;height:16px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
 .led-bar i{display:block;height:100%}
@@ -1508,10 +1509,21 @@ i.lg-empire{background:var(--violet)}
 .led-net{font-family:var(--f-display);font-size:19px;font-weight:700;text-align:right}
 .led-net.pos{color:var(--mint)} .led-net.neg{color:var(--red)} .led-net.dim{color:var(--ink-3)}
 @media (max-width:620px){
-  /* the bar takes a line of its own; the figures stay on the name's line */
-  .row.led{grid-template-columns:20px minmax(0,1fr) 52px 64px;gap:8px;padding:9px 12px}
-  .led-bar{grid-column:1 / -1;height:12px;margin-top:2px}
-  .led-net{font-size:17px}
+  /* Two rows, not three: the figures stay on the manager's line and only the
+     bar drops beneath. Placing them explicitly is what stops the full-width bar
+     pushing everything after it onto a row of its own. */
+  .row.led{grid-template-columns:18px minmax(0,1fr) auto auto;gap:4px 8px;padding:9px 12px}
+  .led-no,.led-who,.led-won,.led-net{grid-row:1}
+  .led-bar{grid-row:2;grid-column:1 / -1;height:11px;margin-top:1px}
+  .led-who{font-size:13px}
+  .led-won{font-size:13px}
+  .led-net{font-size:16px}
+  /* the legend has nowhere to go beside a title on a phone, so it takes the
+     line under it rather than squeezing the title into two */
+  .card-hd{flex-wrap:wrap}
+  .card-hd h3{white-space:nowrap}
+  .card-hd .lg-key{margin:5px 10px 0 0;font-size:9px}
+  .card-hd .lg-key:first-of-type{margin-left:0}
 }
 
 /* ---------- accordions ---------- */

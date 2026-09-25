@@ -58,6 +58,9 @@ eq('the colours are named', ['lg-minigame', 'lg-placement', 'lg-empire']
   eq('the biggest haul fills its track',
      h.includes(`width:${(top.cat[Object.keys(top.cat)[0]] / best * 100).toFixed(1)}%`), true);
   eq('and a buy-in paid ahead is not in the score', /paid ahead/.test(h), false);
+  // the ledger belongs to the franchise, so it wears the team number
+  eq('every row carries its team number',
+     (h.match(/class="led-who"><span class="tname"/g) || []).length, db.teams().length);
 }
 
 /* ---- a season's buy-in hides behind its own year ---- */
