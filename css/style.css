@@ -1503,8 +1503,9 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 /* the net's column is sized to the figure itself: right-aligned text cannot be
    moved by a margin, so its width IS the space beside it -- and every pixel
    taken off it is a pixel the bar gets */
-.row.led{display:grid;grid-template-columns:100px 48px minmax(0,1fr) 58px;
-  align-items:center;gap:12px;padding:9px 24px 9px 16px}
+.row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 148px;
+  align-items:center;gap:12px;padding:9px 20px 9px 16px}
+.led-fig{display:flex;align-items:baseline;justify-content:flex-end;gap:6px;white-space:nowrap}
 .led-who{min-width:0;font-size:14px}
 .led-who .tname{min-width:0}
 /* one track, so the bars are comparable rather than each filling its own row.
@@ -1527,23 +1528,20 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .led-bar button em b{font-family:var(--f-display);font-size:13px;letter-spacing:.02em;
   color:var(--ink);margin-left:5px}
 .led-bar button.on em{display:block}
-.led-won{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-3);text-align:right}
-.led-won.none{color:var(--ink-3);opacity:.5}
-.led-net{font-family:var(--f-display);font-size:19px;font-weight:700;text-align:right}
+.led-won{font-family:var(--f-display);font-size:13px;font-weight:700;color:var(--ink-3)}
+.led-won.none{opacity:.55}
+.led-net{font-family:var(--f-display);font-size:19px;font-weight:700}
 .led-net.pos{color:var(--mint)} .led-net.neg{color:var(--red)} .led-net.dim{color:var(--ink-3)}
 @media (max-width:620px){
   /* Two rows, not three: the figures stay on the manager's line and only the
      bar drops beneath. Placing them explicitly is what stops the full-width bar
      pushing everything after it onto a row of its own. */
-  .row.led{grid-template-columns:minmax(0,1fr) auto auto;gap:4px 8px;padding:9px 14px}
+  .row.led{grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;padding:9px 14px}
   .led-who{grid-row:1;grid-column:1}
-  .led-won{grid-row:1;grid-column:2}
-  .led-net{grid-row:1;grid-column:3}
+  .led-fig{grid-row:1;grid-column:2}
   .led-bar{grid-row:2;grid-column:1 / -1;height:11px;margin-top:1px}
   .led-who{font-size:13px}
-  /* on a phone the two share a line, so they keep their own space */
-  .led-won{font-size:13px;margin-left:0;text-align:right}
-  .led-net{margin-left:0}
+  .led-won{font-size:12px}
   .led-net{font-size:16px}
   /* the legend has nowhere to go beside a title on a phone, so it takes the
      line under it rather than squeezing the title into two */

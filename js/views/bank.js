@@ -262,14 +262,17 @@ export function render(db, state = {}) {
           ${/* the number, not just the name: this ledger belongs to the
                franchise and survives a change of manager */''}
           <span class="led-who">${teamTag(t)}</span>
-          ${/* the haul leads the bar and the net closes the row: position says
-               which figure is which, where two of them side by side did not */''}
-          <span class="led-won${t.won ? '' : ' none'}">${money(t.won)}</span>
           <span class="led-bar">${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) =>
             `<button class="lg-${c}" data-seg style="width:${(v / best * 100).toFixed(1)}%"
                aria-label="${esc(CATS[c].label)} ${money(v)}"><em>${esc(CATS[c].label)}
                <b>${money(v)}</b></em></button>`).join('')}</span>
-          <span class="led-net ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</span>
+          ${/* one figure with the other in parentheses: the net leads because it
+               is what the ledger is for, and the haul explains it without
+               needing a column of its own to be told apart */''}
+          <span class="led-fig">
+            <b class="led-net ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</b>
+            <span class="led-won${t.won ? '' : ' none'}">(${money(t.won)} total)</span>
+          </span>
         </div>`).join('')}
     </div></div>
   </div>
