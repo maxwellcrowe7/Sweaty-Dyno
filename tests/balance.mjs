@@ -75,6 +75,15 @@ eq('nobody has been paid it', row(2025).miniPaid, 170);
 eq('surplus drops accordingly', row(2025).surplus, 5);
 await db.update('minigames',(m)=>{m.seasons['2025'].games=m.seasons['2025'].games.filter(g=>g.id!=='t-new');});
 eq('restored', row(2025).surplus, 30);
+print('\n— buy-ins and carry are different money —');
+{
+  const act = db.balanceSheet().filter((r) => r.active);
+  const fees = act.reduce((a, r) => a + r.fees, 0);
+  eq('the buy-in column foots to what was collected', fees, db.bank().collected);
+  // adding the carry in would count the same dollars once per season
+  eq('and the available column would not', act.reduce((a, r) => a + r.available, 0) > fees, true);
+}
+
 print(fail?`\n${fail} FAILURE(S)`:'\nBalance sheet passed.');
 
 print('\n— the all-time row agrees with the rows above it —');

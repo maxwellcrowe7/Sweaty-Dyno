@@ -206,14 +206,17 @@ export function render(db, state = {}) {
     ${/* the column names carry it: money in, the three things it goes to, what
          is left. A paragraph behind each was explaining arithmetic the row
          already performs. */''}
-    <thead><tr><th class="sticky">Season</th><th class="n">Available</th><th class="n">Empire</th>
+    <thead><tr><th class="sticky">Season</th><th class="n">Buy-ins</th><th class="n">Carried</th>
+      <th class="n">Empire</th>
       <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus</th></tr></thead>
     <tbody>${sheet.map((r) => !r.active
       ? `<tr><td class="sticky dim">${r.season}</td>
-          ${[0, 1, 2, 3, 4].map(() => '<td class="n dimmer">&mdash;</td>').join('')}</tr>`
+          ${[0, 1, 2, 3, 4, 5].map(() => '<td class="n dimmer">&mdash;</td>').join('')}</tr>`
       : `<tr><td class="sticky" style="font-weight:700">${r.season}</td>
-        <td class="n" style="font-weight:700"
-            title="${r.carryIn ? `${money(r.fees)} in buy-ins + ${money(r.carryIn)} carried from ${r.season - 1}` : `${money(r.fees)} in buy-ins`}">${money(r.available)}</td>
+        ${/* money in and money forward are different things: added together,
+             the column footed to more than the league has ever taken in */''}
+        <td class="n" style="font-weight:700">${r.fees ? money(r.fees) : '<span class="dimmer">&mdash;</span>'}</td>
+        <td class="n">${r.carryIn ? money(r.carryIn) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
@@ -227,6 +230,8 @@ export function render(db, state = {}) {
         const left = all.collected - t.empire - t.mini - t.place;
         return `<tr class="total"><td class="sticky">All time</td>
           <td class="n">${money(all.collected)}</td>
+          ${/* a carry is the same money counted again, so it has no total */''}
+          <td class="n dimmer">&mdash;</td>
           <td class="n">${money(t.empire)}</td>
           <td class="n">${money(t.mini)}</td>
           <td class="n">${money(t.place)}</td>
