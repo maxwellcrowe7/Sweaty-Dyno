@@ -225,13 +225,13 @@ export function render(db, state = {}) {
         // sum the columns above rather than a separately-derived figure, or the
         // total silently disagrees with the rows it is totalling
         const t = sheet.filter((r) => r.active).reduce((a, r) => ({
+          carry: a.carry + r.carryIn,
           empire: a.empire + r.empire, mini: a.mini + r.mini, place: a.place + r.place,
-        }), { empire: 0, mini: 0, place: 0 });
+        }), { carry: 0, empire: 0, mini: 0, place: 0 });
         const left = all.collected - t.empire - t.mini - t.place;
         return `<tr class="total"><td class="sticky">All time</td>
           <td class="n">${money(all.collected)}</td>
-          ${/* a carry is the same money counted again, so it has no total */''}
-          <td class="n dimmer">&mdash;</td>
+          <td class="n">${t.carry ? money(t.carry) : '<span class="dimmer">&mdash;</span>'}</td>
           <td class="n">${money(t.empire)}</td>
           <td class="n">${money(t.mini)}</td>
           <td class="n">${money(t.place)}</td>
