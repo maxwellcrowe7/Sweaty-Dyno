@@ -1520,7 +1520,7 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
    net is pushed clear of both, being the figure the ledger is actually for. */
 .row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 56px 76px;
   align-items:center;gap:12px;padding:9px 24px 9px 16px}
-.led-won{margin-left:-6px}
+.led-won{margin-left:4px}
 .led-net{margin-left:26px}
 .led-who{min-width:0;font-size:14px}
 .led-who .tname{min-width:0}
@@ -1528,7 +1528,11 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
    The segments round themselves rather than being clipped by the track, so a
    tapped one can show its figure above the bar. */
 .led-bar{position:relative;display:flex;gap:2px;height:16px;border-radius:99px;background:var(--surface-3)}
-.led-bar button{display:block;height:100%;border-radius:99px;cursor:pointer;padding:0;position:relative}
+/* one bar with a divider, not a row of pills: only the outer ends round */
+.led-bar button{display:block;height:100%;border-radius:0;cursor:pointer;padding:0;position:relative}
+.led-bar button:first-child{border-radius:99px 0 0 99px}
+.led-bar button:last-child{border-radius:0 99px 99px 0}
+.led-bar button:only-child{border-radius:99px}
 .led-bar button:hover{filter:brightness(1.15)}
 .led-bar button em{
   display:none;position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);
