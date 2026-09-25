@@ -191,10 +191,13 @@ const arc = (cx, cy, r, a0, a1) => {
   return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 };
 
+/* Every segment carries its own glow. Lighting only one implied a hierarchy
+   that is not there -- free cash is not more important than the empire pot,
+   just a different claim on the same money. */
 const GAUGE_INK = {
   free:   ['#3DDC97', '#2AB27B', 'rgba(61,220,151,.45)'],
-  owed:   ['#F5C451', '#D9A62F', null],
-  empire: ['#9C8CFA', '#C9BDFF', null],
+  owed:   ['#F5C451', '#D9A62F', 'rgba(245,196,81,.40)'],
+  empire: ['#9C8CFA', '#C9BDFF', 'rgba(156,140,250,.45)'],
 };
 
 /**
