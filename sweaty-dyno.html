@@ -3018,7 +3018,13 @@ class Store {
       // for whether or not it has been handed over, so surplus means genuinely
       // uncommitted money — which is the whole point of carrying it forward.
       const mini = this.minigameSpend(season).committed;
-      const place = b.byCatCommitted.placement || 0;
+      /* What the season sets aside, not what has been won: the scale commits
+         that money the day the season opens, the same way the empire set-aside
+         and the minigame slate do. A season that has not started commits
+         nothing -- otherwise every year to 2030 shows up as active. */
+      const place = season <= this.league.currentSeason
+        ? Object.values(this.placementScale(season)).reduce((a, v) => a + (Number(v) || 0), 0)
+        : 0;
       const active = b.collected > 0 || mini > 0 || place > 0 || empire > 0;
       if (!active) return { season, active: false, fees: 0, carryIn: 0, available: 0,
                             empire: 0, mini: 0, place: 0, surplus: 0, owedOut: b.owedOut };
@@ -4596,8 +4602,7 @@ function render(db, state = {}) {
         <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
-        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${money(r.surplus)}${
-          r.owedOut ? `<span class="owed-flag" title="${money(r.owedOut)} awarded but not yet paid">*</span>` : ''}</td></tr>`).join('')}
+        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${money(r.surplus)}</td></tr>`).join('')}
       ${(() => {
         // sum the columns above rather than a separately-derived figure, or the
         // total silently disagrees with the rows it is totalling
@@ -4613,11 +4618,8 @@ function render(db, state = {}) {
           <td class="n ${left >= 0 ? 'pos' : 'neg'}">${money(left)}</td></tr>`;
       })()}
     </tbody></table></div></div>
-    ${all.owedOut ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px;line-height:1.6"><span class="owed-flag">*</span>
-        ${money(all.owedOut)} has been won but not handed over yet. This table already counts it as spent;
-        the bank total above still has it, because the cash has not left.</div>
-    </div>` : ''}
+    ${/* Who has actually been handed what is the payouts section's job. This
+         table sets money aside and checks that it balances. */''}
   </div>
 
   ${/* The scoreboard, not a statement: buy-ins and prizes each have a section

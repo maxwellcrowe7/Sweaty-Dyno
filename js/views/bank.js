@@ -217,8 +217,7 @@ export function render(db, state = {}) {
         <td class="n" style="color:${r.empire ? 'var(--violet)' : ''}">${r.empire ? money(r.empire) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.mini ? 'var(--heat)' : ''}">${r.mini ? money(r.mini) : '<span class="dimmer">&mdash;</span>'}</td>
         <td class="n" style="color:${r.place ? 'var(--gold)' : ''}">${r.place ? money(r.place) : '<span class="dimmer">&mdash;</span>'}</td>
-        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${money(r.surplus)}${
-          r.owedOut ? `<span class="owed-flag" title="${money(r.owedOut)} awarded but not yet paid">*</span>` : ''}</td></tr>`).join('')}
+        <td class="n ${r.surplus > 0 ? 'pos' : r.surplus < 0 ? 'neg' : 'dimmer'}">${money(r.surplus)}</td></tr>`).join('')}
       ${(() => {
         // sum the columns above rather than a separately-derived figure, or the
         // total silently disagrees with the rows it is totalling
@@ -234,11 +233,8 @@ export function render(db, state = {}) {
           <td class="n ${left >= 0 ? 'pos' : 'neg'}">${money(left)}</td></tr>`;
       })()}
     </tbody></table></div></div>
-    ${all.owedOut ? `<div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px;line-height:1.6"><span class="owed-flag">*</span>
-        ${money(all.owedOut)} has been won but not handed over yet. This table already counts it as spent;
-        the bank total above still has it, because the cash has not left.</div>
-    </div>` : ''}
+    ${/* Who has actually been handed what is the payouts section's job. This
+         table sets money aside and checks that it balances. */''}
   </div>
 
   ${/* The scoreboard, not a statement: buy-ins and prizes each have a section

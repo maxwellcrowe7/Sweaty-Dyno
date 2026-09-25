@@ -26,21 +26,26 @@ eq('its own fees', b.fees, 500);
 eq('plus what 2025 left over', b.carryIn, 30);
 eq('available', b.available, 530);
 eq('the guillotine prize is already committed', b.mini, 10);
-eq('surplus is what is NOT spoken for', b.surplus, 530-150-10);
+// the placement scale commits the day the season opens, won or not
+eq('the places it will pay are committed too', b.place, 150);
+eq('surplus is what is NOT spoken for', b.surplus, 530-150-10-150);
 
 print('\n— the chain keeps running —');
 const c=row(2027);
-eq('2027 carried in 2026 surplus', c.carryIn, 370);
+eq('2027 carried in 2026 surplus', c.carryIn, 220);
 eq('2027 fees so far', c.fees, 100);
-eq('available', c.available, 470);
+eq('available', c.available, 320);
 eq('no empire accrual for a season that has not started', c.empire, 0);
-eq('surplus', c.surplus, 470);
+// 2027 has not started, so it commits nothing yet
+eq('no places committed before a season starts', c.place, 0);
+eq('surplus', c.surplus, 320);
 
 print('\n— commitments vs cash: two different questions —');
 eq('free cash = collected - paid out - empire pot', db.bank().free, 1100-320-300);
 const sheet=db.balanceSheet().filter(r=>r.active);
 const unpaid=sheet.reduce((a,r)=>a+(r.mini-r.miniPaid)+(r.place-r.placePaid),0);
-eq('committed but not handed over', unpaid, 10);
+// 2026 has committed its places and nobody has won them yet
+eq('committed but not handed over', unpaid, 10 + 150);
 eq('free cash = uncommitted surplus + what is owed out', db.bank().free, row(2027).surplus + unpaid);
 eq('untouched seasons stay blank', db.balanceSheet().filter(r=>!r.active).map(r=>r.season), [2028,2029,2030]);
 
@@ -78,8 +83,8 @@ print('\n— the all-time row agrees with the rows above it —');
   const t=act.reduce((a,r)=>({e:a.e+r.empire,m:a.m+r.mini,p:a.p+r.place}),{e:0,m:0,p:0});
   eq('empire totals', t.e, 300);
   eq('minigames total the committed columns', t.m, 170+10);
-  eq('placement totals', t.p, 150);
+  eq('placement totals', t.p, 150 + 150);
   const left=db.bank().collected - t.e - t.m - t.p;
   eq('all-time surplus == last active season surplus', left, act.at(-1).surplus);
-  eq('and equals collected minus every commitment', left, 1100-300-180-150);
+  eq('and equals collected minus every commitment', left, 1100-300-180-300);
 }

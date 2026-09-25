@@ -428,7 +428,13 @@ class Store {
       // for whether or not it has been handed over, so surplus means genuinely
       // uncommitted money — which is the whole point of carrying it forward.
       const mini = this.minigameSpend(season).committed;
-      const place = b.byCatCommitted.placement || 0;
+      /* What the season sets aside, not what has been won: the scale commits
+         that money the day the season opens, the same way the empire set-aside
+         and the minigame slate do. A season that has not started commits
+         nothing -- otherwise every year to 2030 shows up as active. */
+      const place = season <= this.league.currentSeason
+        ? Object.values(this.placementScale(season)).reduce((a, v) => a + (Number(v) || 0), 0)
+        : 0;
       const active = b.collected > 0 || mini > 0 || place > 0 || empire > 0;
       if (!active) return { season, active: false, fees: 0, carryIn: 0, available: 0,
                             empire: 0, mini: 0, place: 0, surplus: 0, owedOut: b.owedOut };
