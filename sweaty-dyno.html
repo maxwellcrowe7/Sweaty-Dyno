@@ -2468,6 +2468,66 @@ function openModal({ title, body, confirm = 'Save', danger = false, extra = '',
 /** The season control. Rendered BY the season-scoped views rather than by the
     chrome, so a page never advertises a year it does not use -- and it writes to
     the one shared db.season, so those pages agree with each other. */
+/* ---------- the arc gauge ----------
+   Lives here rather than in one view: the bank page and the dashboard both ask
+   the same question of the same money -- how much is there, and how much of it
+   is already spoken for. */
+const polar = (cx, cy, r, deg) => {
+  const a = ((deg - 90) * Math.PI) / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+};
+const arc = (cx, cy, r, a0, a1) => {
+  if (a1 - a0 >= 359.99) a1 = a0 + 359.99;
+  const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1);
+  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+};
+
+const GAUGE_INK = {
+  free:   ['#3DDC97', '#2AB27B', 'rgba(61,220,151,.45)'],
+  owed:   ['#F5C451', '#D9A62F', null],
+  empire: ['#9C8CFA', '#C9BDFF', null],
+};
+
+/**
+ * An arc gauge of one pot and the claims on it. Segments are `{ key, value }`
+ * and are drawn in the order given, so the first is the one that is really
+ * yours and the claims follow it round.
+ */
+const gauge = (segments, label = '') => {
+  const parts = segments.filter((s) => s.value > 0);
+  const total = parts.reduce((a, s) => a + s.value, 0);
+  const A0 = 145, SPAN = 250;
+  let at = A0;
+  const drawn = parts.map((s) => {
+    const span = total > 0 ? (s.value / total) * SPAN : 0;
+    const from = at;
+    at += span;
+    return { ...s, from, span };
+  }).filter((s) => s.span > 0.4).reverse();   // later segments sit underneath
+
+  return `
+  <svg class="gauge" viewBox="0 0 200 168" role="img" aria-label="${esc(label)}">
+    <defs>
+      ${Object.entries(GAUGE_INK).map(([k, [a, b]]) =>
+        `<linearGradient id="g-${k}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${a}"/><stop offset="100%" stop-color="${b}"/>
+        </linearGradient>`).join('')}
+    </defs>
+    <path d="${arc(100, 100, 78, A0, A0 + SPAN)}" stroke="#303B4A" stroke-width="13" fill="none" stroke-linecap="round"/>
+    ${drawn.map((s) => {
+      const glow = GAUGE_INK[s.key]?.[2];
+      return `<path d="${arc(100, 100, 78, s.from, s.from + s.span)}"
+        stroke="url(#g-${s.key})" stroke-width="13" fill="none" stroke-linecap="round"${
+        glow ? ` filter="drop-shadow(0 0 6px ${glow})"` : ''}/>`;
+    }).join('')}
+    ${Array.from({ length: 11 }, (_, i) => {
+      const a = A0 + (SPAN / 10) * i;
+      const [x0, y0] = polar(100, 100, 62, a), [x1, y1] = polar(100, 100, i % 5 ? 57 : 53, a);
+      return `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"
+                stroke="${i % 5 ? '#374355' : '#54637A'}" stroke-width="${i % 5 ? 1 : 1.6}" stroke-linecap="round"/>`;
+    }).join('')}
+  </svg>`;
+};
 const seasonPicker = (db, label = 'Season') => `<div class="season-pick">
   <span>${esc(label)}</span>
   <select data-season aria-label="Season">
@@ -2634,7 +2694,7 @@ const teamOptions = (teams, sel = '', blank = '— none —') =>
   `<option value="">${esc(blank)}</option>` + teams.map((t) =>
     `<option value="${t.number}" ${String(sel) === String(t.number) ? 'selected' : ''}>T${t.number} · ${esc(t.manager)}</option>`).join('');
 
-return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, seasonPicker, fmt, unfmt, wireRichBar, wireFormatBar, formatBar, teamOptions };
+return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, gauge, seasonPicker, fmt, unfmt, wireRichBar, wireFormatBar, formatBar, teamOptions };
 })();
 
 /* ===== js/db.js ===== */
@@ -4225,46 +4285,7 @@ return { shouldConsider, run, pullTransactions };
 
 /* ===== js/views/dashboard.js ===== */
 __M["js/views/dashboard.js"] = (function () {
-const { money, esc, icon, teamTag, empty, fmtDate, pts } = __M["js/util.js"];
-
-const polar = (cx, cy, r, deg) => {
-  const a = ((deg - 90) * Math.PI) / 180;
-  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-};
-const arc = (cx, cy, r, a0, a1) => {
-  if (a1 - a0 >= 359.99) a1 = a0 + 359.99;
-  const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1);
-  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
-};
-
-/** Two-segment arc gauge: how much of the bank is free vs. locked in the empire pot. */
-function gauge(free, locked) {
-  const total = free + locked;
-  const A0 = 145, SPAN = 250;
-  const seg = (v) => (total > 0 ? (v / total) * SPAN : 0);
-  const fA = seg(free), lA = seg(locked);
-  return `
-  <svg class="gauge" viewBox="0 0 200 168" role="img"
-       aria-label="Bank cash ${money(total)}: ${money(free)} free, ${money(locked)} empire pot">
-    <defs>
-      <linearGradient id="gf" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#3DDC97"/><stop offset="100%" stop-color="#2AB27B"/>
-      </linearGradient>
-      <linearGradient id="gl" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#9C8CFA"/><stop offset="100%" stop-color="#C9BDFF"/>
-      </linearGradient>
-    </defs>
-    <path d="${arc(100, 100, 78, A0, A0 + SPAN)}" stroke="#303B4A" stroke-width="13" fill="none" stroke-linecap="round"/>
-    ${lA > 0.4 ? `<path d="${arc(100, 100, 78, A0 + fA, A0 + fA + lA)}" stroke="url(#gl)" stroke-width="13" fill="none" stroke-linecap="round"/>` : ''}
-    ${fA > 0.4 ? `<path d="${arc(100, 100, 78, A0, A0 + fA)}" stroke="url(#gf)" stroke-width="13" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(61,220,151,.45))"/>` : ''}
-    ${Array.from({ length: 11 }, (_, i) => {
-      const a = A0 + (SPAN / 10) * i;
-      const [x0, y0] = polar(100, 100, 62, a), [x1, y1] = polar(100, 100, i % 5 ? 57 : 53, a);
-      return `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"
-                stroke="${i % 5 ? '#374355' : '#54637A'}" stroke-width="${i % 5 ? 1 : 1.6}" stroke-linecap="round"/>`;
-    }).join('')}
-  </svg>`;
-}
+const { money, esc, icon, teamTag, empty, fmtDate, pts, gauge } = __M["js/util.js"];
 function render(db) {
   // Home is pinned to the current season rather than the shared browsing one:
   // it has no picker, so following it would show a stale year with no way back.
@@ -4290,7 +4311,8 @@ function render(db) {
   <div class="hero">
   <div class="card gauge-card">
     <div style="position:relative">
-      ${gauge(all.free, all.earmarked)}
+      ${gauge([{ key: 'free', value: all.free }, { key: 'empire', value: all.earmarked }],
+        `Bank cash ${money(all.cash)}: ${money(all.free)} free, ${money(all.earmarked)} empire pot`)}
       <div class="gauge-val">
         <div class="big">${money(all.cash)}</div>
         <div class="lbl">In the bank</div>
@@ -4435,7 +4457,7 @@ return { render, mount };
 
 /* ===== js/views/bank.js ===== */
 __M["js/views/bank.js"] = (function () {
-const { money, esc, icon, teamTag, empty, toast } = __M["js/util.js"];
+const { money, esc, icon, teamTag, empty, toast, gauge } = __M["js/util.js"];
 
 const CATS = {
   empire:    { label: 'Empire Pot', chip: 'violet' },
@@ -4572,20 +4594,43 @@ function render(db, state = {}) {
   const best = Math.max(1, ...led.map((t) => t.won));
 
   return `
-  ${/* What a treasurer actually needs, and each fact once: what is held, what
-       two things have a claim on it, and what is therefore left. Buy-ins owed
-       used to sit here, but that number only means anything before a season
-       starts and the grid below says it better. */''}
-  <div class="tiles">
-    <div class="tile accent"><div class="k">In the bank</div><div class="v">${money(all.cash)}</div>
-      <div class="m">${money(all.collected)} in &minus; ${money(all.disbursed)} out</div></div>
-    <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(all.earmarked)}</div>
-      <div class="m">${db.empireClaim() ? 'claimed' : 'accruing, unclaimed'}</div></div>
-    <div class="tile ${all.owedOut ? 'gold' : ''}"><div class="k">Owed out</div><div class="v">${money(all.owedOut)}</div>
-      <div class="m">won, not handed over</div></div>
-    <div class="tile ${all.spendable < 0 ? 'red' : 'mint'}"><div class="k">Free cash</div>
-      <div class="v">${money(all.spendable)}</div>
-      <div class="m">after the pot and the prizes</div></div>
+  ${/* The bank is one pot with claims on it, so it is one graphic: the dial is
+       the cash, and the colours are what is already spoken for. Beside it sit
+       the two things a dial of today's money cannot say -- what has come in and
+       what has gone out over every season. */''}
+  <div class="hero">
+    <div class="card gauge-card">
+      <div style="position:relative">
+        ${gauge([
+          { key: 'free', value: all.spendable },
+          { key: 'owed', value: all.owedOut },
+          { key: 'empire', value: all.earmarked },
+        ], `In the bank ${money(all.cash)}: ${money(all.spendable)} free, ${
+          money(all.owedOut)} owed out, ${money(all.earmarked)} empire pot`)}
+        <div class="gauge-val">
+          <div class="big">${money(all.cash)}</div>
+          <div class="lbl">In the bank</div>
+        </div>
+      </div>
+      <div class="gauge-legend">
+        <div><i style="background:#3DDC97"></i> ${money(all.spendable)} free</div>
+        ${all.owedOut ? `<div><i style="background:#F5C451"></i> ${money(all.owedOut)} owed out</div>` : ''}
+        <div><i style="background:#9C8CFA"></i> ${money(all.earmarked)} empire pot</div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile mint"><div class="k">Collected</div><div class="v">${money(all.collected)}</div>
+        <div class="m">every season</div></div>
+      <div class="tile accent"><div class="k">Paid out</div><div class="v">${money(all.disbursed)}</div>
+        <div class="m">to managers</div></div>
+      <div class="tile gold"><div class="k">${db.season} at stake</div>
+        <div class="v">${money(db.payoutLines(db.season).reduce((a, l) => a + (l.category === 'empire'
+          ? (db.empireOutlook(db.season).live ? db.empireOutlook(db.season).pot : 0) : l.scheduled), 0))}</div>
+        <div class="m">prizes this season</div></div>
+      <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(all.earmarked)}</div>
+        <div class="m">${db.empireClaim() ? 'claimed' : 'accruing, unclaimed'}</div></div>
+    </div>
   </div>
 
   <div class="section-title">Buy-ins</div>

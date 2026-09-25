@@ -177,6 +177,67 @@ export function openModal({ title, body, confirm = 'Save', danger = false, extra
 /** The season control. Rendered BY the season-scoped views rather than by the
     chrome, so a page never advertises a year it does not use -- and it writes to
     the one shared db.season, so those pages agree with each other. */
+/* ---------- the arc gauge ----------
+   Lives here rather than in one view: the bank page and the dashboard both ask
+   the same question of the same money -- how much is there, and how much of it
+   is already spoken for. */
+const polar = (cx, cy, r, deg) => {
+  const a = ((deg - 90) * Math.PI) / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+};
+const arc = (cx, cy, r, a0, a1) => {
+  if (a1 - a0 >= 359.99) a1 = a0 + 359.99;
+  const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1);
+  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+};
+
+const GAUGE_INK = {
+  free:   ['#3DDC97', '#2AB27B', 'rgba(61,220,151,.45)'],
+  owed:   ['#F5C451', '#D9A62F', null],
+  empire: ['#9C8CFA', '#C9BDFF', null],
+};
+
+/**
+ * An arc gauge of one pot and the claims on it. Segments are `{ key, value }`
+ * and are drawn in the order given, so the first is the one that is really
+ * yours and the claims follow it round.
+ */
+export const gauge = (segments, label = '') => {
+  const parts = segments.filter((s) => s.value > 0);
+  const total = parts.reduce((a, s) => a + s.value, 0);
+  const A0 = 145, SPAN = 250;
+  let at = A0;
+  const drawn = parts.map((s) => {
+    const span = total > 0 ? (s.value / total) * SPAN : 0;
+    const from = at;
+    at += span;
+    return { ...s, from, span };
+  }).filter((s) => s.span > 0.4).reverse();   // later segments sit underneath
+
+  return `
+  <svg class="gauge" viewBox="0 0 200 168" role="img" aria-label="${esc(label)}">
+    <defs>
+      ${Object.entries(GAUGE_INK).map(([k, [a, b]]) =>
+        `<linearGradient id="g-${k}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${a}"/><stop offset="100%" stop-color="${b}"/>
+        </linearGradient>`).join('')}
+    </defs>
+    <path d="${arc(100, 100, 78, A0, A0 + SPAN)}" stroke="#303B4A" stroke-width="13" fill="none" stroke-linecap="round"/>
+    ${drawn.map((s) => {
+      const glow = GAUGE_INK[s.key]?.[2];
+      return `<path d="${arc(100, 100, 78, s.from, s.from + s.span)}"
+        stroke="url(#g-${s.key})" stroke-width="13" fill="none" stroke-linecap="round"${
+        glow ? ` filter="drop-shadow(0 0 6px ${glow})"` : ''}/>`;
+    }).join('')}
+    ${Array.from({ length: 11 }, (_, i) => {
+      const a = A0 + (SPAN / 10) * i;
+      const [x0, y0] = polar(100, 100, 62, a), [x1, y1] = polar(100, 100, i % 5 ? 57 : 53, a);
+      return `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"
+                stroke="${i % 5 ? '#374355' : '#54637A'}" stroke-width="${i % 5 ? 1 : 1.6}" stroke-linecap="round"/>`;
+    }).join('')}
+  </svg>`;
+};
+
 export const seasonPicker = (db, label = 'Season') => `<div class="season-pick">
   <span>${esc(label)}</span>
   <select data-season aria-label="Season">

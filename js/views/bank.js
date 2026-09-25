@@ -1,4 +1,4 @@
-import { money, esc, icon, teamTag, empty, toast } from '../util.js';
+import { money, esc, icon, teamTag, empty, toast, gauge } from '../util.js';
 
 const CATS = {
   empire:    { label: 'Empire Pot', chip: 'violet' },
@@ -136,20 +136,43 @@ export function render(db, state = {}) {
   const best = Math.max(1, ...led.map((t) => t.won));
 
   return `
-  ${/* What a treasurer actually needs, and each fact once: what is held, what
-       two things have a claim on it, and what is therefore left. Buy-ins owed
-       used to sit here, but that number only means anything before a season
-       starts and the grid below says it better. */''}
-  <div class="tiles">
-    <div class="tile accent"><div class="k">In the bank</div><div class="v">${money(all.cash)}</div>
-      <div class="m">${money(all.collected)} in &minus; ${money(all.disbursed)} out</div></div>
-    <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(all.earmarked)}</div>
-      <div class="m">${db.empireClaim() ? 'claimed' : 'accruing, unclaimed'}</div></div>
-    <div class="tile ${all.owedOut ? 'gold' : ''}"><div class="k">Owed out</div><div class="v">${money(all.owedOut)}</div>
-      <div class="m">won, not handed over</div></div>
-    <div class="tile ${all.spendable < 0 ? 'red' : 'mint'}"><div class="k">Free cash</div>
-      <div class="v">${money(all.spendable)}</div>
-      <div class="m">after the pot and the prizes</div></div>
+  ${/* The bank is one pot with claims on it, so it is one graphic: the dial is
+       the cash, and the colours are what is already spoken for. Beside it sit
+       the two things a dial of today's money cannot say -- what has come in and
+       what has gone out over every season. */''}
+  <div class="hero">
+    <div class="card gauge-card">
+      <div style="position:relative">
+        ${gauge([
+          { key: 'free', value: all.spendable },
+          { key: 'owed', value: all.owedOut },
+          { key: 'empire', value: all.earmarked },
+        ], `In the bank ${money(all.cash)}: ${money(all.spendable)} free, ${
+          money(all.owedOut)} owed out, ${money(all.earmarked)} empire pot`)}
+        <div class="gauge-val">
+          <div class="big">${money(all.cash)}</div>
+          <div class="lbl">In the bank</div>
+        </div>
+      </div>
+      <div class="gauge-legend">
+        <div><i style="background:#3DDC97"></i> ${money(all.spendable)} free</div>
+        ${all.owedOut ? `<div><i style="background:#F5C451"></i> ${money(all.owedOut)} owed out</div>` : ''}
+        <div><i style="background:#9C8CFA"></i> ${money(all.earmarked)} empire pot</div>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile mint"><div class="k">Collected</div><div class="v">${money(all.collected)}</div>
+        <div class="m">every season</div></div>
+      <div class="tile accent"><div class="k">Paid out</div><div class="v">${money(all.disbursed)}</div>
+        <div class="m">to managers</div></div>
+      <div class="tile gold"><div class="k">${db.season} at stake</div>
+        <div class="v">${money(db.payoutLines(db.season).reduce((a, l) => a + (l.category === 'empire'
+          ? (db.empireOutlook(db.season).live ? db.empireOutlook(db.season).pot : 0) : l.scheduled), 0))}</div>
+        <div class="m">prizes this season</div></div>
+      <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(all.earmarked)}</div>
+        <div class="m">${db.empireClaim() ? 'claimed' : 'accruing, unclaimed'}</div></div>
+    </div>
   </div>
 
   <div class="section-title">Buy-ins</div>

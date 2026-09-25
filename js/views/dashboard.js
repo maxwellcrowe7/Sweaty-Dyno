@@ -1,43 +1,4 @@
-import { money, esc, icon, teamTag, empty, fmtDate, pts } from '../util.js';
-
-const polar = (cx, cy, r, deg) => {
-  const a = ((deg - 90) * Math.PI) / 180;
-  return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-};
-const arc = (cx, cy, r, a0, a1) => {
-  if (a1 - a0 >= 359.99) a1 = a0 + 359.99;
-  const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1);
-  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
-};
-
-/** Two-segment arc gauge: how much of the bank is free vs. locked in the empire pot. */
-function gauge(free, locked) {
-  const total = free + locked;
-  const A0 = 145, SPAN = 250;
-  const seg = (v) => (total > 0 ? (v / total) * SPAN : 0);
-  const fA = seg(free), lA = seg(locked);
-  return `
-  <svg class="gauge" viewBox="0 0 200 168" role="img"
-       aria-label="Bank cash ${money(total)}: ${money(free)} free, ${money(locked)} empire pot">
-    <defs>
-      <linearGradient id="gf" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#3DDC97"/><stop offset="100%" stop-color="#2AB27B"/>
-      </linearGradient>
-      <linearGradient id="gl" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#9C8CFA"/><stop offset="100%" stop-color="#C9BDFF"/>
-      </linearGradient>
-    </defs>
-    <path d="${arc(100, 100, 78, A0, A0 + SPAN)}" stroke="#303B4A" stroke-width="13" fill="none" stroke-linecap="round"/>
-    ${lA > 0.4 ? `<path d="${arc(100, 100, 78, A0 + fA, A0 + fA + lA)}" stroke="url(#gl)" stroke-width="13" fill="none" stroke-linecap="round"/>` : ''}
-    ${fA > 0.4 ? `<path d="${arc(100, 100, 78, A0, A0 + fA)}" stroke="url(#gf)" stroke-width="13" fill="none" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(61,220,151,.45))"/>` : ''}
-    ${Array.from({ length: 11 }, (_, i) => {
-      const a = A0 + (SPAN / 10) * i;
-      const [x0, y0] = polar(100, 100, 62, a), [x1, y1] = polar(100, 100, i % 5 ? 57 : 53, a);
-      return `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}"
-                stroke="${i % 5 ? '#374355' : '#54637A'}" stroke-width="${i % 5 ? 1 : 1.6}" stroke-linecap="round"/>`;
-    }).join('')}
-  </svg>`;
-}
+import { money, esc, icon, teamTag, empty, fmtDate, pts, gauge } from '../util.js';
 
 export function render(db) {
   // Home is pinned to the current season rather than the shared browsing one:
@@ -64,7 +25,8 @@ export function render(db) {
   <div class="hero">
   <div class="card gauge-card">
     <div style="position:relative">
-      ${gauge(all.free, all.earmarked)}
+      ${gauge([{ key: 'free', value: all.free }, { key: 'empire', value: all.earmarked }],
+        `Bank cash ${money(all.cash)}: ${money(all.free)} free, ${money(all.earmarked)} empire pot`)}
       <div class="gauge-val">
         <div class="big">${money(all.cash)}</div>
         <div class="lbl">In the bank</div>

@@ -17,6 +17,7 @@ globalThis.fetch = async (u) => {
   return { ok: true, json: async () => store[x.split('/').pop().split('.json')[0]] };
 };
 
+const { money } = await import('../js/util.js');
 const { db } = await import('../js/db.js');
 await db.init();
 const V = await import('../js/views/bank.js');
@@ -37,9 +38,12 @@ eq('free cash is what is left after the pot and the prizes',
    all.spendable, all.cash - all.earmarked - all.owedOut);
 
 const h = V.render(db, {});
-eq('the header carries what is held, claimed and left',
-   ['In the bank', 'Empire pot', 'Owed out', 'Free cash'].every((k) => h.includes(k)), true);
-eq('buy-ins owed is not one of them', /Owed now/.test(h), false);
+// one dial of the cash, coloured by what already has a claim on it
+eq('the bank is drawn as a gauge', /class="gauge"/.test(h), true);
+eq('and the dial reads the cash on hand', h.includes(`>${money(all.cash)}</div>`), true);
+eq('its legend names the claims',
+   ['free', 'empire pot'].every((k) => h.includes(k)), true);
+eq('buy-ins owed is not up there', /Owed now/.test(h), false);
 
 /* ---- the scoreboard ranks by net and explains its own bar ---- */
 // the order IS the ranking, so there is no number to print -- check the rows
