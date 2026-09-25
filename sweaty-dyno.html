@@ -1511,21 +1511,35 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .lg-key{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-left:11px}
 .lg-key i{width:8px;height:8px;border-radius:2px}
-i.lg-minigame{background:var(--heat)}
-i.lg-placement{background:var(--gold)}
-i.lg-empire{background:var(--violet)}
+/* class only, not i.lg-*: the bar's segments are buttons now, and an element
+   selector quietly dropped every one of them back to the empty track */
+.lg-minigame{background:var(--heat)}
+.lg-placement{background:var(--gold)}
+.lg-empire{background:var(--violet)}
 /* The haul sits right off the end of its bar -- they are one reading -- and the
    net is pushed clear of both, being the figure the ledger is actually for. */
-.row.led{display:grid;grid-template-columns:22px 92px minmax(0,1fr) 56px 72px;
-  align-items:center;gap:12px;padding:9px 16px}
+.row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 56px 76px;
+  align-items:center;gap:12px;padding:9px 24px 9px 16px}
 .led-won{margin-left:-6px}
-.led-net{margin-left:14px}
-.led-no{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-3);text-align:center}
+.led-net{margin-left:26px}
 .led-who{min-width:0;font-size:14px}
 .led-who .tname{min-width:0}
-/* one track, so the bars are comparable rather than each filling its own row */
-.led-bar{display:flex;gap:2px;height:16px;border-radius:99px;overflow:hidden;background:var(--surface-3)}
-.led-bar i{display:block;height:100%}
+/* one track, so the bars are comparable rather than each filling its own row.
+   The segments round themselves rather than being clipped by the track, so a
+   tapped one can show its figure above the bar. */
+.led-bar{position:relative;display:flex;gap:2px;height:16px;border-radius:99px;background:var(--surface-3)}
+.led-bar button{display:block;height:100%;border-radius:99px;cursor:pointer;padding:0;position:relative}
+.led-bar button:hover{filter:brightness(1.15)}
+.led-bar button em{
+  display:none;position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);
+  z-index:8;padding:4px 9px;border-radius:var(--r-sm);white-space:nowrap;
+  background:var(--surface-2);border:1px solid var(--line);box-shadow:0 8px 20px rgba(0,0,0,.5);
+  font-style:normal;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);
+}
+.led-bar button em b{font-family:var(--f-display);font-size:13px;letter-spacing:.02em;
+  color:var(--ink);margin-left:5px}
+.led-bar button.on em{display:block}
 .led-won{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--ink-3);text-align:left}
 .led-won.none{color:var(--ink-3);opacity:.5}
 .led-net{font-family:var(--f-display);font-size:19px;font-weight:700;text-align:right}
@@ -1534,8 +1548,8 @@ i.lg-empire{background:var(--violet)}
   /* Two rows, not three: the figures stay on the manager's line and only the
      bar drops beneath. Placing them explicitly is what stops the full-width bar
      pushing everything after it onto a row of its own. */
-  .row.led{grid-template-columns:18px minmax(0,1fr) auto auto;gap:4px 8px;padding:9px 12px}
-  .led-no,.led-who,.led-won,.led-net{grid-row:1}
+  .row.led{grid-template-columns:minmax(0,1fr) auto auto;gap:4px 8px;padding:9px 14px}
+  .led-who,.led-won,.led-net{grid-row:1}
   .led-bar{grid-row:2;grid-column:1 / -1;height:11px;margin-top:1px}
   .led-who{font-size:13px}
   /* on a phone the two share a line, so they keep their own space */
@@ -4668,15 +4682,17 @@ function render(db, state = {}) {
         `<span class="lg-key"><i class="lg-${k}"></i>${c.label}</span>`).join('')}
     </div>
     <div class="card-bd flush"><div class="rows">
-      ${led.slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t, i) => `
+      ${led.slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t) => `
         <div class="row led">
-          <span class="led-no">${i + 1}</span>
+          ${/* no rank column: the rows are sorted by net every time they are
+               drawn, so the order is the ranking */''}
           ${/* the number, not just the name: this ledger belongs to the
                franchise and survives a change of manager */''}
           <span class="led-who">${teamTag(t)}</span>
           <span class="led-bar">${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) =>
-            `<i class="lg-${c}" style="width:${(v / best * 100).toFixed(1)}%"
-               title="${esc(CATS[c].label)} ${money(v)}"></i>`).join('')}</span>
+            `<button class="lg-${c}" data-seg style="width:${(v / best * 100).toFixed(1)}%"
+               aria-label="${esc(CATS[c].label)} ${money(v)}"><em>${esc(CATS[c].label)}
+               <b>${money(v)}</b></em></button>`).join('')}</span>
           <span class="led-won${t.won ? '' : ' none'}">${money(t.won)}</span>
           <span class="led-net ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</span>
         </div>`).join('')}
@@ -4755,6 +4771,19 @@ function mount(root, db, go, setState, params = {}) {
   /* On a phone the prizes a manager won are folded away -- there is no room to
      spell them out beside his name. On a desktop they are always out, so a tap
      there means nothing. */
+  /* A bar segment says what it is worth when you tap it -- the colours have a
+     legend, but the amounts were only ever in a hover title. */
+  const shutSegs = (except) => root.querySelectorAll('.led-bar button.on')
+    .forEach((b) => { if (b !== except) b.classList.remove('on'); });
+  root.querySelectorAll('[data-seg]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const on = !b.classList.contains('on');
+    shutSegs();
+    b.classList.toggle('on', on);
+  }));
+  root._segShut = () => shutSegs();
+  document.addEventListener('click', root._segShut);
+
   root.querySelectorAll('[data-won]').forEach((li) => li.addEventListener('click', (e) => {
     if (e.target.closest('button')) return;
     if (window.matchMedia('(min-width:621px)').matches) return;
@@ -8230,6 +8259,7 @@ function paint() {
   if (main._menuShut) { document.removeEventListener('click', main._menuShut); main._menuShut = null; }
   if (main._menuKey) { document.removeEventListener('keydown', main._menuKey); main._menuKey = null; }
   if (main._rateShut) { document.removeEventListener('click', main._rateShut); main._rateShut = null; }
+  if (main._segShut) { document.removeEventListener('click', main._segShut); main._segShut = null; }
   closeInfo();
   try {
     main.innerHTML = v.mod.render(db, state);

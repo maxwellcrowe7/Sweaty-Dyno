@@ -255,15 +255,17 @@ export function render(db, state = {}) {
         `<span class="lg-key"><i class="lg-${k}"></i>${c.label}</span>`).join('')}
     </div>
     <div class="card-bd flush"><div class="rows">
-      ${led.slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t, i) => `
+      ${led.slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t) => `
         <div class="row led">
-          <span class="led-no">${i + 1}</span>
+          ${/* no rank column: the rows are sorted by net every time they are
+               drawn, so the order is the ranking */''}
           ${/* the number, not just the name: this ledger belongs to the
                franchise and survives a change of manager */''}
           <span class="led-who">${teamTag(t)}</span>
           <span class="led-bar">${Object.entries(t.cat).filter(([, v]) => v > 0).map(([c, v]) =>
-            `<i class="lg-${c}" style="width:${(v / best * 100).toFixed(1)}%"
-               title="${esc(CATS[c].label)} ${money(v)}"></i>`).join('')}</span>
+            `<button class="lg-${c}" data-seg style="width:${(v / best * 100).toFixed(1)}%"
+               aria-label="${esc(CATS[c].label)} ${money(v)}"><em>${esc(CATS[c].label)}
+               <b>${money(v)}</b></em></button>`).join('')}</span>
           <span class="led-won${t.won ? '' : ' none'}">${money(t.won)}</span>
           <span class="led-net ${t.net > 0 ? 'pos' : t.net < 0 ? 'neg' : 'dim'}">${money(t.net, { sign: true })}</span>
         </div>`).join('')}
@@ -343,6 +345,19 @@ export function mount(root, db, go, setState, params = {}) {
   /* On a phone the prizes a manager won are folded away -- there is no room to
      spell them out beside his name. On a desktop they are always out, so a tap
      there means nothing. */
+  /* A bar segment says what it is worth when you tap it -- the colours have a
+     legend, but the amounts were only ever in a hover title. */
+  const shutSegs = (except) => root.querySelectorAll('.led-bar button.on')
+    .forEach((b) => { if (b !== except) b.classList.remove('on'); });
+  root.querySelectorAll('[data-seg]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const on = !b.classList.contains('on');
+    shutSegs();
+    b.classList.toggle('on', on);
+  }));
+  root._segShut = () => shutSegs();
+  document.addEventListener('click', root._segShut);
+
   root.querySelectorAll('[data-won]').forEach((li) => li.addEventListener('click', (e) => {
     if (e.target.closest('button')) return;
     if (window.matchMedia('(min-width:621px)').matches) return;

@@ -243,6 +243,7 @@ function paint() {
   if (main._menuShut) { document.removeEventListener('click', main._menuShut); main._menuShut = null; }
   if (main._menuKey) { document.removeEventListener('keydown', main._menuKey); main._menuKey = null; }
   if (main._rateShut) { document.removeEventListener('click', main._rateShut); main._rateShut = null; }
+  if (main._segShut) { document.removeEventListener('click', main._segShut); main._segShut = null; }
   closeInfo();
   try {
     main.innerHTML = v.mod.render(db, state);

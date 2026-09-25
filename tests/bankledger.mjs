@@ -42,12 +42,13 @@ eq('the header carries what is held, claimed and left',
 eq('buy-ins owed is not one of them', /Owed now/.test(h), false);
 
 /* ---- the scoreboard ranks by net and explains its own bar ---- */
-// read the ranks the view printed rather than re-deriving the order
-const ranks = [...h.matchAll(/class="led-no">(\d+)</g)].map((m) => Number(m[1]));
-eq('every manager is ranked', ranks.length, db.teams().length);
-eq('and numbered in order', ranks.join(), db.teams().map((_, i) => i + 1).join());
-const nets = db.ledger().slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t) => t.net);
-eq('best net first', nets[0], Math.max(...db.ledger().map((t) => t.net)));
+// the order IS the ranking, so there is no number to print -- check the rows
+// actually come out sorted
+const drawn = [...h.matchAll(/class="led-net [^"]*">([^<]+)</g)]
+  .map((m) => Number(String(m[1]).replace(/[^0-9.]/g, '')) * (m[1].includes('-') ? -1 : 1));
+eq('a row per manager', drawn.length, db.teams().length);
+eq('drawn best net first', drawn.join(),
+   db.ledger().slice().sort((a, b) => b.net - a.net || b.won - a.won).map((t) => t.net).join());
 eq('the colours are named', ['lg-minigame', 'lg-placement', 'lg-empire']
    .every((k) => h.includes(`lg-key`) && h.includes(k)), true);
 // one bar per manager, drawn against the biggest haul rather than its own total
@@ -61,6 +62,11 @@ eq('the colours are named', ['lg-minigame', 'lg-placement', 'lg-empire']
   // the ledger belongs to the franchise, so it wears the team number
   eq('every row carries its team number',
      (h.match(/class="led-who"><span class="tname"/g) || []).length, db.teams().length);
+  // each coloured length can be tapped for what it is worth
+  const segs = h.match(/data-seg/g) || [];
+  eq('every segment is tappable',
+     segs.length, db.ledger().reduce((a, t) => a + Object.values(t.cat).filter((v) => v > 0).length, 0));
+  eq('and names its own figure', /<em>Minigames\s+<b>/.test(h), true);
 }
 
 /* ---- a season's buy-in hides behind its own year ---- */
