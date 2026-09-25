@@ -1503,9 +1503,9 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 /* the net's column is sized to the figure itself: right-aligned text cannot be
    moved by a margin, so its width IS the space beside it -- and every pixel
    taken off it is a pixel the bar gets */
-.row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 148px;
-  align-items:center;gap:12px;padding:9px 20px 9px 16px}
-.led-fig{display:flex;align-items:baseline;justify-content:flex-end;gap:6px;white-space:nowrap}
+.row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 156px;
+  align-items:center;gap:8px;padding:9px 20px 9px 16px}
+.led-fig{display:flex;align-items:baseline;justify-content:flex-end;gap:10px;white-space:nowrap}
 .led-who{min-width:0;font-size:14px}
 .led-who .tname{min-width:0}
 /* one track, so the bars are comparable rather than each filling its own row.
