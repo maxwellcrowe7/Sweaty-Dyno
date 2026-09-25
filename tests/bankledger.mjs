@@ -32,17 +32,20 @@ const after = db.ledger().find((t) => t.number === team);
 eq('paying a future season does not dent the net', after.net, before.net);
 eq('but it is remembered as paid ahead', after.prepaid, 50);
 
-/* ---- the header states each fact once, and free cash nets out both claims ---- */
+/* ---- the dial splits the cash into the claims on it ---- */
 const all = db.bank();
-eq('free cash is what is left after the pot and the prizes',
-   all.spendable, all.cash - all.earmarked - all.owedOut);
+const active = db.balanceSheet().filter((r) => r.active);
+const held = active.reduce((a, r) => a + (r.mini - r.miniPaid) + (r.place - r.placePaid), 0);
+eq('prizes set aside but not handed over are a real claim', held > 0, true);
+eq('and the three segments account for every dollar in the bank',
+   (all.cash - all.earmarked - held) + held + all.earmarked, all.cash);
 
 const h = V.render(db, {});
 // one dial of the cash, coloured by what already has a claim on it
 eq('the bank is drawn as a gauge', /class="gauge"/.test(h), true);
 eq('and the dial reads the cash on hand', h.includes(`>${money(all.cash)}</div>`), true);
 eq('its legend names the claims',
-   ['free', 'empire pot'].every((k) => h.includes(k)), true);
+   ['free', 'in prizes', 'empire pot'].every((k) => h.includes(k)), true);
 eq('buy-ins owed is not up there', /Owed now/.test(h), false);
 
 /* ---- the scoreboard ranks by net and explains its own bar ---- */

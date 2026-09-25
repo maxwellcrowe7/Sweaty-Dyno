@@ -4588,6 +4588,15 @@ function render(db, state = {}) {
   const seasonPaid = (s) => bank.payins.filter((p) => p.season === s).reduce((a, p) => a + (Number(p.paid) || 0), 0);
   const seasonDue = (s) => db.buyIn(s) * teams.length;
 
+  /* Prizes a season has set aside and not yet handed over -- committed whether
+     or not anyone has won them yet, which is the honest claim on the cash.
+     "Owed out" only counted prizes already won, so it read zero for most of a
+     season while several hundred dollars were plainly spoken for. */
+  const sheetRows = db.balanceSheet().filter((r) => r.active);
+  const heldForPrizes = sheetRows.reduce((a, r) =>
+    a + (r.mini - r.miniPaid) + (r.place - r.placePaid), 0);
+  const freeCash = all.cash - all.earmarked - heldForPrizes;
+
   /* A total with what was expected of it tucked behind, said as a fraction --
      the two figures beside each other are the whole story, and the section
      heading already says what they are. The totals are the last row, so it
@@ -4611,19 +4620,19 @@ function render(db, state = {}) {
     <div class="card gauge-card">
       <div style="position:relative">
         ${gauge([
-          { key: 'free', value: all.spendable },
-          { key: 'owed', value: all.owedOut },
+          { key: 'free', value: freeCash },
+          { key: 'owed', value: heldForPrizes },
           { key: 'empire', value: all.earmarked },
-        ], `In the bank ${money(all.cash)}: ${money(all.spendable)} free, ${
-          money(all.owedOut)} owed out, ${money(all.earmarked)} empire pot`)}
+        ], `In the bank ${money(all.cash)}: ${money(freeCash)} free, ${
+          money(heldForPrizes)} held for prizes, ${money(all.earmarked)} empire pot`)}
         <div class="gauge-val">
           <div class="big">${money(all.cash)}</div>
           <div class="lbl">In the bank</div>
         </div>
       </div>
       <div class="gauge-legend">
-        <div><i style="background:#3DDC97"></i> ${money(all.spendable)} free</div>
-        ${all.owedOut ? `<div><i style="background:#F5C451"></i> ${money(all.owedOut)} owed out</div>` : ''}
+        <div><i style="background:#3DDC97"></i> ${money(freeCash)} free</div>
+        ${heldForPrizes ? `<div><i style="background:#F5C451"></i> ${money(heldForPrizes)} in prizes</div>` : ''}
         <div><i style="background:#9C8CFA"></i> ${money(all.earmarked)} empire pot</div>
       </div>
     </div>
