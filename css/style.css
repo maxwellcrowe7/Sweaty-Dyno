@@ -1500,10 +1500,12 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .lg-empire{background:var(--violet)}
 /* The haul sits right off the end of its bar -- they are one reading -- and the
    net is pushed clear of both, being the figure the ledger is actually for. */
-.row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 56px 76px;
+/* the net's column is sized to the figure itself: right-aligned text cannot be
+   moved by a margin, so its width IS the space beside it -- and every pixel
+   taken off it is a pixel the bar gets */
+.row.led{display:grid;grid-template-columns:100px minmax(0,1fr) 56px 58px;
   align-items:center;gap:12px;padding:9px 24px 9px 16px}
 .led-won{margin-left:4px}
-.led-net{margin-left:26px}
 .led-who{min-width:0;font-size:14px}
 .led-who .tname{min-width:0}
 /* one track, so the bars are comparable rather than each filling its own row.
