@@ -1,4 +1,4 @@
-import { money, esc, icon, teamTag, empty, toast, info } from '../util.js';
+import { money, esc, icon, teamTag, empty, toast } from '../util.js';
 
 const CATS = {
   empire:    { label: 'Empire Pot', chip: 'violet' },
@@ -203,8 +203,11 @@ export function render(db, state = {}) {
 
   <div class="section-title">Balance sheet</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
-    <thead><tr><th class="sticky">Season</th><th class="n">Available${info(`That season's buy-ins plus anything the season before did not spend. Surplus belongs to the league, so it rolls forward instead of disappearing.`)}</th><th class="n">Empire</th>
-      <th class="n">Minigames${info(`Every prize set aside for the season's minigames, whether or not it has been handed over yet.`)}</th><th class="n">Placement${info('What the season\'s finishing places pay out, whether or not it has been handed over yet.')}</th><th class="n">Surplus${info(`What is left once the empire set-aside and every prize are accounted for — money not yet spoken for. It becomes the next season's carry.`)}</th></tr></thead>
+    ${/* the column names carry it: money in, the three things it goes to, what
+         is left. A paragraph behind each was explaining arithmetic the row
+         already performs. */''}
+    <thead><tr><th class="sticky">Season</th><th class="n">Available</th><th class="n">Empire</th>
+      <th class="n">Minigames</th><th class="n">Placement</th><th class="n">Surplus</th></tr></thead>
     <tbody>${sheet.map((r) => !r.active
       ? `<tr><td class="sticky dim">${r.season}</td>
           ${[0, 1, 2, 3, 4].map(() => '<td class="n dimmer">&mdash;</td>').join('')}</tr>`
