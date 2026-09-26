@@ -542,23 +542,36 @@ table.dt th.sticky{width:1%}
 .gauge-legend div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-2)}
 .gauge-legend i{width:8px;height:8px;border-radius:2px;display:block}
 
-/* The equation behind the dial: what came in, what went out, what is left.
-   Rows rather than tiles, because it is a sum and reads down. */
-.flow{display:flex;flex-direction:column;justify-content:center;padding:6px 20px}
-.flow-row{display:grid;grid-template-columns:96px 108px 1fr;align-items:baseline;
-  gap:14px;padding:13px 0}
-.flow-row + .flow-row{border-top:1px solid var(--line-soft)}
-.flow-row .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
-.flow-row b{font-family:var(--f-display);font-size:26px;font-weight:700;text-align:right;letter-spacing:-.01em}
-.flow-row b.pos{color:var(--mint)} .flow-row b.neg{color:var(--ink-2)}
-.flow-row .m{font-size:11.5px;color:var(--ink-3)}
-.flow-row.sum{border-top:1px solid var(--line)}
-.flow-row.sum b{color:var(--heat)}
+/* One card, one graphic: the dial and its own segments spelled out beside it.
+   The claims give the card a reason to be wide, rather than a narrow card
+   sitting in a wide space. */
+.bank-hero{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 16px 18px;
+  position:relative;overflow:hidden}
+.bank-hero::before{
+  content:"";position:absolute;left:14%;top:-52%;transform:translateX(-50%);
+  width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,107,44,.16),transparent 62%);pointer-events:none;
+}
+.bh-dial{position:relative;display:flex;justify-content:center}
+.bh-claims{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.bh-claims li{
+  display:grid;grid-template-columns:10px 92px 74px 1fr;align-items:baseline;
+  gap:10px;padding:10px 4px;
+}
+.bh-claims li + li{border-top:1px solid var(--line-soft)}
+.bh-claims i{width:9px;height:9px;border-radius:2px;align-self:center}
+.bh-k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.bh-claims b{font-family:var(--f-display);font-size:22px;font-weight:700;text-align:right;letter-spacing:-.01em}
+.bh-m{font-size:11.5px;color:var(--ink-3);line-height:1.45}
+@media (min-width:760px){
+  /* side by side, the claims taking the width the dial does not need */
+  .bank-hero{grid-template-columns:auto minmax(0,1fr);gap:20px;padding:16px 22px 18px}
+  .bh-claims{padding-right:6px}
+}
 @media (max-width:620px){
-  .flow{padding:2px 14px}
-  .flow-row{grid-template-columns:82px 1fr;gap:6px 12px;padding:11px 0}
-  .flow-row b{font-size:22px;text-align:left}
-  .flow-row .m{grid-column:2;margin-top:-2px}
+  .bh-claims li{grid-template-columns:10px 1fr auto;gap:6px 10px;padding:9px 2px}
+  .bh-claims b{text-align:right}
+  .bh-m{grid-column:2 / -1;margin-top:-1px}
 }
 
 /* ---------- draft board ---------- */
@@ -1538,6 +1551,9 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .lg-key i{width:8px;height:8px;border-radius:2px}
 /* class only, not i.lg-*: the bar's segments are buttons now, and an element
    selector quietly dropped every one of them back to the empty track */
+/* the dial's own three, so a swatch beside a claim matches its arc */
+.lg-free{background:#3DDC97}
+.lg-owed{background:#F5C451}
 .lg-minigame{background:var(--heat)}
 .lg-placement{background:var(--gold)}
 .lg-empire{background:var(--violet)}
@@ -4618,6 +4634,13 @@ function render(db, state = {}) {
   const heldForPrizes = sheetRows.reduce((a, r) =>
     a + (r.mini - r.miniPaid) + (r.place - r.placePaid), 0);
   const freeCash = all.cash - all.earmarked - heldForPrizes;
+  /* What the held prize money consists of -- the split the dial deliberately
+     does not draw, because four segments turn it into a pie chart. */
+  const prizeSplit = [
+    ['placement', sheetRows.reduce((a, r) => a + (r.place - r.placePaid), 0)],
+    ['minigames', sheetRows.reduce((a, r) => a + (r.mini - r.miniPaid), 0)],
+  ].filter(([, v]) => v > 0);
+  const empNow = db.empireOutlook(db.season);
 
   /* A total with what was expected of it tucked behind, said as a fraction --
      the two figures beside each other are the whole story, and the section
@@ -4638,8 +4661,11 @@ function render(db, state = {}) {
        the cash, and the colours are what is already spoken for. Beside it sit
        the two things a dial of today's money cannot say -- what has come in and
        what has gone out over every season. */''}
-  <div class="hero">
-    <div class="card gauge-card">
+  ${/* One card, because it is one graphic: the dial on the left and its own
+       three segments on the right, each carrying the fact the dial cannot --
+       what the prize money consists of, and who could take the pot. */''}
+  <div class="card bank-hero">
+    <div class="bh-dial">
       <div style="position:relative">
         ${gauge([
           { key: 'free', value: freeCash },
@@ -4652,34 +4678,28 @@ function render(db, state = {}) {
           <div class="lbl">In the bank</div>
         </div>
       </div>
-      <div class="gauge-legend">
-        <div><i style="background:#3DDC97"></i> ${money(freeCash)} free</div>
-        ${heldForPrizes ? `<div><i style="background:#F5C451"></i> ${money(heldForPrizes)} in prizes</div>` : ''}
-        <div><i style="background:#9C8CFA"></i> ${money(all.earmarked)} empire pot</div>
-      </div>
     </div>
 
-    ${/* The dial says what is there now; this says how it got there. The empire
-         pot and the season's prizes used to sit here too, but the first is a
-         segment of the dial with its figure in the legend and the second is the
-         payouts card's own header -- both said twice within one screen. */''}
-    <div class="card flow">
-      <div class="flow-row">
-        <span class="k">Collected</span>
-        <b class="pos">${money(all.collected)}</b>
-        <span class="m">every buy-in, every season</span>
-      </div>
-      <div class="flow-row">
-        <span class="k">Paid out</span>
-        <b class="neg">&minus;${money(all.disbursed)}</b>
-        <span class="m">prizes handed to managers</span>
-      </div>
-      <div class="flow-row sum">
-        <span class="k">In the bank</span>
-        <b>${money(all.cash)}</b>
-        <span class="m">${sheetRows.length} season${sheetRows.length === 1 ? '' : 's'} of it</span>
-      </div>
-    </div>
+    <ul class="bh-claims">
+      <li><i class="lg-free"></i>
+        <span class="bh-k">Free</span>
+        <b>${money(freeCash)}</b>
+        <span class="bh-m">nothing has a claim on it</span></li>
+      <li><i class="lg-owed"></i>
+        <span class="bh-k">In prizes</span>
+        <b>${money(heldForPrizes)}</b>
+        <span class="bh-m">${prizeSplit.length
+          ? prizeSplit.map(([k, v]) => `${money(v)} ${k}`).join(' &middot; ')
+          : 'nothing set aside yet'}</span></li>
+      <li><i class="lg-empire"></i>
+        <span class="bh-k">Empire pot</span>
+        <b>${money(all.earmarked)}</b>
+        <span class="bh-m">${empNow.claimed
+          ? `claimed by ${esc(db.team(empNow.team)?.manager ?? '')} in ${empNow.season}`
+          : empNow.live
+            ? `${esc(empNow.contenders.map((t) => t.manager).join(', '))} could claim it in ${db.season}`
+            : `nobody can claim it in ${db.season}`}</span></li>
+    </ul>
   </div>
 
   <div class="section-title">Buy-ins</div>

@@ -524,23 +524,36 @@ table.dt th.sticky{width:1%}
 .gauge-legend div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-2)}
 .gauge-legend i{width:8px;height:8px;border-radius:2px;display:block}
 
-/* The equation behind the dial: what came in, what went out, what is left.
-   Rows rather than tiles, because it is a sum and reads down. */
-.flow{display:flex;flex-direction:column;justify-content:center;padding:6px 20px}
-.flow-row{display:grid;grid-template-columns:96px 108px 1fr;align-items:baseline;
-  gap:14px;padding:13px 0}
-.flow-row + .flow-row{border-top:1px solid var(--line-soft)}
-.flow-row .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
-.flow-row b{font-family:var(--f-display);font-size:26px;font-weight:700;text-align:right;letter-spacing:-.01em}
-.flow-row b.pos{color:var(--mint)} .flow-row b.neg{color:var(--ink-2)}
-.flow-row .m{font-size:11.5px;color:var(--ink-3)}
-.flow-row.sum{border-top:1px solid var(--line)}
-.flow-row.sum b{color:var(--heat)}
+/* One card, one graphic: the dial and its own segments spelled out beside it.
+   The claims give the card a reason to be wide, rather than a narrow card
+   sitting in a wide space. */
+.bank-hero{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 16px 18px;
+  position:relative;overflow:hidden}
+.bank-hero::before{
+  content:"";position:absolute;left:14%;top:-52%;transform:translateX(-50%);
+  width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,107,44,.16),transparent 62%);pointer-events:none;
+}
+.bh-dial{position:relative;display:flex;justify-content:center}
+.bh-claims{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.bh-claims li{
+  display:grid;grid-template-columns:10px 92px 74px 1fr;align-items:baseline;
+  gap:10px;padding:10px 4px;
+}
+.bh-claims li + li{border-top:1px solid var(--line-soft)}
+.bh-claims i{width:9px;height:9px;border-radius:2px;align-self:center}
+.bh-k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.bh-claims b{font-family:var(--f-display);font-size:22px;font-weight:700;text-align:right;letter-spacing:-.01em}
+.bh-m{font-size:11.5px;color:var(--ink-3);line-height:1.45}
+@media (min-width:760px){
+  /* side by side, the claims taking the width the dial does not need */
+  .bank-hero{grid-template-columns:auto minmax(0,1fr);gap:20px;padding:16px 22px 18px}
+  .bh-claims{padding-right:6px}
+}
 @media (max-width:620px){
-  .flow{padding:2px 14px}
-  .flow-row{grid-template-columns:82px 1fr;gap:6px 12px;padding:11px 0}
-  .flow-row b{font-size:22px;text-align:left}
-  .flow-row .m{grid-column:2;margin-top:-2px}
+  .bh-claims li{grid-template-columns:10px 1fr auto;gap:6px 10px;padding:9px 2px}
+  .bh-claims b{text-align:right}
+  .bh-m{grid-column:2 / -1;margin-top:-1px}
 }
 
 /* ---------- draft board ---------- */
@@ -1520,6 +1533,9 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .lg-key i{width:8px;height:8px;border-radius:2px}
 /* class only, not i.lg-*: the bar's segments are buttons now, and an element
    selector quietly dropped every one of them back to the empty track */
+/* the dial's own three, so a swatch beside a claim matches its arc */
+.lg-free{background:#3DDC97}
+.lg-owed{background:#F5C451}
 .lg-minigame{background:var(--heat)}
 .lg-placement{background:var(--gold)}
 .lg-empire{background:var(--violet)}

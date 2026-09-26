@@ -129,6 +129,13 @@ export function render(db, state = {}) {
   const heldForPrizes = sheetRows.reduce((a, r) =>
     a + (r.mini - r.miniPaid) + (r.place - r.placePaid), 0);
   const freeCash = all.cash - all.earmarked - heldForPrizes;
+  /* What the held prize money consists of -- the split the dial deliberately
+     does not draw, because four segments turn it into a pie chart. */
+  const prizeSplit = [
+    ['placement', sheetRows.reduce((a, r) => a + (r.place - r.placePaid), 0)],
+    ['minigames', sheetRows.reduce((a, r) => a + (r.mini - r.miniPaid), 0)],
+  ].filter(([, v]) => v > 0);
+  const empNow = db.empireOutlook(db.season);
 
   /* A total with what was expected of it tucked behind, said as a fraction --
      the two figures beside each other are the whole story, and the section
@@ -149,8 +156,11 @@ export function render(db, state = {}) {
        the cash, and the colours are what is already spoken for. Beside it sit
        the two things a dial of today's money cannot say -- what has come in and
        what has gone out over every season. */''}
-  <div class="hero">
-    <div class="card gauge-card">
+  ${/* One card, because it is one graphic: the dial on the left and its own
+       three segments on the right, each carrying the fact the dial cannot --
+       what the prize money consists of, and who could take the pot. */''}
+  <div class="card bank-hero">
+    <div class="bh-dial">
       <div style="position:relative">
         ${gauge([
           { key: 'free', value: freeCash },
@@ -163,34 +173,28 @@ export function render(db, state = {}) {
           <div class="lbl">In the bank</div>
         </div>
       </div>
-      <div class="gauge-legend">
-        <div><i style="background:#3DDC97"></i> ${money(freeCash)} free</div>
-        ${heldForPrizes ? `<div><i style="background:#F5C451"></i> ${money(heldForPrizes)} in prizes</div>` : ''}
-        <div><i style="background:#9C8CFA"></i> ${money(all.earmarked)} empire pot</div>
-      </div>
     </div>
 
-    ${/* The dial says what is there now; this says how it got there. The empire
-         pot and the season's prizes used to sit here too, but the first is a
-         segment of the dial with its figure in the legend and the second is the
-         payouts card's own header -- both said twice within one screen. */''}
-    <div class="card flow">
-      <div class="flow-row">
-        <span class="k">Collected</span>
-        <b class="pos">${money(all.collected)}</b>
-        <span class="m">every buy-in, every season</span>
-      </div>
-      <div class="flow-row">
-        <span class="k">Paid out</span>
-        <b class="neg">&minus;${money(all.disbursed)}</b>
-        <span class="m">prizes handed to managers</span>
-      </div>
-      <div class="flow-row sum">
-        <span class="k">In the bank</span>
-        <b>${money(all.cash)}</b>
-        <span class="m">${sheetRows.length} season${sheetRows.length === 1 ? '' : 's'} of it</span>
-      </div>
-    </div>
+    <ul class="bh-claims">
+      <li><i class="lg-free"></i>
+        <span class="bh-k">Free</span>
+        <b>${money(freeCash)}</b>
+        <span class="bh-m">nothing has a claim on it</span></li>
+      <li><i class="lg-owed"></i>
+        <span class="bh-k">In prizes</span>
+        <b>${money(heldForPrizes)}</b>
+        <span class="bh-m">${prizeSplit.length
+          ? prizeSplit.map(([k, v]) => `${money(v)} ${k}`).join(' &middot; ')
+          : 'nothing set aside yet'}</span></li>
+      <li><i class="lg-empire"></i>
+        <span class="bh-k">Empire pot</span>
+        <b>${money(all.earmarked)}</b>
+        <span class="bh-m">${empNow.claimed
+          ? `claimed by ${esc(db.team(empNow.team)?.manager ?? '')} in ${empNow.season}`
+          : empNow.live
+            ? `${esc(empNow.contenders.map((t) => t.manager).join(', '))} could claim it in ${db.season}`
+            : `nobody can claim it in ${db.season}`}</span></li>
+    </ul>
   </div>
 
   <div class="section-title">Buy-ins</div>

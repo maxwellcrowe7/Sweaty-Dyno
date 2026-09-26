@@ -44,18 +44,18 @@ const h = V.render(db, {});
 // one dial of the cash, coloured by what already has a claim on it
 eq('the bank is drawn as a gauge', /class="gauge"/.test(h), true);
 eq('and the dial reads the cash on hand', h.includes(`>${money(all.cash)}</div>`), true);
-eq('its legend names the claims',
-   ['free', 'in prizes', 'empire pot'].every((k) => h.includes(k)), true);
+eq('its three claims are named',
+   ['Free', 'In prizes', 'Empire pot'].every((k) => h.includes(k)), true);
 eq('buy-ins owed is not up there', /Owed now/.test(h), false);
 // the header says nothing the dial or a section below already says -- scoped to
 // the hero, since Empire pot and "at stake" both belong to the payouts section
-const hero = h.slice(h.indexOf('<div class="hero">'), h.indexOf('<div class="section-title">Buy-ins'));
+const hero = h.slice(h.indexOf('<div class="card bank-hero">'), h.indexOf('<div class="section-title">Buy-ins'));
 // (twice in the hero: once in the legend, once in the gauge's aria-label)
 eq('nothing is tiled beside the dial', /class="tile/.test(hero), false);
 eq('the season at stake is not up there', /at stake/i.test(hero), false);
-// what is left explains the dial: in, out, what is there
-eq('the flow states the equation',
-   ['Collected', 'Paid out', 'In the bank'].every((k) => hero.includes(k)), true);
+// each claim carries the fact the dial cannot draw
+eq('the prize money says what it consists of', /placement/.test(hero), true);
+eq('and the pot says who could take it', /could claim it|nobody can claim/.test(hero), true);
 
 /* ---- the scoreboard ranks by net and explains its own bar ---- */
 // the order IS the ranking, so there is no number to print -- check the rows
