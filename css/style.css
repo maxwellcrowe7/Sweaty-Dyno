@@ -1646,6 +1646,8 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .pay-val.zero{color:var(--ink-3)}
 /* fully paid out: same green the slate uses for a decided prize */
 .pay-val.won{color:var(--mint)}
+/* in progress -- won but not handed over, or not yet won at all */
+.pay-val.part{color:var(--gold)}
 .pay-line .acc-caret{transition:transform .18s}
 .pay-line.open .acc-caret{transform:rotate(90deg)}
 .pay-rows{display:none;list-style:none;margin:0;padding:0 16px 12px 44px}

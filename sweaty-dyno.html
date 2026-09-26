@@ -1664,6 +1664,8 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
 .pay-val.zero{color:var(--ink-3)}
 /* fully paid out: same green the slate uses for a decided prize */
 .pay-val.won{color:var(--mint)}
+/* in progress -- won but not handed over, or not yet won at all */
+.pay-val.part{color:var(--gold)}
 .pay-line .acc-caret{transition:transform .18s}
 .pay-line.open .acc-caret{transform:rotate(90deg)}
 .pay-rows{display:none;list-style:none;margin:0;padding:0 16px 12px 44px}
@@ -4543,16 +4545,25 @@ const label = (db, r, cat) => cat === 'placement'
   : esc(db.team(r.team)?.manager ?? '');
 
 function seasonPayouts(db, season, open, admin) {
-  const lines = db.payoutLines(season);
   /* What the season pays out, not what has been handed over: until the window
      closes nobody is owed anything, so the figure is the slate and the places
      it will pay. "To pay" waits for the season to be over. */
   const over = db.seasonOver(season);
-  const emp = db.empireOutlook(season);
-  const total = lines.reduce((a, l) => a + (l.category === 'empire'
-    ? (emp.claimed || emp.live ? emp.pot : 0) : l.scheduled), 0);
+  /* The empire pot is the one line that can evaporate. It is on the slate while
+     somebody could still finish the season holding it, and off it the moment the
+     window shuts with nobody having done so -- so the season's own total has to
+     be summed from the lines as they stand, not from the slate as it opened. */
+  const lines = db.payoutLines(season).map((l) => {
+    if (l.category !== 'empire') return { ...l, pot: l.scheduled };
+    const emp = db.empireOutlook(season);
+    return { ...l, emp, pot: emp.claimed || (emp.live && !over) ? emp.pot : 0 };
+  });
+  const total = lines.reduce((a, l) => a + l.pot, 0);
   const paid = lines.reduce((a, l) => a + l.paidTotal, 0);
   const owed = over ? total - paid : 0;
+  /* Green means the season is closed out -- every dollar on the slate handed
+     over. Anything short of that is in progress, whatever stage it is at. */
+  const done = total > 0 && paid >= total;
 
   return `
   <div class="card acc${open ? ' open' : ''}" style="margin-bottom:10px">
@@ -4561,22 +4572,21 @@ function seasonPayouts(db, season, open, admin) {
       <h3>${season}</h3>
       <div class="spacer" style="margin-left:auto"></div>
       ${owed > 0 ? `<span class="chip red">${money(owed)} to pay</span>` : ''}
-      <span class="chip${total ? (owed ? '' : ' mint') : ''}">${money(total)}</span>
+      <span class="chip${total ? (done ? ' mint' : ' gold') : ''}">${money(total)}</span>
     </button>
     <div class="acc-bd">
       ${lines.map((l) => {
         const c = CATS[l.category];
-        const emp = l.category === 'empire' ? db.empireOutlook(season) : null;
-        // the empire pot is only on the table once somebody could finish the
-        // season holding it -- in year one nobody could
-        const pot = emp ? (emp.claimed || emp.live ? emp.pot : 0) : l.scheduled;
-        const can = l.rows.length > 0 || (emp && emp.live && !emp.claimed);
+        const emp = l.emp || null;
+        const pot = l.pot;
+        const can = l.rows.length > 0 || (emp && emp.live && !emp.claimed && !over);
 
         let sub;
         if (emp) {
           sub = emp.claimed ? 'Claimed'
-            : emp.live ? `${emp.contenders.length} could claim it`
-            : 'Nobody can claim it this season';
+            : !emp.live ? 'Nobody can claim it this season'
+            : over ? 'Went unclaimed'
+            : `${emp.contenders.length} could claim it`;
         } else if (!l.scheduled) {
           sub = l.category === 'placement' ? 'No payout amounts set for any place' : 'Nothing set aside yet';
         } else if (l.decided === l.rows.length && l.rows.length) {
@@ -4594,7 +4604,7 @@ function seasonPayouts(db, season, open, admin) {
             <div class="grow"><div class="s">${sub}</div></div>
             ${over && can && l.paidCount < l.decided ? '<span class="dot-owed" title="Payment outstanding"></span>' : ''}
             <div class="pay-val${!pot ? ' zero'
-              : over && l.paidTotal === pot ? ' won' : ''}">${money(pot)}</div>
+              : l.paidTotal >= pot ? ' won' : ' part'}">${money(pot)}</div>
           </button>
           ${!can ? '' : `<ul class="pay-rows">
             ${emp ? `<li class="pay-note">${emp.claimed

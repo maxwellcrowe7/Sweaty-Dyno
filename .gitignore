@@ -7,3 +7,4 @@ node_modules/
 
 # Original spreadsheet (source data already lives in data/*.json)
 *.xlsx
+.claude/
