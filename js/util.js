@@ -69,11 +69,11 @@ const I = {
   // among glyphs that fill their box. Drawn symmetrically about x=12 with the
   // two tails tucked INSIDE the bowls' widest point (6.4 / 17.6): ending them
   // on the arcs instead let the top-right and bottom-left overhang everything
-  // else, which read as a slant. The tails lift away from the bar rather than
-  // running flat into it, which is what makes an S an S -- point-symmetric
-  // about (12, 12.4), so the two terminals mirror each other exactly.
-  wallet:'M12 2.6v19.6M17.2 4Q16.7 5 15 5.2H10a3.6 3.6 0 0 0 0 7.2'
-       + 'h4a3.6 3.6 0 0 1 0 7.2H9Q7.3 19.8 6.8 20.8',
+  // else, which read as a slant. The tails hook back INTO the letter -- the top
+  // one turns down, the bottom one turns up -- the way an S closes on its own
+  // counters. Point-symmetric about (12, 12.4), so they mirror exactly.
+  wallet:'M12 2.6v19.6M17 6.4Q16.6 5.4 15 5.2H10a3.6 3.6 0 0 0 0 7.2'
+       + 'h4a3.6 3.6 0 0 1 0 7.2H9Q7.4 19.4 7 18.4',
   trophy:'M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 14v6',
   board:'M4 4h16v16H4zM4 9.5h16M9.5 9.5V20M15 9.5V20',
   // two straight arrows running opposite ways, clear of each other -- the old
