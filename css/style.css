@@ -549,7 +549,7 @@ table.dt th.sticky{width:1%}
   display:grid;grid-template-columns:10px 102px 72px 1fr;align-items:baseline;
   gap:7px;padding:10px 4px;
 }
-.bh-claims .bh-m{margin-left:12px}
+.bh-claims .bh-m{margin-left:20px}
 .bh-claims li + li{border-top:1px solid var(--line-soft)}
 /* on the label's own line, not centred in a row the figure makes taller --
    the swatch belongs to the small caps beside it */
