@@ -76,7 +76,153 @@ function barChart(rows, key, label, unit = '') {
   </div>`;
 }
 
+/* Luck reads as a signed number of wins, so it needs its sign and its colour.
+   Positive means the schedule has been kind, which is not a compliment. */
+const luckCell = (v) => v == null ? '<span class="dimmer">&mdash;</span>'
+  : `<span style="color:${v > 0.3 ? 'var(--gold)' : v < -0.3 ? 'var(--mint)' : 'var(--ink-3)'}">${
+      v > 0 ? '+' : ''}${v.toFixed(1)}</span>`;
+
+const rec = (w, l, t) => `${w}&ndash;${l}${t ? `&ndash;${t}` : ''}`;
+
+/* ---------- the standings, which is what a record table is ---------- */
+function standings(db, st) {
+  const rows = [...st.rows].filter((r) => r.games > 0)
+    .sort((a, b) => (b.wins + b.ties / 2) - (a.wins + a.ties / 2) || b.total - a.total);
+  return `<div class="tw"><table class="dt">
+    <thead><tr><th class="sticky">Team</th>
+      <th class="n">Rec</th><th class="n">PF</th><th class="n">PA</th><th class="n">Diff</th>
+      <th class="n">All&#8209;play</th><th class="n">Luck</th></tr></thead>
+    <tbody>${rows.map((r) => `
+      <tr><td class="sticky">${teamTag(r)}</td>
+        <td class="n" style="font-weight:700">${rec(r.wins, r.losses, r.ties)}</td>
+        <td class="n">${pts(r.total)}</td>
+        <td class="n dim">${pts(r.pa)}</td>
+        <td class="n" style="color:${r.diff >= 0 ? 'var(--mint)' : 'var(--ink-3)'}">${
+          r.diff > 0 ? '+' : ''}${pts(r.diff)}</td>
+        <td class="n dim">${r.allPlayW}&ndash;${r.allPlayL}</td>
+        <td class="n">${luckCell(r.luck)}</td>
+      </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+/* ---------- all time ---------- */
+function allTime(db) {
+  const at = db.allTime();
+  if (!at.hasData) return empty('No seasons logged yet',
+    'Pull a season from Sleeper in Admin and the record book fills itself in.', 'chart');
+
+  const byPct = [...at.rows].sort((a, b) => (b.winPct ?? 0) - (a.winPct ?? 0) || b.pf - a.pf);
+  const byPF = [...at.rows].sort((a, b) => b.pf - a.pf);
+  const best = at.rows.map((r) => r.best).filter(Boolean)
+    .sort((a, b) => b.points - a.points);
+  const bestOf = (w) => at.rows.find((r) => r.best === w);
+  const champs = [...at.rows].filter((r) => r.titles).sort((a, b) => b.titles - a.titles);
+
+  /* Every week anyone has ever played, ranked. The record book is the one thing
+     a dynasty league re-reads, so it is worth showing whole rather than as a
+     single "best week" tile. */
+  const allWeeks = at.rows.flatMap((r) => r.bySeason.flatMap((s) =>
+    Object.entries(s.byWeek).map(([week, points]) =>
+      ({ team: r.number, manager: r.manager, season: s.season, week: Number(week), points }))));
+  const top = [...allWeeks].sort((a, b) => b.points - a.points).slice(0, 5);
+  const bot = [...allWeeks].sort((a, b) => a.points - b.points).slice(0, 5);
+
+  const h2h = db.headToHead();
+  const grid = [...at.rows].sort((a, b) => a.number - b.number);
+
+  return `
+  <div class="tiles">
+    <div class="tile accent"><div class="k">Best record</div>
+      <div class="v" style="font-size:23px">${esc(byPct[0]?.manager ?? '--')}</div>
+      <div class="m">${byPct[0] ? `${rec(byPct[0].wins, byPct[0].losses, byPct[0].ties)} &middot; ${
+        (byPct[0].winPct * 100).toFixed(0)}%` : ''}</div></div>
+    <div class="tile gold"><div class="k">Most points</div>
+      <div class="v" style="font-size:23px">${esc(byPF[0]?.manager ?? '--')}</div>
+      <div class="m">${byPF[0] ? pts(byPF[0].pf) + ' over ' + byPF[0].seasons
+        + ' season' + (byPF[0].seasons === 1 ? '' : 's') : ''}</div></div>
+    <div class="tile mint"><div class="k">Best week ever</div>
+      <div class="v">${best[0] ? pts(best[0].points) : '--'}</div>
+      <div class="m">${best[0] ? `${esc(bestOf(best[0]).manager)} &middot; ${best[0].season} wk ${best[0].week}` : ''}</div></div>
+    <div class="tile"><div class="k">Titles</div>
+      <div class="v" style="font-size:23px">${champs.length ? esc(champs[0].manager) : '&mdash;'}</div>
+      <div class="m">${champs.length ? `${champs[0].titles} &middot; ${champs.length} manager${
+        champs.length === 1 ? '' : 's'} with one` : 'none awarded yet'}</div></div>
+  </div>
+
+  <div class="section-title">Franchises<span class="sub-n dim">${at.seasons.length} season${
+    at.seasons.length === 1 ? '' : 's'}</span></div>
+  <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
+    <thead><tr><th class="sticky">Team</th>
+      <th class="n">Yrs</th><th class="n">Rec</th><th class="n">Win%</th>
+      <th class="n">PF</th><th class="n">PA</th><th class="n">Avg</th>
+      <th class="n">All&#8209;play</th><th class="n">Luck</th><th class="n">Titles</th></tr></thead>
+    <tbody>${byPct.map((r) => `
+      <tr><td class="sticky">${teamTag(r)}</td>
+        <td class="n dim">${r.seasons}</td>
+        <td class="n" style="font-weight:700">${rec(r.wins, r.losses, r.ties)}</td>
+        <td class="n">${r.winPct == null ? '&mdash;' : (r.winPct * 100).toFixed(1) + '%'}</td>
+        <td class="n">${pts(r.pf)}</td>
+        <td class="n dim">${pts(r.pa)}</td>
+        <td class="n dim">${pts(r.avg)}</td>
+        <td class="n dim">${r.allPlayW}&ndash;${r.allPlayL}</td>
+        <td class="n">${luckCell(r.luck)}</td>
+        <td class="n">${r.titles ? `${icon('crown')}`.repeat(1) + (r.titles > 1 ? ` <b>${r.titles}</b>` : '')
+          : '<span class="dimmer">&mdash;</span>'}</td>
+      </tr>`).join('')}
+    </tbody></table></div></div></div>
+
+  <div class="section-title">Head to head</div>
+  <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt h2h">
+    <thead><tr><th class="sticky">&nbsp;</th>
+      ${grid.map((c) => `<th class="n" title="${esc(c.manager)}">T${c.number}</th>`).join('')}</tr></thead>
+    <tbody>${grid.map((r) => `
+      <tr><td class="sticky">${teamTag(r)}</td>
+        ${grid.map((c) => {
+          if (c.number === r.number) return '<td class="n self"></td>';
+          const x = h2h[r.number]?.[c.number];
+          if (!x) return '<td class="n"><span class="dimmer">&mdash;</span></td>';
+          const cls = x.w > x.l ? 'won' : x.w < x.l ? 'lost' : '';
+          return `<td class="n ${cls}" title="${esc(r.manager)} vs ${esc(c.manager)}">${x.w}&ndash;${x.l}</td>`;
+        }).join('')}
+      </tr>`).join('')}
+    </tbody></table></div></div>
+    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px">Regular season only. Read across: the row is your record
+      against that column.</div></div>
+  </div>
+
+  <div class="section-title">Record book</div>
+  <div class="rb-grid">
+    ${[['Biggest weeks', top, 'mint'], ['Smallest weeks', bot, 'dim']].map(([title, list, tone]) => `
+      <div class="card"><div class="card-hd"><h3>${title}</h3></div>
+        <div class="card-bd flush"><div class="rows">
+          ${list.map((w, i) => `<div class="row rb">
+            <span class="rb-n">${i + 1}</span>
+            ${teamTag({ number: w.team, manager: w.manager })}
+            <div class="grow"></div>
+            <span class="rb-when">${w.season} wk ${w.week}</span>
+            <b class="rb-pts ${tone}">${pts(w.points)}</b>
+          </div>`).join('')}
+        </div></div>
+      </div>`).join('')}
+  </div>`;
+}
+
 export function render(db, state = {}) {
+  const tab = state.statTab === 'all' ? 'all' : 'season';
+
+  const bar = `
+  <div class="view-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}</h2>
+    ${tab === 'season' ? seasonPicker(db) : ''}</div>
+  <div class="pill-bar">
+    <div class="pills">
+      <button data-stab="season" aria-pressed="${tab === 'season'}">Season</button>
+      <button data-stab="all" aria-pressed="${tab === 'all'}">All-time</button>
+    </div>
+  </div>`;
+
+  if (tab === 'all') return bar + allTime(db);
+
   const S = db.season;
   const st = db.stats(S);
   // ?team=6 arrives from the Managers tab, otherwise the season's leader
@@ -89,25 +235,37 @@ export function render(db, state = {}) {
   const withData = st.rows.filter((r) => r.games > 0);
 
   if (!st.hasData && !st.hasMaxPF) {
-    return `${empty(`Nothing logged for ${S} yet`,
+    return bar + `${empty(`Nothing logged for ${S} yet`,
       'Connect your Sleeper league in Admin to pull weekly scores automatically, or enter them by hand.', 'chart')}
       <div style="text-align:center;margin-top:-14px"><button class="btn" data-go="admin">${icon('sync')} Set up Sleeper</button></div>`;
   }
 
   const lead = [...withData].sort((a, b) => b.total - a.total)[0];
-  const ceiling = [...st.rows].filter((r) => r.maxPF != null).sort((a, b) => b.maxPF - a.maxPF)[0];
   const eff = [...st.rows].filter((r) => r.efficiency != null).sort((a, b) => b.efficiency - a.efficiency)[0];
   const best = st.weekly.length ? st.weekly.reduce((a, b) => (b.points > a.points ? b : a)) : null;
+  /* The most wronged team in the league. It is the stat this page exists to
+     settle, so it gets a tile rather than a column somebody has to go find. */
+  const unlucky = [...withData].filter((r) => r.luck != null).sort((a, b) => a.luck - b.luck)[0];
 
-  return `
-  <div class="view-hd"><h2>${S} stats</h2>${seasonPicker(db)}</div>
+  /* One card, three questions about the same ten managers, rather than three
+     cards of identical bars. */
+  const LINEUP = [
+    ['maxPF', 'Max PF', 'Every week\'s best possible lineup, added up.', st.hasMaxPF],
+    ['left', 'Left on bench', 'Ceiling minus what was actually started. Lower is better.', st.hasCeiling],
+    ['efficiency', 'Efficiency', 'Points as a share of the ceiling.', st.hasEfficiency],
+  ].filter(([, , , ok]) => ok);
+  const lk = LINEUP.some(([k]) => k === state.lineup) ? state.lineup : LINEUP[0]?.[0];
+  const lkRow = LINEUP.find(([k]) => k === lk);
+
+  return bar + `
   <div class="tiles">
     <div class="tile accent"><div class="k">Points leader</div>
       <div class="v" style="font-size:23px">${esc(lead?.manager ?? '--')}</div>
       <div class="m">${lead ? pts(lead.total) + ' through wk ' + st.weeks.at(-1) : 'no scores yet'}</div></div>
-    <div class="tile gold"><div class="k">Highest ceiling</div>
-      <div class="v" style="font-size:23px">${esc(ceiling?.manager ?? '--')}</div>
-      <div class="m">${ceiling ? pts(ceiling.maxPF) + ' max PF' : 'no max PF yet'}</div></div>
+    <div class="tile gold"><div class="k">Most unlucky</div>
+      <div class="v" style="font-size:23px">${esc(unlucky?.manager ?? '--')}</div>
+      <div class="m">${unlucky ? `${unlucky.luck.toFixed(1)} wins vs ${unlucky.allPlayW}&ndash;${
+        unlucky.allPlayL} all-play` : 'needs matchups'}</div></div>
     <div class="tile mint"><div class="k">Best manager</div>
       <div class="v" style="font-size:23px">${eff ? esc(eff.manager) : '&mdash;'}</div>
       <div class="m">${eff ? (eff.efficiency * 100).toFixed(1) + '% of ceiling'
@@ -116,6 +274,18 @@ export function render(db, state = {}) {
       <div class="v">${best ? pts(best.points) : '--'}</div>
       <div class="m">${best ? esc(db.team(best.team)?.manager) + ' &middot; wk ' + best.week : ''}</div></div>
   </div>
+
+  ${st.hasRecords ? `
+  <div class="section-title">Standings</div>
+  <div class="card"><div class="card-bd flush">${standings(db, st)}</div>
+    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px"><b>All-play</b> is your score against all nine others,
+      every week &mdash; the record a schedule cannot flatter. <b>Luck</b> is how many wins you are
+      above or below what that record says you deserve.</div></div>
+  </div>` : `
+  <div class="card" style="margin-bottom:14px"><div class="card-bd">
+    <div class="s dim" style="font-size:12.5px">${icon('alert')} No matchups pulled for ${S} yet, so there are
+    no records. Run <b>Pull ${S} from Sleeper</b> in Admin.</div></div></div>`}
 
   ${st.hasData ? `
   <div class="section-title">Week by week</div>
@@ -136,31 +306,17 @@ export function render(db, state = {}) {
     </div>
   </div>` : ''}
 
-  ${st.hasMaxPF ? `
-  <div class="section-title">Max points for</div>
+  ${LINEUP.length ? `
+  <div class="section-title">Lineups</div>
   <div class="card">
-    <div class="card-hd"><h3>Season ceiling</h3><div class="spacer"></div>
-      <span class="chip ghost">best possible lineup</span></div>
-    <div class="card-bd flush">${barChart(st.rows, 'maxPF', 'Max PF')}</div>
-    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px">Max PF is what you'd have scored starting the perfect lineup every week.
-      The gap between this and your actual points is the cost of your start/sit calls.</div>
+    <div class="card-bd" style="padding-bottom:0">
+      <div class="pills">${LINEUP.map(([k, label]) =>
+        `<button data-lineup="${k}" aria-pressed="${k === lk}">${label}</button>`).join('')}</div>
     </div>
-  </div>` : ''}
-
-  ${st.hasCeiling ? `
-  <div class="section-title">Left on the bench</div>
-  <div class="card">
-    <div class="card-hd"><h3>Ceiling minus actual</h3><div class="spacer"></div>
-      <span class="chip ghost">lower is better</span></div>
-    <div class="card-bd flush">${barChart(st.rows, 'left', 'Left on bench')}</div>
-  </div>` : ''}
-
-  ${st.hasEfficiency ? `
-  <div class="section-title">Lineup efficiency</div>
-  <div class="card">
-    <div class="card-hd"><h3>Points as a share of ceiling</h3></div>
-    <div class="card-bd flush">${barChart(withData, 'efficiency', 'Efficiency', '%')}</div>
+    <div class="card-bd flush">${barChart(
+      lk === 'efficiency' ? withData : st.rows, lk, lkRow[1], lk === 'efficiency' ? '%' : '')}</div>
+    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
+      <div class="s dim" style="font-size:12px">${lkRow[2]}</div></div>
   </div>` : ''}
 
   ${st.hasData ? `
@@ -168,8 +324,7 @@ export function render(db, state = {}) {
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
     <thead><tr><th class="sticky">Team</th>
       ${st.weeks.map((w) => `<th class="n">W${w}</th>`).join('')}
-      <th class="n">Total</th><th class="n">Avg</th><th class="n">High</th><th class="n">Low</th>
-      ${st.hasMaxPF ? '<th class="n">Max PF</th><th class="n">Bench</th>' : ''}</tr></thead>
+      <th class="n">Total</th><th class="n">Avg</th><th class="n">High</th><th class="n">Low</th></tr></thead>
     <tbody>${[...withData].sort((a, b) => b.total - a.total).map((r) => `
       <tr><td class="sticky">${teamTag(r)}</td>
         ${st.weeks.map((w) => `<td class="n ${r.byWeek[w] === r.high ? 'pos' : r.byWeek[w] === r.low ? 'dim' : ''}">${r.byWeek[w] != null ? pts(r.byWeek[w]) : '<span class="dimmer">&mdash;</span>'}</td>`).join('')}
@@ -177,8 +332,6 @@ export function render(db, state = {}) {
         <td class="n">${pts(r.avg)}</td>
         <td class="n pos">${pts(r.high)}</td>
         <td class="n dim">${pts(r.low)}</td>
-        ${st.hasMaxPF ? `<td class="n">${r.maxPF != null ? pts(r.maxPF) : '<span class="dimmer">&mdash;</span>'}</td>
-        <td class="n dim">${r.left != null ? pts(r.left) : '<span class="dimmer">&mdash;</span>'}</td>` : ''}
       </tr>`).join('')}
     </tbody></table></div></div></div>` : ''}
 
@@ -192,6 +345,10 @@ export function mount(root, db, go, setState) {
     setState({ focusTeam: Number(b.dataset.focus) })));
   root.querySelectorAll('[data-metric]').forEach((b) => b.addEventListener('click', () =>
     setState({ metric: b.dataset.metric })));
+  root.querySelectorAll('[data-stab]').forEach((b) => b.addEventListener('click', () =>
+    setState({ statTab: b.dataset.stab })));
+  root.querySelectorAll('[data-lineup]').forEach((b) => b.addEventListener('click', () =>
+    setState({ lineup: b.dataset.lineup })));
   root.querySelector('[data-go]')?.addEventListener('click', (e) => go(e.currentTarget.dataset.go));
 
   /* crosshair + tooltip */
