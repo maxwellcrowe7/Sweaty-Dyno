@@ -554,10 +554,14 @@ table.dt th.sticky{width:1%}
 }
 .bh-dial{position:relative;display:flex;justify-content:center}
 .bh-claims{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+/* the figure belongs to its label, so it sits close to it and the detail text
+   is pushed clear -- the column gaps do that, not a margin on right-aligned
+   text, which cannot move */
 .bh-claims li{
-  display:grid;grid-template-columns:10px 92px 74px 1fr;align-items:baseline;
-  gap:10px;padding:10px 4px;
+  display:grid;grid-template-columns:10px 86px 72px 1fr;align-items:baseline;
+  gap:7px;padding:10px 4px;
 }
+.bh-claims .bh-m{margin-left:12px}
 .bh-claims li + li{border-top:1px solid var(--line-soft)}
 /* on the label's own line, not centred in a row the figure makes taller --
    the swatch belongs to the small caps beside it */
