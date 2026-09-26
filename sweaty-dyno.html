@@ -3448,6 +3448,14 @@ class Store {
     const st = this.get('stats');
     const weekly = st.weekly.filter((w) => w.season === season);
     const weeks = [...new Set(weekly.map((w) => w.week))].sort((a, b) => a - b);
+    /* Every score in the season, by week. Points against needs the opponent's
+       number, and the all-play record needs everyone else's, so both read from
+       here rather than re-scanning the list per team per week. */
+    const board = new Map();
+    for (const w of weekly) {
+      if (!board.has(w.week)) board.set(w.week, new Map());
+      board.get(w.week).set(w.team, w.points);
+    }
     const rows = this.teams(season).map((t) => {
       const mine = weekly.filter((w) => w.team === t.number);
       const total = mine.reduce((a, w) => a + w.points, 0);
@@ -3458,8 +3466,42 @@ class Store {
       // Max PF is a whole-season figure, so the ratio is only meaningful once the
       // weekly log actually covers the season. Partial data would report nonsense.
       const fullSeason = mine.length >= (st.regularSeasonWeeks || 14);
+
+      /* ---- the head-to-head half, which only exists once matchups are paired ---- */
+      const played = mine.filter((w) => w.result);
+      const wins = played.filter((w) => w.result === 'W').length;
+      const losses = played.filter((w) => w.result === 'L').length;
+      const ties = played.filter((w) => w.result === 'T').length;
+      const pa = mine.reduce((a, w) =>
+        a + (w.opponent != null ? (board.get(w.week)?.get(w.opponent) ?? 0) : 0), 0);
+
+      /* All-play: your score against every other score that week. It is the
+         honest measure of a team, because it cannot be dodged by a soft
+         schedule -- and the gap between it and the real record IS the luck. */
+      let apW = 0, apL = 0, apT = 0;
+      for (const w of mine) {
+        for (const [team, pts] of board.get(w.week) || []) {
+          if (team === t.number) continue;
+          if (w.points > pts) apW++; else if (w.points < pts) apL++; else apT++;
+        }
+      }
+      const apGames = apW + apL + apT;
+      // what the record "should" be: your all-play rate over the games you played
+      const expWins = apGames ? (apW + apT / 2) / apGames * played.length : null;
+
+      const mean = scores.length ? total / scores.length : 0;
+      const stdev = scores.length > 1
+        ? Math.sqrt(scores.reduce((a, v) => a + (v - mean) ** 2, 0) / scores.length) : null;
+
       return {
         ...t, total, maxPF: maxpf, games: mine.length, fullSeason,
+        wins, losses, ties, pa: Math.round(pa * 100) / 100,
+        diff: Math.round((total - pa) * 100) / 100,
+        allPlayW: apW, allPlayL: apL, allPlayT: apT,
+        allPlay: apGames ? (apW + apT / 2) / apGames : null,
+        expWins: expWins == null ? null : Math.round(expWins * 100) / 100,
+        luck: expWins == null ? null : Math.round((wins + ties / 2 - expWins) * 100) / 100,
+        stdev: stdev == null ? null : Math.round(stdev * 100) / 100,
         avg: mine.length ? total / mine.length : null,
         high: scores.length ? Math.max(...scores) : null,
         low: scores.length ? Math.min(...scores) : null,
@@ -3471,10 +3513,82 @@ class Store {
       };
     });
     return { weeks, rows, weekly, hasData: weekly.length > 0,
+             hasRecords: rows.some((r) => r.wins + r.losses + r.ties > 0),
              hasMaxPF: rows.some((r) => r.maxPF != null),
              hasEfficiency: rows.some((r) => r.efficiency != null),
              hasCeiling: rows.some((r) => r.maxTotal != null),
              regularSeasonWeeks: st.regularSeasonWeeks || 14 };
+  }
+
+  /**
+   * The franchise record book: every season with scores, added up per team.
+   *
+   * Aggregated by team NUMBER, not by manager, because that is how this league
+   * already thinks -- titles and empire points ride with the franchise, so a
+   * replacement inherits the history along with the roster. The current holder
+   * is named, and `owners` lists everyone who has held it.
+   */
+  allTime() {
+    const st = this.get('stats');
+    const seasons = [...new Set(st.weekly.map((w) => w.season))].sort((a, b) => a - b);
+    const per = seasons.map((s) => ({ season: s, st: this.stats(s) }));
+    const finishes = this.get('bank').finishes || [];
+    const emp = this.empire();
+
+    const rows = this.teams().map((t) => {
+      const mine = per.map(({ season, st: x }) => ({ season, r: x.rows.find((r) => r.number === t.number) }))
+        .filter((x) => x.r && x.r.games > 0);
+      const sum = (f) => mine.reduce((a, x) => a + (f(x.r) || 0), 0);
+      const games = sum((r) => r.games);
+      const wins = sum((r) => r.wins), losses = sum((r) => r.losses), ties = sum((r) => r.ties);
+      const played = wins + losses + ties;
+      const total = sum((r) => r.total);
+      const mineFin = finishes.filter((f) => f.team === t.number);
+      // a manager's best week ever is the line people actually quote
+      const weeks = st.weekly.filter((w) => w.team === t.number);
+      const bestWk = weeks.length ? weeks.reduce((a, b) => (b.points > a.points ? b : a)) : null;
+      const worstWk = weeks.length ? weeks.reduce((a, b) => (b.points < a.points ? b : a)) : null;
+      return {
+        ...t, seasons: mine.length, games, wins, losses, ties,
+        winPct: played ? (wins + ties / 2) / played : null,
+        pf: Math.round(total * 100) / 100,
+        pa: Math.round(sum((r) => r.pa) * 100) / 100,
+        avg: games ? Math.round((total / games) * 100) / 100 : null,
+        allPlayW: sum((r) => r.allPlayW), allPlayL: sum((r) => r.allPlayL), allPlayT: sum((r) => r.allPlayT),
+        luck: mine.some((x) => x.r.luck != null)
+          ? Math.round(sum((r) => r.luck) * 100) / 100 : null,
+        titles: mineFin.filter((f) => f.place === 1).length,
+        podiums: mineFin.filter((f) => f.place <= 3).length,
+        best: bestWk ? { points: bestWk.points, season: bestWk.season, week: bestWk.week } : null,
+        worst: worstWk ? { points: worstWk.points, season: worstWk.season, week: worstWk.week } : null,
+        empirePoints: emp.board.find((e) => e.number === t.number)?.total || 0,
+        bySeason: mine.map((x) => ({ season: x.season, ...x.r })),
+      };
+    }).filter((r) => r.games > 0);
+
+    for (const r of rows) {
+      const ap = r.allPlayW + r.allPlayL + r.allPlayT;
+      r.allPlay = ap ? (r.allPlayW + r.allPlayT / 2) / ap : null;
+    }
+    return { seasons, rows, hasData: rows.length > 0 };
+  }
+
+  /**
+   * Who has beaten whom, all time. One row per team, one column per opponent,
+   * built from the same paired matchups the records come from.
+   */
+  headToHead() {
+    const weekly = this.get('stats').weekly.filter((w) => w.opponent != null && w.result);
+    const grid = {};
+    for (const w of weekly) {
+      const cell = ((grid[w.team] ||= {})[w.opponent] ||= { w: 0, l: 0, t: 0, pf: 0, pa: 0 });
+      if (w.result === 'W') cell.w++; else if (w.result === 'L') cell.l++; else cell.t++;
+      cell.pf += w.points;
+    }
+    // points against in a pairing is just the other side's points for
+    for (const [a, opps] of Object.entries(grid))
+      for (const [b, cell] of Object.entries(opps)) cell.pa = grid[b]?.[a]?.pf ?? 0;
+    return grid;
   }
 
   /* ---------- rules ---------- */
@@ -4155,6 +4269,65 @@ const writeLast = (v) => {
   try { localStorage.setItem(LAST, JSON.stringify(v)); } catch { /* private mode */ }
 };
 
+/* ------------------------------------------------------------
+   Sleeper files each week's scores as a flat list of rosters, with a
+   `matchup_id` shared by the two teams playing each other. Pairing on it is
+   the only thing standing between "points for" and an actual record, so it
+   happens on the way in and every reader gets opponent and result for free.
+   ------------------------------------------------------------ */
+function withOpponents(rows) {
+  const out = rows.map((r) => ({ ...r, opponent: null, result: null }));
+  const pairs = new Map();
+  for (const r of out) {
+    if (r.matchupId == null) continue;
+    const k = `${r.week}:${r.matchupId}`;
+    if (!pairs.has(k)) pairs.set(k, []);
+    pairs.get(k).push(r);
+  }
+  // anything that is not exactly two teams -- a bye, or a roster we could not
+  // place -- keeps a null opponent rather than being guessed at
+  for (const [a, b] of [...pairs.values()].filter((p) => p.length === 2)) {
+    a.opponent = b.team; b.opponent = a.team;
+    a.result = a.points > b.points ? 'W' : a.points < b.points ? 'L' : 'T';
+    b.result = b.points > a.points ? 'W' : b.points < a.points ? 'L' : 'T';
+  }
+  return out;
+}
+
+/** Replace a season's weekly rows, keeping any ceiling already computed. */
+async function saveWeekly(db, season, rows) {
+  const paired = withOpponents(rows);
+  await db.update('stats', (s) => {
+    const prior = new Map(s.weekly.filter((x) => x.season === season)
+      .map((x) => [`${x.week}:${x.team}`, x.maxPoints]));
+    s.weekly = s.weekly.filter((x) => x.season !== season);
+    for (const r of paired) s.weekly.push({
+      season, week: r.week, team: r.team, points: r.points,
+      maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,   // never wipe computed ceilings
+      opponent: r.opponent, result: r.result,
+    });
+    s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  });
+  return paired;
+}
+
+/** Final places from the playoff brackets. Silent before the playoffs start. */
+async function saveStandings(db, season, id, rosterToTeam) {
+  try {
+    const places = await SL.fetchStandings(id);
+    const finished = Object.entries(places)
+      .map(([place, roster]) => ({ season, place: Number(place), team: rosterToTeam[roster] }))
+      .filter((f) => f.team)
+      .sort((a, b) => a.place - b.place);
+    if (!finished.length) return 0;
+    await db.update('bank', (b) => {
+      b.finishes = [...(b.finishes || []).filter((f) => f.season !== season), ...finished]
+        .sort((x, y) => x.season - y.season || x.place - y.place);
+    });
+    return finished.length;
+  } catch { return 0; }
+}
+
 /** Should we even look? Cheap checks only — no network. */
 function shouldConsider(db) {
   const cfg = db.league.sleeper || {};
@@ -4199,32 +4372,8 @@ async function run(db, onStep = () => {}) {
     }
     if (!rows.length) return null;
 
-    await db.update('stats', (s) => {
-      const prior = new Map(s.weekly.filter((x) => x.season === season)
-        .map((x) => [`${x.week}:${x.team}`, x.maxPoints]));
-      s.weekly = s.weekly.filter((x) => x.season !== season);
-      for (const r of rows) s.weekly.push({
-        season, week: r.week, team: r.team, points: r.points,
-        maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,
-        opponent: null, result: null,
-      });
-      s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
-    });
-
-    let placed = 0;
-    try {
-      const places = await SL.fetchStandings(id);
-      const finished = Object.entries(places)
-        .map(([place, roster]) => ({ season, place: Number(place), team: map.rosterToTeam[roster] }))
-        .filter((f) => f.team);
-      if (finished.length) {
-        await db.update('bank', (b) => {
-          b.finishes = [...(b.finishes || []).filter((f) => f.season !== season), ...finished]
-            .sort((x, y) => x.season - y.season || x.place - y.place);
-        });
-        placed = finished.length;
-      }
-    } catch { /* no bracket until the playoffs */ }
+    await saveWeekly(db, season, rows);
+    const placed = await saveStandings(db, season, id, map.rosterToTeam);
 
     const newWeeks = missing.length || weeks.length;
     return `Synced ${newWeeks} week${newWeeks === 1 ? '' : 's'} from Sleeper`
@@ -4283,12 +4432,12 @@ async function namer(db, pids, onStep = () => {}) {
  * anything hand-entered that Sleeper has never heard of is left alone.
  * Returns a short summary.
  */
-async function pullTransactions(db, season, onStep = () => {}) {
+async function pullTransactions(db, season, onStep = () => {}, prebuilt = null) {
   const id = db.league.sleeper.leagueIds[String(season)];
   if (!id) return 'No Sleeper league ID for that season.';
 
-  onStep('Matching rosters…');
-  const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
+  if (!prebuilt) onStep('Matching rosters…');
+  const map = prebuilt || await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
   if (!Object.keys(map.rosterToTeam).length) return 'No rosters matched — check the aliases in managers.json.';
 
   /* Record who Sleeper thinks owns each franchise, so the Managers tab can flag
@@ -4358,7 +4507,72 @@ async function pullTransactions(db, season, onStep = () => {}) {
   return `${trades.length} trade${trades.length === 1 ? '' : 's'} and ${moves.length} pickup${moves.length === 1 ? '' : 's'} from ${season}`;
 }
 
-return { shouldConsider, run, pullTransactions };
+/* ============================================================
+   THE ONE PULL
+   Everything the app takes from Sleeper comes from the same league, so it
+   comes from the same button. Scores, matchups, final places, transactions
+   and Max PF, in that order, sharing one roster map and one download of the
+   player file rather than four errands that each pay for their own.
+   ============================================================ */
+async function pullSeason(db, season, onStep = () => {}) {
+  const id = db.league.sleeper.leagueIds[String(season)];
+  if (!id) throw new Error(`No Sleeper league ID saved for ${season}`);
+  const done = [];
+
+  onStep('Matching rosters…');
+  const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
+  if (!Object.keys(map.rosterToTeam).length)
+    throw new Error('no rosters matched — check the aliases in managers.json');
+  if (map.unmatched.length)
+    onStep(`Heads up: no manager matched ${map.unmatched.map((u) => u.name).join(', ')}.`);
+
+  const rsw = db.get('stats').regularSeasonWeeks;
+  const weeks = await SL.completedWeeks(season, rsw);
+
+  /* ---- scores and matchups ---- */
+  if (weeks.length) {
+    const rows = [];
+    for (const w of weeks) {
+      onStep(`Week ${w} of ${weeks.at(-1)}…`);
+      rows.push(...(await SL.fetchWeek(id, w, map.rosterToTeam)));
+    }
+    const paired = await saveWeekly(db, season, rows);
+    const games = paired.filter((r) => r.result).length;
+    done.push(`${rows.length} scores over ${weeks.length} week${weeks.length === 1 ? '' : 's'}`);
+    // worth saying out loud: without pairings the record columns stay empty
+    done.push(games ? `${games / 2} matchups` : 'no matchups could be paired');
+  } else {
+    done.push('no completed weeks yet');
+  }
+
+  /* ---- final places ---- */
+  onStep('Reading the playoff brackets…');
+  const placed = await saveStandings(db, season, id, map.rosterToTeam);
+  if (placed) done.push(`${placed} final places`);
+
+  /* ---- transactions ---- */
+  onStep('Reading transactions…');
+  try {
+    done.push(await pullTransactions(db, season, onStep, map));
+  } catch (e) { done.push(`transactions failed (${e.message})`); }
+
+  /* ---- Max PF ---- */
+  if (weeks.length) {
+    onStep('Working out the best possible lineups…');
+    try {
+      const totals = await SL.fetchMaxPF(id, weeks, map.rosterToTeam, onStep);
+      await db.update('stats', (s) => {
+        s.maxPF = s.maxPF.filter((m) => m.season !== season);
+        for (const [team, points] of Object.entries(totals)) s.maxPF.push({ season, team: +team, points });
+      });
+      done.push(`Max PF for ${Object.keys(totals).length} teams`);
+    } catch (e) { done.push(`Max PF failed (${e.message})`); }
+  }
+
+  return `${season}: ${done.join(', ')}.`;
+}
+
+return { shouldConsider, run, pullTransactions, pullSeason };
 })();
 
 /* ===== js/views/dashboard.js ===== */
@@ -7594,7 +7808,7 @@ return { render, mount };
 __M["js/views/admin.js"] = (function () {
 const { esc, icon, toast, openModal, money, teamTag, fmtDate } = __M["js/util.js"];
 const SL = __M["js/sleeper.js"];
-const { pullTransactions } = __M["js/autosync.js"];
+const { pullSeason } = __M["js/autosync.js"];
 const { isConfigured } = __M["js/config.js"];
 
 const LEVEL = { warn: 'red', info: '', edit: 'heat' };
@@ -7751,20 +7965,19 @@ function render(db) {
           </div>
         </div>`).join('')}
       <div class="s dim" style="font-size:12px;margin:4px 0 14px;line-height:1.6">
-        <b>Transactions</b> pulls every trade, waiver claim and free-agent add, filed by the season
-        windows below. <b>Sync</b> pulls weekly scores and, once the playoffs are done, the final standings that drive
-        placement payouts and empire points. <b>Max PF</b> works out each team's best possible lineup;
-        it downloads a large player file, so run it on wifi.<br><br>
+        One button, because it is all one league. <b>Pull</b> brings in weekly scores and matchups
+        (records, points against, everything the Stats tab counts), the final standings that drive
+        placement payouts and empire points once the playoffs are done, every trade and claim filed
+        by the season windows below, and each team's best possible lineup. It downloads a large
+        player file the first time, so run it on wifi.<br><br>
         Open your league on sleeper.com &mdash; the ID is the long number in the URL
         (<span class="dimmer">sleeper.com/leagues/<b style="color:var(--heat)">1124…</b>/team</span>).
         Sleeper's read API is public, so nothing here needs a password.
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" data-save-ids>${icon('check')} Save IDs</button>
-        <button class="btn primary" data-sync="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Sync ${S} from Sleeper</button>
-        <button class="btn" data-tx="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('swap')} Pull ${S} transactions</button>
-        <button class="btn danger" data-tx-clear="${S}">${icon('x')} Clear ${S}</button>
-        <button class="btn" data-maxpf="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('chart')} Compute Max PF</button>
+        <button class="btn primary" data-pull="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Pull ${S} from Sleeper</button>
+        <button class="btn danger" data-tx-clear="${S}">${icon('x')} Clear ${S} transactions</button>
       </div>
       <div data-syncout class="s dim" style="font-size:12px;margin-top:12px"></div>
       ${st.lastSleeperSync ? `<div class="s dimmer" style="font-size:11.5px;margin-top:6px">Last sync ${esc(st.lastSleeperSync)}</div>` : ''}
@@ -8050,87 +8263,14 @@ function mount(root, db) {
     });
   });
 
-  root.querySelector('[data-tx]')?.addEventListener('click', async (ev) => {
-    const S = Number(ev.currentTarget.dataset.tx);
+  /* One errand, one roster map, one download of the player file. */
+  root.querySelector('[data-pull]')?.addEventListener('click', async (ev) => {
+    const S = Number(ev.currentTarget.dataset.pull);
     ev.currentTarget.disabled = true;
     try {
-      const out = await pullTransactions(db, S, say);
-      say(out);
-      toast('Transactions pulled');
-    } catch (e) { say(`Transaction pull failed — ${e.message}`); toast('Pull failed'); }
-    ev.currentTarget.disabled = false;
-  });
-
-  root.querySelector('[data-sync]')?.addEventListener('click', async (ev) => {
-    const S = Number(ev.currentTarget.dataset.sync);
-    const id = db.league.sleeper.leagueIds[String(S)];
-    ev.currentTarget.disabled = true;
-    try {
-      say('Matching rosters…');
-      const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(S));
-      if (map.unmatched.length)
-        say(`Heads up: no manager matched ${map.unmatched.map((u) => u.name).join(', ')}. Add those names to \`aliases\` in managers.json.`);
-      const weeks = await SL.completedWeeks(S, db.get('stats').regularSeasonWeeks);
-      if (!weeks.length) { say('No completed weeks yet this season.'); ev.currentTarget.disabled = false; return; }
-      const rows = [];
-      for (const w of weeks) {
-        say(`Pulling week ${w} of ${weeks.at(-1)}…`);
-        rows.push(...(await SL.fetchWeek(id, w, map.rosterToTeam)));
-      }
-      await db.update('stats', (s) => {
-        const prior = new Map(s.weekly.filter((x) => x.season === S)
-          .map((x) => [`${x.week}:${x.team}`, x.maxPoints]));
-        s.weekly = s.weekly.filter((x) => x.season !== S);
-        for (const r of rows) s.weekly.push({
-          season: S, week: r.week, team: r.team, points: r.points,
-          maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,   // never wipe computed ceilings
-          opponent: null, result: null,
-        });
-        s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      });
-
-      // Final standings drive the placement payouts and the empire points, so
-      // pull them here too rather than making it a separate errand.
-      say('Reading the playoff brackets…');
-      let placed = 0;
-      try {
-        const places = await SL.fetchStandings(id);
-        const finished = Object.entries(places)
-          .map(([place, roster]) => ({ season: S, place: Number(place), team: map.rosterToTeam[roster] }))
-          .filter((f) => f.team)
-          .sort((a, b) => a.place - b.place);
-        if (finished.length) {
-          await db.update('bank', (b) => {
-            b.finishes = [...(b.finishes || []).filter((f) => f.season !== S), ...finished]
-              .sort((x, y) => x.season - y.season || x.place - y.place);
-          });
-          placed = finished.length;
-        }
-      } catch { /* brackets appear only once the playoffs start */ }
-
-      say(`Synced ${rows.length} scores across ${weeks.length} weeks`
-        + (placed ? `, and ${placed} final places.` : '. No playoff bracket yet.'));
-      toast(`${S} synced`);
-    } catch (e) { say(`Sync failed — ${e.message}`); }
-    ev.currentTarget.disabled = false;
-  });
-
-  root.querySelector('[data-maxpf]')?.addEventListener('click', async (ev) => {
-    const S = Number(ev.currentTarget.dataset.maxpf);
-    const id = db.league.sleeper.leagueIds[String(S)];
-    ev.currentTarget.disabled = true;
-    try {
-      const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(S));
-      const weeks = await SL.completedWeeks(S, db.get('stats').regularSeasonWeeks);
-      if (!weeks.length) { say('No completed weeks to compute from.'); ev.currentTarget.disabled = false; return; }
-      const totals = await SL.fetchMaxPF(id, weeks, map.rosterToTeam, say);
-      await db.update('stats', (s) => {
-        s.maxPF = s.maxPF.filter((m) => m.season !== S);
-        for (const [team, points] of Object.entries(totals)) s.maxPF.push({ season: S, team: +team, points });
-      });
-      say(`Max PF computed for ${Object.keys(totals).length} teams over ${weeks.length} weeks.`);
-      toast('Max PF updated');
-    } catch (e) { say(`Could not compute Max PF — ${e.message}`); }
+      say(await pullSeason(db, S, say));
+      toast(`${S} pulled`);
+    } catch (e) { say(`Pull failed — ${e.message}`); toast('Pull failed'); }
     ev.currentTarget.disabled = false;
   });
 

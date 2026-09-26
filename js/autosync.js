@@ -22,6 +22,65 @@ const writeLast = (v) => {
   try { localStorage.setItem(LAST, JSON.stringify(v)); } catch { /* private mode */ }
 };
 
+/* ------------------------------------------------------------
+   Sleeper files each week's scores as a flat list of rosters, with a
+   `matchup_id` shared by the two teams playing each other. Pairing on it is
+   the only thing standing between "points for" and an actual record, so it
+   happens on the way in and every reader gets opponent and result for free.
+   ------------------------------------------------------------ */
+function withOpponents(rows) {
+  const out = rows.map((r) => ({ ...r, opponent: null, result: null }));
+  const pairs = new Map();
+  for (const r of out) {
+    if (r.matchupId == null) continue;
+    const k = `${r.week}:${r.matchupId}`;
+    if (!pairs.has(k)) pairs.set(k, []);
+    pairs.get(k).push(r);
+  }
+  // anything that is not exactly two teams -- a bye, or a roster we could not
+  // place -- keeps a null opponent rather than being guessed at
+  for (const [a, b] of [...pairs.values()].filter((p) => p.length === 2)) {
+    a.opponent = b.team; b.opponent = a.team;
+    a.result = a.points > b.points ? 'W' : a.points < b.points ? 'L' : 'T';
+    b.result = b.points > a.points ? 'W' : b.points < a.points ? 'L' : 'T';
+  }
+  return out;
+}
+
+/** Replace a season's weekly rows, keeping any ceiling already computed. */
+async function saveWeekly(db, season, rows) {
+  const paired = withOpponents(rows);
+  await db.update('stats', (s) => {
+    const prior = new Map(s.weekly.filter((x) => x.season === season)
+      .map((x) => [`${x.week}:${x.team}`, x.maxPoints]));
+    s.weekly = s.weekly.filter((x) => x.season !== season);
+    for (const r of paired) s.weekly.push({
+      season, week: r.week, team: r.team, points: r.points,
+      maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,   // never wipe computed ceilings
+      opponent: r.opponent, result: r.result,
+    });
+    s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  });
+  return paired;
+}
+
+/** Final places from the playoff brackets. Silent before the playoffs start. */
+async function saveStandings(db, season, id, rosterToTeam) {
+  try {
+    const places = await SL.fetchStandings(id);
+    const finished = Object.entries(places)
+      .map(([place, roster]) => ({ season, place: Number(place), team: rosterToTeam[roster] }))
+      .filter((f) => f.team)
+      .sort((a, b) => a.place - b.place);
+    if (!finished.length) return 0;
+    await db.update('bank', (b) => {
+      b.finishes = [...(b.finishes || []).filter((f) => f.season !== season), ...finished]
+        .sort((x, y) => x.season - y.season || x.place - y.place);
+    });
+    return finished.length;
+  } catch { return 0; }
+}
+
 /** Should we even look? Cheap checks only — no network. */
 export function shouldConsider(db) {
   const cfg = db.league.sleeper || {};
@@ -66,32 +125,8 @@ export async function run(db, onStep = () => {}) {
     }
     if (!rows.length) return null;
 
-    await db.update('stats', (s) => {
-      const prior = new Map(s.weekly.filter((x) => x.season === season)
-        .map((x) => [`${x.week}:${x.team}`, x.maxPoints]));
-      s.weekly = s.weekly.filter((x) => x.season !== season);
-      for (const r of rows) s.weekly.push({
-        season, week: r.week, team: r.team, points: r.points,
-        maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,
-        opponent: null, result: null,
-      });
-      s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
-    });
-
-    let placed = 0;
-    try {
-      const places = await SL.fetchStandings(id);
-      const finished = Object.entries(places)
-        .map(([place, roster]) => ({ season, place: Number(place), team: map.rosterToTeam[roster] }))
-        .filter((f) => f.team);
-      if (finished.length) {
-        await db.update('bank', (b) => {
-          b.finishes = [...(b.finishes || []).filter((f) => f.season !== season), ...finished]
-            .sort((x, y) => x.season - y.season || x.place - y.place);
-        });
-        placed = finished.length;
-      }
-    } catch { /* no bracket until the playoffs */ }
+    await saveWeekly(db, season, rows);
+    const placed = await saveStandings(db, season, id, map.rosterToTeam);
 
     const newWeeks = missing.length || weeks.length;
     return `Synced ${newWeeks} week${newWeeks === 1 ? '' : 's'} from Sleeper`
@@ -150,12 +185,12 @@ async function namer(db, pids, onStep = () => {}) {
  * anything hand-entered that Sleeper has never heard of is left alone.
  * Returns a short summary.
  */
-export async function pullTransactions(db, season, onStep = () => {}) {
+export async function pullTransactions(db, season, onStep = () => {}, prebuilt = null) {
   const id = db.league.sleeper.leagueIds[String(season)];
   if (!id) return 'No Sleeper league ID for that season.';
 
-  onStep('Matching rosters…');
-  const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
+  if (!prebuilt) onStep('Matching rosters…');
+  const map = prebuilt || await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
   if (!Object.keys(map.rosterToTeam).length) return 'No rosters matched — check the aliases in managers.json.';
 
   /* Record who Sleeper thinks owns each franchise, so the Managers tab can flag
@@ -223,4 +258,69 @@ export async function pullTransactions(db, season, onStep = () => {}) {
   });
 
   return `${trades.length} trade${trades.length === 1 ? '' : 's'} and ${moves.length} pickup${moves.length === 1 ? '' : 's'} from ${season}`;
+}
+
+/* ============================================================
+   THE ONE PULL
+   Everything the app takes from Sleeper comes from the same league, so it
+   comes from the same button. Scores, matchups, final places, transactions
+   and Max PF, in that order, sharing one roster map and one download of the
+   player file rather than four errands that each pay for their own.
+   ============================================================ */
+export async function pullSeason(db, season, onStep = () => {}) {
+  const id = db.league.sleeper.leagueIds[String(season)];
+  if (!id) throw new Error(`No Sleeper league ID saved for ${season}`);
+  const done = [];
+
+  onStep('Matching rosters…');
+  const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(season));
+  if (!Object.keys(map.rosterToTeam).length)
+    throw new Error('no rosters matched — check the aliases in managers.json');
+  if (map.unmatched.length)
+    onStep(`Heads up: no manager matched ${map.unmatched.map((u) => u.name).join(', ')}.`);
+
+  const rsw = db.get('stats').regularSeasonWeeks;
+  const weeks = await SL.completedWeeks(season, rsw);
+
+  /* ---- scores and matchups ---- */
+  if (weeks.length) {
+    const rows = [];
+    for (const w of weeks) {
+      onStep(`Week ${w} of ${weeks.at(-1)}…`);
+      rows.push(...(await SL.fetchWeek(id, w, map.rosterToTeam)));
+    }
+    const paired = await saveWeekly(db, season, rows);
+    const games = paired.filter((r) => r.result).length;
+    done.push(`${rows.length} scores over ${weeks.length} week${weeks.length === 1 ? '' : 's'}`);
+    // worth saying out loud: without pairings the record columns stay empty
+    done.push(games ? `${games / 2} matchups` : 'no matchups could be paired');
+  } else {
+    done.push('no completed weeks yet');
+  }
+
+  /* ---- final places ---- */
+  onStep('Reading the playoff brackets…');
+  const placed = await saveStandings(db, season, id, map.rosterToTeam);
+  if (placed) done.push(`${placed} final places`);
+
+  /* ---- transactions ---- */
+  onStep('Reading transactions…');
+  try {
+    done.push(await pullTransactions(db, season, onStep, map));
+  } catch (e) { done.push(`transactions failed (${e.message})`); }
+
+  /* ---- Max PF ---- */
+  if (weeks.length) {
+    onStep('Working out the best possible lineups…');
+    try {
+      const totals = await SL.fetchMaxPF(id, weeks, map.rosterToTeam, onStep);
+      await db.update('stats', (s) => {
+        s.maxPF = s.maxPF.filter((m) => m.season !== season);
+        for (const [team, points] of Object.entries(totals)) s.maxPF.push({ season, team: +team, points });
+      });
+      done.push(`Max PF for ${Object.keys(totals).length} teams`);
+    } catch (e) { done.push(`Max PF failed (${e.message})`); }
+  }
+
+  return `${season}: ${done.join(', ')}.`;
 }

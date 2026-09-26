@@ -669,6 +669,14 @@ class Store {
     const st = this.get('stats');
     const weekly = st.weekly.filter((w) => w.season === season);
     const weeks = [...new Set(weekly.map((w) => w.week))].sort((a, b) => a - b);
+    /* Every score in the season, by week. Points against needs the opponent's
+       number, and the all-play record needs everyone else's, so both read from
+       here rather than re-scanning the list per team per week. */
+    const board = new Map();
+    for (const w of weekly) {
+      if (!board.has(w.week)) board.set(w.week, new Map());
+      board.get(w.week).set(w.team, w.points);
+    }
     const rows = this.teams(season).map((t) => {
       const mine = weekly.filter((w) => w.team === t.number);
       const total = mine.reduce((a, w) => a + w.points, 0);
@@ -679,8 +687,42 @@ class Store {
       // Max PF is a whole-season figure, so the ratio is only meaningful once the
       // weekly log actually covers the season. Partial data would report nonsense.
       const fullSeason = mine.length >= (st.regularSeasonWeeks || 14);
+
+      /* ---- the head-to-head half, which only exists once matchups are paired ---- */
+      const played = mine.filter((w) => w.result);
+      const wins = played.filter((w) => w.result === 'W').length;
+      const losses = played.filter((w) => w.result === 'L').length;
+      const ties = played.filter((w) => w.result === 'T').length;
+      const pa = mine.reduce((a, w) =>
+        a + (w.opponent != null ? (board.get(w.week)?.get(w.opponent) ?? 0) : 0), 0);
+
+      /* All-play: your score against every other score that week. It is the
+         honest measure of a team, because it cannot be dodged by a soft
+         schedule -- and the gap between it and the real record IS the luck. */
+      let apW = 0, apL = 0, apT = 0;
+      for (const w of mine) {
+        for (const [team, pts] of board.get(w.week) || []) {
+          if (team === t.number) continue;
+          if (w.points > pts) apW++; else if (w.points < pts) apL++; else apT++;
+        }
+      }
+      const apGames = apW + apL + apT;
+      // what the record "should" be: your all-play rate over the games you played
+      const expWins = apGames ? (apW + apT / 2) / apGames * played.length : null;
+
+      const mean = scores.length ? total / scores.length : 0;
+      const stdev = scores.length > 1
+        ? Math.sqrt(scores.reduce((a, v) => a + (v - mean) ** 2, 0) / scores.length) : null;
+
       return {
         ...t, total, maxPF: maxpf, games: mine.length, fullSeason,
+        wins, losses, ties, pa: Math.round(pa * 100) / 100,
+        diff: Math.round((total - pa) * 100) / 100,
+        allPlayW: apW, allPlayL: apL, allPlayT: apT,
+        allPlay: apGames ? (apW + apT / 2) / apGames : null,
+        expWins: expWins == null ? null : Math.round(expWins * 100) / 100,
+        luck: expWins == null ? null : Math.round((wins + ties / 2 - expWins) * 100) / 100,
+        stdev: stdev == null ? null : Math.round(stdev * 100) / 100,
         avg: mine.length ? total / mine.length : null,
         high: scores.length ? Math.max(...scores) : null,
         low: scores.length ? Math.min(...scores) : null,
@@ -692,10 +734,82 @@ class Store {
       };
     });
     return { weeks, rows, weekly, hasData: weekly.length > 0,
+             hasRecords: rows.some((r) => r.wins + r.losses + r.ties > 0),
              hasMaxPF: rows.some((r) => r.maxPF != null),
              hasEfficiency: rows.some((r) => r.efficiency != null),
              hasCeiling: rows.some((r) => r.maxTotal != null),
              regularSeasonWeeks: st.regularSeasonWeeks || 14 };
+  }
+
+  /**
+   * The franchise record book: every season with scores, added up per team.
+   *
+   * Aggregated by team NUMBER, not by manager, because that is how this league
+   * already thinks -- titles and empire points ride with the franchise, so a
+   * replacement inherits the history along with the roster. The current holder
+   * is named, and `owners` lists everyone who has held it.
+   */
+  allTime() {
+    const st = this.get('stats');
+    const seasons = [...new Set(st.weekly.map((w) => w.season))].sort((a, b) => a - b);
+    const per = seasons.map((s) => ({ season: s, st: this.stats(s) }));
+    const finishes = this.get('bank').finishes || [];
+    const emp = this.empire();
+
+    const rows = this.teams().map((t) => {
+      const mine = per.map(({ season, st: x }) => ({ season, r: x.rows.find((r) => r.number === t.number) }))
+        .filter((x) => x.r && x.r.games > 0);
+      const sum = (f) => mine.reduce((a, x) => a + (f(x.r) || 0), 0);
+      const games = sum((r) => r.games);
+      const wins = sum((r) => r.wins), losses = sum((r) => r.losses), ties = sum((r) => r.ties);
+      const played = wins + losses + ties;
+      const total = sum((r) => r.total);
+      const mineFin = finishes.filter((f) => f.team === t.number);
+      // a manager's best week ever is the line people actually quote
+      const weeks = st.weekly.filter((w) => w.team === t.number);
+      const bestWk = weeks.length ? weeks.reduce((a, b) => (b.points > a.points ? b : a)) : null;
+      const worstWk = weeks.length ? weeks.reduce((a, b) => (b.points < a.points ? b : a)) : null;
+      return {
+        ...t, seasons: mine.length, games, wins, losses, ties,
+        winPct: played ? (wins + ties / 2) / played : null,
+        pf: Math.round(total * 100) / 100,
+        pa: Math.round(sum((r) => r.pa) * 100) / 100,
+        avg: games ? Math.round((total / games) * 100) / 100 : null,
+        allPlayW: sum((r) => r.allPlayW), allPlayL: sum((r) => r.allPlayL), allPlayT: sum((r) => r.allPlayT),
+        luck: mine.some((x) => x.r.luck != null)
+          ? Math.round(sum((r) => r.luck) * 100) / 100 : null,
+        titles: mineFin.filter((f) => f.place === 1).length,
+        podiums: mineFin.filter((f) => f.place <= 3).length,
+        best: bestWk ? { points: bestWk.points, season: bestWk.season, week: bestWk.week } : null,
+        worst: worstWk ? { points: worstWk.points, season: worstWk.season, week: worstWk.week } : null,
+        empirePoints: emp.board.find((e) => e.number === t.number)?.total || 0,
+        bySeason: mine.map((x) => ({ season: x.season, ...x.r })),
+      };
+    }).filter((r) => r.games > 0);
+
+    for (const r of rows) {
+      const ap = r.allPlayW + r.allPlayL + r.allPlayT;
+      r.allPlay = ap ? (r.allPlayW + r.allPlayT / 2) / ap : null;
+    }
+    return { seasons, rows, hasData: rows.length > 0 };
+  }
+
+  /**
+   * Who has beaten whom, all time. One row per team, one column per opponent,
+   * built from the same paired matchups the records come from.
+   */
+  headToHead() {
+    const weekly = this.get('stats').weekly.filter((w) => w.opponent != null && w.result);
+    const grid = {};
+    for (const w of weekly) {
+      const cell = ((grid[w.team] ||= {})[w.opponent] ||= { w: 0, l: 0, t: 0, pf: 0, pa: 0 });
+      if (w.result === 'W') cell.w++; else if (w.result === 'L') cell.l++; else cell.t++;
+      cell.pf += w.points;
+    }
+    // points against in a pairing is just the other side's points for
+    for (const [a, opps] of Object.entries(grid))
+      for (const [b, cell] of Object.entries(opps)) cell.pa = grid[b]?.[a]?.pf ?? 0;
+    return grid;
   }
 
   /* ---------- rules ---------- */

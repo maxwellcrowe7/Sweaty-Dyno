@@ -1,6 +1,6 @@
 import { esc, icon, toast, openModal, money, teamTag, fmtDate } from '../util.js';
 import * as SL from '../sleeper.js';
-import { pullTransactions } from '../autosync.js';
+import { pullSeason } from '../autosync.js';
 import { isConfigured } from '../config.js';
 
 const LEVEL = { warn: 'red', info: '', edit: 'heat' };
@@ -158,20 +158,19 @@ export function render(db) {
           </div>
         </div>`).join('')}
       <div class="s dim" style="font-size:12px;margin:4px 0 14px;line-height:1.6">
-        <b>Transactions</b> pulls every trade, waiver claim and free-agent add, filed by the season
-        windows below. <b>Sync</b> pulls weekly scores and, once the playoffs are done, the final standings that drive
-        placement payouts and empire points. <b>Max PF</b> works out each team's best possible lineup;
-        it downloads a large player file, so run it on wifi.<br><br>
+        One button, because it is all one league. <b>Pull</b> brings in weekly scores and matchups
+        (records, points against, everything the Stats tab counts), the final standings that drive
+        placement payouts and empire points once the playoffs are done, every trade and claim filed
+        by the season windows below, and each team's best possible lineup. It downloads a large
+        player file the first time, so run it on wifi.<br><br>
         Open your league on sleeper.com &mdash; the ID is the long number in the URL
         (<span class="dimmer">sleeper.com/leagues/<b style="color:var(--heat)">1124…</b>/team</span>).
         Sleeper's read API is public, so nothing here needs a password.
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" data-save-ids>${icon('check')} Save IDs</button>
-        <button class="btn primary" data-sync="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Sync ${S} from Sleeper</button>
-        <button class="btn" data-tx="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('swap')} Pull ${S} transactions</button>
-        <button class="btn danger" data-tx-clear="${S}">${icon('x')} Clear ${S}</button>
-        <button class="btn" data-maxpf="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('chart')} Compute Max PF</button>
+        <button class="btn primary" data-pull="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Pull ${S} from Sleeper</button>
+        <button class="btn danger" data-tx-clear="${S}">${icon('x')} Clear ${S} transactions</button>
       </div>
       <div data-syncout class="s dim" style="font-size:12px;margin-top:12px"></div>
       ${st.lastSleeperSync ? `<div class="s dimmer" style="font-size:11.5px;margin-top:6px">Last sync ${esc(st.lastSleeperSync)}</div>` : ''}
@@ -458,87 +457,14 @@ export function mount(root, db) {
     });
   });
 
-  root.querySelector('[data-tx]')?.addEventListener('click', async (ev) => {
-    const S = Number(ev.currentTarget.dataset.tx);
+  /* One errand, one roster map, one download of the player file. */
+  root.querySelector('[data-pull]')?.addEventListener('click', async (ev) => {
+    const S = Number(ev.currentTarget.dataset.pull);
     ev.currentTarget.disabled = true;
     try {
-      const out = await pullTransactions(db, S, say);
-      say(out);
-      toast('Transactions pulled');
-    } catch (e) { say(`Transaction pull failed — ${e.message}`); toast('Pull failed'); }
-    ev.currentTarget.disabled = false;
-  });
-
-  root.querySelector('[data-sync]')?.addEventListener('click', async (ev) => {
-    const S = Number(ev.currentTarget.dataset.sync);
-    const id = db.league.sleeper.leagueIds[String(S)];
-    ev.currentTarget.disabled = true;
-    try {
-      say('Matching rosters…');
-      const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(S));
-      if (map.unmatched.length)
-        say(`Heads up: no manager matched ${map.unmatched.map((u) => u.name).join(', ')}. Add those names to \`aliases\` in managers.json.`);
-      const weeks = await SL.completedWeeks(S, db.get('stats').regularSeasonWeeks);
-      if (!weeks.length) { say('No completed weeks yet this season.'); ev.currentTarget.disabled = false; return; }
-      const rows = [];
-      for (const w of weeks) {
-        say(`Pulling week ${w} of ${weeks.at(-1)}…`);
-        rows.push(...(await SL.fetchWeek(id, w, map.rosterToTeam)));
-      }
-      await db.update('stats', (s) => {
-        const prior = new Map(s.weekly.filter((x) => x.season === S)
-          .map((x) => [`${x.week}:${x.team}`, x.maxPoints]));
-        s.weekly = s.weekly.filter((x) => x.season !== S);
-        for (const r of rows) s.weekly.push({
-          season: S, week: r.week, team: r.team, points: r.points,
-          maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,   // never wipe computed ceilings
-          opponent: null, result: null,
-        });
-        s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      });
-
-      // Final standings drive the placement payouts and the empire points, so
-      // pull them here too rather than making it a separate errand.
-      say('Reading the playoff brackets…');
-      let placed = 0;
-      try {
-        const places = await SL.fetchStandings(id);
-        const finished = Object.entries(places)
-          .map(([place, roster]) => ({ season: S, place: Number(place), team: map.rosterToTeam[roster] }))
-          .filter((f) => f.team)
-          .sort((a, b) => a.place - b.place);
-        if (finished.length) {
-          await db.update('bank', (b) => {
-            b.finishes = [...(b.finishes || []).filter((f) => f.season !== S), ...finished]
-              .sort((x, y) => x.season - y.season || x.place - y.place);
-          });
-          placed = finished.length;
-        }
-      } catch { /* brackets appear only once the playoffs start */ }
-
-      say(`Synced ${rows.length} scores across ${weeks.length} weeks`
-        + (placed ? `, and ${placed} final places.` : '. No playoff bracket yet.'));
-      toast(`${S} synced`);
-    } catch (e) { say(`Sync failed — ${e.message}`); }
-    ev.currentTarget.disabled = false;
-  });
-
-  root.querySelector('[data-maxpf]')?.addEventListener('click', async (ev) => {
-    const S = Number(ev.currentTarget.dataset.maxpf);
-    const id = db.league.sleeper.leagueIds[String(S)];
-    ev.currentTarget.disabled = true;
-    try {
-      const map = await SL.buildRosterMap(id, db.get('managers'), db.teams(S));
-      const weeks = await SL.completedWeeks(S, db.get('stats').regularSeasonWeeks);
-      if (!weeks.length) { say('No completed weeks to compute from.'); ev.currentTarget.disabled = false; return; }
-      const totals = await SL.fetchMaxPF(id, weeks, map.rosterToTeam, say);
-      await db.update('stats', (s) => {
-        s.maxPF = s.maxPF.filter((m) => m.season !== S);
-        for (const [team, points] of Object.entries(totals)) s.maxPF.push({ season: S, team: +team, points });
-      });
-      say(`Max PF computed for ${Object.keys(totals).length} teams over ${weeks.length} weeks.`);
-      toast('Max PF updated');
-    } catch (e) { say(`Could not compute Max PF — ${e.message}`); }
+      say(await pullSeason(db, S, say));
+      toast(`${S} pulled`);
+    } catch (e) { say(`Pull failed — ${e.message}`); toast('Pull failed'); }
     ev.currentTarget.disabled = false;
   });
 
