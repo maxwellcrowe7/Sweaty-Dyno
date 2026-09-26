@@ -569,7 +569,7 @@ table.dt th.sticky{width:1%}
   /* spread as far as the longest detail string will allow before it clips */
   .bh-claims li{grid-template-columns:9px 84px 56px minmax(0,1fr);gap:8px;padding:8px 2px 8px 8px}
   .bh-claims .bh-k{font-size:11px;letter-spacing:.06em}
-  .bh-claims b{font-size:19px;text-align:right}
+  .bh-claims b{font-size:19px;text-align:right;margin-right:4px}
   .bh-claims .bh-m{margin-left:13px;font-size:10px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
