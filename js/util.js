@@ -62,7 +62,11 @@ export const posChip = (pos) =>
 // ---------- icons (Lucide-style, 24x24 stroke) ----------
 const I = {
   home:'M3 10.2 12 3l9 7.2M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5',
-  wallet:'M19 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6M16 12.5h.01',
+  // A columned bank front. The wallet it replaces was a rounded rectangle with
+  // a dot in it -- at 18px that is a blank card, not money. This keeps its
+  // silhouette at nav size, and the pediment-and-columns reads differently
+  // enough from the house above it in the nav.
+  wallet:'M3 21h18M5.5 18v-7M10 18v-7M14 18v-7M18.5 18v-7M3.5 10.5 12 4l8.5 6.5',
   trophy:'M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 14v6',
   board:'M4 4h16v16H4zM4 9.5h16M9.5 9.5V20M15 9.5V20',
   // two straight arrows running opposite ways, clear of each other -- the old
