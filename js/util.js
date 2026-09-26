@@ -66,8 +66,11 @@ const I = {
   // else at 18px: a wallet read as a blank card, a vault handle mushed into a
   // blob, and a bank front echoed the house two rows above it in the nav.
   // Wider than a text dollar sign and run full height, so it carries weight
-  // among glyphs that fill their box.
-  wallet:'M18 7.5A4 4 0 0 0 14 4.5h-3a3.75 3.75 0 0 0 0 7.5h2a3.75 3.75 0 0 1 0 7.5h-3a4 4 0 0 1-4-3M12 2v20',
+  // among glyphs that fill their box. Drawn symmetrically about x=12 with the
+  // two tails tucked INSIDE the bowls' widest point (6.4 / 17.6): ending them
+  // on the arcs instead let the top-right and bottom-left overhang everything
+  // else, which read as a slant.
+  wallet:'M12 2.2v19.6M17.2 5.2H10a3.6 3.6 0 0 0 0 7.2h4a3.6 3.6 0 0 1 0 7.2H6.8',
   trophy:'M7 4h10v5a5 5 0 0 1-10 0V4ZM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 14v6',
   board:'M4 4h16v16H4zM4 9.5h16M9.5 9.5V20M15 9.5V20',
   // two straight arrows running opposite ways, clear of each other -- the old
