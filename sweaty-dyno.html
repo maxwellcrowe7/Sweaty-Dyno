@@ -582,9 +582,13 @@ table.dt th.sticky{width:1%}
   .bank-hero{grid-template-columns:auto auto;justify-content:start;gap:34px;margin-bottom:10px}
 }
 @media (max-width:620px){
-  .bh-claims li{grid-template-columns:10px 1fr auto;gap:6px 10px;padding:9px 2px}
-  .bh-claims b{text-align:right}
-  .bh-m{grid-column:2 / -1;margin-top:-1px}
+  /* One line per claim rather than two: three claims were costing six rows
+     under the dial, which is most of a phone screen before anything is said. */
+  .bh-claims li{grid-template-columns:9px 74px 50px minmax(0,1fr);gap:7px;padding:8px 0}
+  .bh-claims .bh-k{font-size:11px;letter-spacing:.06em}
+  .bh-claims b{font-size:19px;text-align:right}
+  .bh-claims .bh-m{margin-left:9px;font-size:10.5px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 
 /* ---------- draft board ---------- */
