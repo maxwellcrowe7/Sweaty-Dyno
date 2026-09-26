@@ -667,7 +667,10 @@ class Store {
   /* ---------- stats ---------- */
   stats(season = this.season) {
     const st = this.get('stats');
-    const weekly = st.weekly.filter((w) => w.season === season);
+    /* Regular season only. The playoff weeks are pulled and kept -- they decide
+       the title -- but a 6-team bracket is not a 10-team sample, so folding
+       them into form, all-play or efficiency would quietly corrupt all three. */
+    const weekly = st.weekly.filter((w) => w.season === season && !w.playoff);
     const weeks = [...new Set(weekly.map((w) => w.week))].sort((a, b) => a - b);
     /* Every score in the season, by week. Points against needs the opponent's
        number, and the all-play record needs everyone else's, so both read from
@@ -766,7 +769,7 @@ class Store {
       const total = sum((r) => r.total);
       const mineFin = finishes.filter((f) => f.team === t.number);
       // a manager's best week ever is the line people actually quote
-      const weeks = st.weekly.filter((w) => w.team === t.number);
+      const weeks = st.weekly.filter((w) => w.team === t.number && !w.playoff);
       const bestWk = weeks.length ? weeks.reduce((a, b) => (b.points > a.points ? b : a)) : null;
       const worstWk = weeks.length ? weeks.reduce((a, b) => (b.points < a.points ? b : a)) : null;
       return {
@@ -794,12 +797,20 @@ class Store {
     return { seasons, rows, hasData: rows.length > 0 };
   }
 
+  /** The title weeks: pulled and kept, but never mixed into regular-season form. */
+  playoffWeeks(season = this.season) {
+    return this.get('stats').weekly
+      .filter((w) => w.playoff && (season == null || w.season === season))
+      .sort((a, b) => a.season - b.season || a.week - b.week || a.team - b.team);
+  }
+
   /**
    * Who has beaten whom, all time. One row per team, one column per opponent,
    * built from the same paired matchups the records come from.
    */
   headToHead() {
-    const weekly = this.get('stats').weekly.filter((w) => w.opponent != null && w.result);
+    const weekly = this.get('stats').weekly
+      .filter((w) => w.opponent != null && w.result && !w.playoff);
     const grid = {};
     for (const w of weekly) {
       const cell = ((grid[w.team] ||= {})[w.opponent] ||= { w: 0, l: 0, t: 0, pf: 0, pa: 0 });

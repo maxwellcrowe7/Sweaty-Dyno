@@ -125,35 +125,6 @@ export function optimalScore(playersPoints, slots, posOf) {
 }
 
 /**
- * Season Max PF per team = sum of each week's optimal lineup.
- * Downloads the player dictionary once; call only when the user asks for it.
- */
-export async function fetchMaxPF(leagueId, weeks, rosterToTeam, onProgress = () => {}) {
-  const lg = await league(leagueId);
-  const slots = lg.roster_positions || [];
-  onProgress('Loading player list (~5 MB, once)…');
-  const pl = await players();
-  const posOf = (pid) => {
-    const p = pl[pid];
-    if (!p) return null;
-    return p.position || (Array.isArray(p.fantasy_positions) ? p.fantasy_positions[0] : null);
-  };
-
-  const totals = {};
-  for (const wk of weeks) {
-    onProgress(`Week ${wk}…`);
-    const ms = await matchups(leagueId, wk);
-    for (const m of ms) {
-      const tn = rosterToTeam[m.roster_id];
-      if (!tn || !m.players_points) continue;
-      const best = optimalScore(m.players_points, slots, posOf);
-      if (best) totals[tn] = Math.round(((totals[tn] || 0) + best.total) * 100) / 100;
-    }
-  }
-  return totals;
-}
-
-/**
  * Final standings from the playoff brackets. Sleeper tags each placement game
  * with `p`: in the winners bracket p=1 is the championship (1st/2nd), p=3 the
  * third-place game, p=5 the fifth. The losers bracket numbers from 7th.
@@ -183,6 +154,41 @@ export async function completedWeeks(season, regularSeasonWeeks = 14) {
   const cur = Number(st.week) || 0;
   const done = String(st.season) === String(season) ? Math.max(0, cur - 1) : regularSeasonWeeks;
   return Array.from({ length: Math.min(done, regularSeasonWeeks) }, (_, i) => i + 1);
+}
+
+/**
+ * Every week the league has actually scored, playoffs included, and where the
+ * playoffs start.
+ *
+ * The league object knows both and neither has to be guessed: `last_scored_leg`
+ * is Sleeper's own high-water mark, and `playoff_week_start` the boundary.
+ * Stopping at the regular season meant weeks 15-17 -- the ones that decide the
+ * title -- were never read at all.
+ */
+export async function seasonWeeks(leagueId, season, regularSeasonWeeks = 14) {
+  const lg = await league(leagueId);
+  const playoffStart = Number(lg.settings?.playoff_week_start) || regularSeasonWeeks + 1;
+  let last = Number(lg.settings?.last_scored_leg) || 0;
+  if (!last) {
+    // a league that has never been scored: fall back to the NFL's clock
+    const st = await nflState();
+    last = String(st.season) === String(season)
+      ? Math.max(0, (Number(st.week) || 0) - 1) : playoffStart + 2;
+  }
+  return {
+    weeks: Array.from({ length: last }, (_, i) => i + 1),
+    playoffStart, lastScored: last, slots: lg.roster_positions || [],
+  };
+}
+
+/** pid -> position, from the player dictionary. Downloads it once per page load. */
+export async function positionLookup() {
+  const pl = await players();
+  return (pid) => {
+    const p = pl[String(pid)];
+    if (!p) return null;
+    return p.position || (Array.isArray(p.fantasy_positions) ? p.fantasy_positions[0] : null);
+  };
 }
 
 /* ---------- transactions (trades, waivers, free agents) ---------- */

@@ -48,7 +48,7 @@ function withOpponents(rows) {
 }
 
 /** Replace a season's weekly rows, keeping any ceiling already computed. */
-async function saveWeekly(db, season, rows) {
+async function saveWeekly(db, season, rows, playoffStart = Infinity) {
   const paired = withOpponents(rows);
   await db.update('stats', (s) => {
     const prior = new Map(s.weekly.filter((x) => x.season === season)
@@ -56,8 +56,11 @@ async function saveWeekly(db, season, rows) {
     s.weekly = s.weekly.filter((x) => x.season !== season);
     for (const r of paired) s.weekly.push({
       season, week: r.week, team: r.team, points: r.points,
-      maxPoints: prior.get(`${r.week}:${r.team}`) ?? null,   // never wipe computed ceilings
+      // never wipe a ceiling we are not recomputing this time
+      maxPoints: r.maxPoints ?? prior.get(`${r.week}:${r.team}`) ?? null,
       opponent: r.opponent, result: r.result,
+      // the title weeks are worth keeping; they are just not regular-season form
+      playoff: r.week >= playoffStart,
     });
     s.lastSleeperSync = new Date().toISOString().slice(0, 16).replace('T', ' ');
   });
@@ -104,7 +107,7 @@ export async function run(db, onStep = () => {}) {
   const id = db.league.sleeper.leagueIds[String(season)];
   try {
     const have = new Set(db.get('stats').weekly.filter((w) => w.season === season).map((w) => w.week));
-    const weeks = await SL.completedWeeks(season, db.get('stats').regularSeasonWeeks);
+    const { weeks, playoffStart } = await SL.seasonWeeks(id, season, db.get('stats').regularSeasonWeeks);
     const missing = weeks.filter((w) => !have.has(w));
 
     // mark the attempt before doing the work, so a wobbly network does not
@@ -125,7 +128,7 @@ export async function run(db, onStep = () => {}) {
     }
     if (!rows.length) return null;
 
-    await saveWeekly(db, season, rows);
+    await saveWeekly(db, season, rows, playoffStart);
     const placed = await saveStandings(db, season, id, map.rosterToTeam);
 
     const newWeeks = missing.length || weeks.length;
@@ -280,20 +283,49 @@ export async function pullSeason(db, season, onStep = () => {}) {
     onStep(`Heads up: no manager matched ${map.unmatched.map((u) => u.name).join(', ')}.`);
 
   const rsw = db.get('stats').regularSeasonWeeks;
-  const weeks = await SL.completedWeeks(season, rsw);
+  const { weeks, playoffStart, slots } = await SL.seasonWeeks(id, season, rsw);
 
-  /* ---- scores and matchups ---- */
+  /* ---- scores, matchups and ceilings, from one pass ---- */
   if (weeks.length) {
     const rows = [];
     for (const w of weeks) {
-      onStep(`Week ${w} of ${weeks.at(-1)}…`);
+      onStep(`Week ${w} of ${weeks.at(-1)}${w >= playoffStart ? ' (playoffs)' : ''}…`);
       rows.push(...(await SL.fetchWeek(id, w, map.rosterToTeam)));
     }
-    const paired = await saveWeekly(db, season, rows);
-    const games = paired.filter((r) => r.result).length;
-    done.push(`${rows.length} scores over ${weeks.length} week${weeks.length === 1 ? '' : 's'}`);
+
+    /* The same payload that carries the score carries every rostered player's
+       points, so the week's best possible lineup costs nothing extra to work
+       out here. Computing it in a second pass of its own is what left the
+       per-week ceiling empty for every season nobody hand-seeded. */
+    onStep('Loading the player list (~5 MB, once)…');
+    try {
+      const posOf = await SL.positionLookup();
+      for (const r of rows) r.maxPoints = SL.optimalScore(r.playersPoints, slots, posOf)?.total ?? null;
+    } catch (e) { onStep(`Ceilings skipped — ${e.message}`); }
+
+    const paired = await saveWeekly(db, season, rows, playoffStart);
+    const reg = paired.filter((r) => r.week < playoffStart);
+    const post = paired.length - reg.length;
+    const games = reg.filter((r) => r.result).length;
+    done.push(`${reg.length} scores over ${weeks.filter((w) => w < playoffStart).length} regular-season weeks`);
+    if (post) done.push(`${post} playoff scores`);
     // worth saying out loud: without pairings the record columns stay empty
     done.push(games ? `${games / 2} matchups` : 'no matchups could be paired');
+
+    /* Season Max PF is a regular-season figure, because the points it is
+       compared against are. */
+    const totals = {};
+    for (const r of reg) {
+      if (r.maxPoints == null) continue;
+      totals[r.team] = Math.round(((totals[r.team] || 0) + r.maxPoints) * 100) / 100;
+    }
+    if (Object.keys(totals).length) {
+      await db.update('stats', (s) => {
+        s.maxPF = s.maxPF.filter((m) => m.season !== season);
+        for (const [team, points] of Object.entries(totals)) s.maxPF.push({ season, team: +team, points });
+      });
+      done.push(`Max PF for ${Object.keys(totals).length} teams`);
+    }
   } else {
     done.push('no completed weeks yet');
   }
@@ -308,19 +340,6 @@ export async function pullSeason(db, season, onStep = () => {}) {
   try {
     done.push(await pullTransactions(db, season, onStep, map));
   } catch (e) { done.push(`transactions failed (${e.message})`); }
-
-  /* ---- Max PF ---- */
-  if (weeks.length) {
-    onStep('Working out the best possible lineups…');
-    try {
-      const totals = await SL.fetchMaxPF(id, weeks, map.rosterToTeam, onStep);
-      await db.update('stats', (s) => {
-        s.maxPF = s.maxPF.filter((m) => m.season !== season);
-        for (const [team, points] of Object.entries(totals)) s.maxPF.push({ season, team: +team, points });
-      });
-      done.push(`Max PF for ${Object.keys(totals).length} teams`);
-    } catch (e) { done.push(`Max PF failed (${e.message})`); }
-  }
 
   return `${season}: ${done.join(', ')}.`;
 }

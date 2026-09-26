@@ -78,10 +78,22 @@ ok('unpaired week scores', st2.rows.find((x) => x.number === 1).total, 280);
 ok('unpaired week is not a game', st2.rows.find((x) => x.number === 1).wins
   + st2.rows.find((x) => x.number === 1).losses, 2);
 
+/* Playoff weeks are stored but never counted as regular-season form. */
+db.get('stats').weekly.push(
+  { season:S, week:15, team:1, points:200, maxPoints:null, opponent:3, result:'W', playoff:true },
+  { season:S, week:15, team:3, points:150, maxPoints:null, opponent:1, result:'L', playoff:true },
+);
+const st3 = db.stats(S);
+ok('playoff points stay out of the total', st3.rows.find((x) => x.number === 1).total, 280);
+ok('playoff wins stay out of the record', st3.rows.find((x) => x.number === 1).wins, 1);
+ok('playoff weeks are kept', db.playoffWeeks(S).length, 2);
+ok('playoff week is not in the chart', st3.weeks.includes(15), false);
+
 /* Head to head reads off the same pairings. */
 const h2h = db.headToHead();
 ok('T1 owns nobody', [h2h[1][2].w, h2h[1][2].l], [1, 1]);
 ok('T3 owns T4', [h2h[3][4].w, h2h[3][4].l], [2, 0]);
+ok('h2h ignores the playoffs', [h2h[1][3]?.w ?? 0], [0]);
 ok('h2h points mirror', h2h[1][2].pa, h2h[2][1].pf);
 
 print(fails ? `Records: ${fails} failed.` : 'Records passed.');
