@@ -571,7 +571,7 @@ table.dt th.sticky{width:1%}
 .bh-claims li + li{border-top:1px solid var(--line-soft)}
 /* on the label's own line, not centred in a row the figure makes taller --
    the swatch belongs to the small caps beside it */
-.bh-claims i{width:9px;height:9px;border-radius:2px;align-self:baseline;position:relative;top:-1px}
+.bh-claims i{width:9px;height:9px;border-radius:2px;align-self:baseline;position:relative;top:1px}
 .bh-k{font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);
   font-weight:700;white-space:nowrap}
 .bh-claims b{font-family:var(--f-display);font-size:22px;font-weight:700;text-align:right;letter-spacing:-.01em}
@@ -4697,7 +4697,9 @@ function render(db, state = {}) {
       <li><i class="lg-free"></i>
         <span class="bh-k">Free</span>
         <b>${money(freeCash)}</b>
-        <span class="bh-m">nothing has a claim on it</span></li>
+        ${/* not "unclaimed": it is the surplus that rolls forward, and it is
+             what pays for the prizes of seasons nobody has set yet */''}
+        <span class="bh-m">carries forward to future prizes</span></li>
       <li><i class="lg-owed"></i>
         <span class="bh-k">In prizes</span>
         <b>${money(heldForPrizes)}</b>

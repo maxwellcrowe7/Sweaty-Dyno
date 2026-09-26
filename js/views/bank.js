@@ -179,7 +179,9 @@ export function render(db, state = {}) {
       <li><i class="lg-free"></i>
         <span class="bh-k">Free</span>
         <b>${money(freeCash)}</b>
-        <span class="bh-m">nothing has a claim on it</span></li>
+        ${/* not "unclaimed": it is the surplus that rolls forward, and it is
+             what pays for the prizes of seasons nobody has set yet */''}
+        <span class="bh-m">carries forward to future prizes</span></li>
       <li><i class="lg-owed"></i>
         <span class="bh-k">In prizes</span>
         <b>${money(heldForPrizes)}</b>
