@@ -541,7 +541,9 @@ table.dt th.sticky{width:1%}
   gap:10px;padding:10px 4px;
 }
 .bh-claims li + li{border-top:1px solid var(--line-soft)}
-.bh-claims i{width:9px;height:9px;border-radius:2px;align-self:center}
+/* on the label's own line, not centred in a row the figure makes taller --
+   the swatch belongs to the small caps beside it */
+.bh-claims i{width:9px;height:9px;border-radius:2px;align-self:baseline;position:relative;top:-1px}
 .bh-k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .bh-claims b{font-family:var(--f-display);font-size:22px;font-weight:700;text-align:right;letter-spacing:-.01em}
 .bh-m{font-size:11.5px;color:var(--ink-3);line-height:1.45}
