@@ -111,7 +111,7 @@ export function render(db, state = {}) {
     <div class="tile mint"><div class="k">Best manager</div>
       <div class="v" style="font-size:23px">${eff ? esc(eff.manager) : '&mdash;'}</div>
       <div class="m">${eff ? (eff.efficiency * 100).toFixed(1) + '% of ceiling'
-        : `needs all ${st.regularSeasonWeeks} weeks logged`}</div></div>
+        : 'no ceilings yet — pull from Sleeper'}</div></div>
     <div class="tile"><div class="k">Top week</div>
       <div class="v">${best ? pts(best.points) : '--'}</div>
       <div class="m">${best ? esc(db.team(best.team)?.manager) + ' &middot; wk ' + best.week : ''}</div></div>

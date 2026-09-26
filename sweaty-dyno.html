@@ -3464,10 +3464,15 @@ class Store {
       const total = mine.reduce((a, w) => a + w.points, 0);
       const maxpf = st.maxPF.find((m) => m.season === season && m.team === t.number)?.points ?? null;
       const scores = mine.map((w) => w.points);
+      /* Efficiency is measured over the weeks that HAVE a ceiling, comparing
+         those weeks' points with those weeks' best possible lineups. It used to
+         divide the season's points by the stored season Max PF and so needed a
+         complete season to mean anything; a week's start/sit calls are just as
+         answerable in week 1 as in week 14, as long as both halves of the ratio
+         cover the same weeks. */
       const ceil = mine.filter((w) => w.maxPoints != null);
       const maxTotal = ceil.reduce((a, w) => a + w.maxPoints, 0);
-      // Max PF is a whole-season figure, so the ratio is only meaningful once the
-      // weekly log actually covers the season. Partial data would report nonsense.
+      const ceilActual = ceil.reduce((a, w) => a + w.points, 0);
       const fullSeason = mine.length >= (st.regularSeasonWeeks || 14);
 
       /* ---- the head-to-head half, which only exists once matchups are paired ---- */
@@ -3508,9 +3513,10 @@ class Store {
         avg: mine.length ? total / mine.length : null,
         high: scores.length ? Math.max(...scores) : null,
         low: scores.length ? Math.min(...scores) : null,
-        efficiency: fullSeason && maxpf && total ? total / maxpf : null,
+        efficiency: maxTotal ? ceilActual / maxTotal : null,
         maxTotal: ceil.length ? Math.round(maxTotal * 100) / 100 : null,
-        left: ceil.length ? Math.round((maxTotal - total) * 100) / 100 : null,
+        // what those same weeks left on the bench, so it reconciles with the ratio
+        left: ceil.length ? Math.round((maxTotal - ceilActual) * 100) / 100 : null,
         byWeek: Object.fromEntries(mine.map((w) => [w.week, w.points])),
         byWeekMax: Object.fromEntries(ceil.map((w) => [w.week, w.maxPoints])),
       };
@@ -6692,7 +6698,7 @@ function render(db, state = {}) {
     <div class="tile mint"><div class="k">Best manager</div>
       <div class="v" style="font-size:23px">${eff ? esc(eff.manager) : '&mdash;'}</div>
       <div class="m">${eff ? (eff.efficiency * 100).toFixed(1) + '% of ceiling'
-        : `needs all ${st.regularSeasonWeeks} weeks logged`}</div></div>
+        : 'no ceilings yet — pull from Sleeper'}</div></div>
     <div class="tile"><div class="k">Top week</div>
       <div class="v">${best ? pts(best.points) : '--'}</div>
       <div class="m">${best ? esc(db.team(best.team)?.manager) + ' &middot; wk ' + best.week : ''}</div></div>

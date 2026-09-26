@@ -96,5 +96,23 @@ ok('T3 owns T4', [h2h[3][4].w, h2h[3][4].l], [2, 0]);
 ok('h2h ignores the playoffs', [h2h[1][3]?.w ?? 0], [0]);
 ok('h2h points mirror', h2h[1][2].pa, h2h[2][1].pf);
 
+
+
+/* Lineup efficiency is answerable from week one: the ratio only needs both
+   halves to cover the same weeks, not a whole season. */
+const E = 2098;
+db.get('stats').weekly.push(
+  { season:E, week:1, team:1, points:90,  maxPoints:100, opponent:2, result:'W' },
+  { season:E, week:1, team:2, points:60,  maxPoints:120, opponent:1, result:'L' },
+);
+const ste = db.stats(E);
+ok('efficiency after one week', ste.hasEfficiency, true);
+ok('T1 started 90% of its ceiling', ste.rows.find((x) => x.number === 1).efficiency, 0.9);
+ok('T2 left 60 on the bench', ste.rows.find((x) => x.number === 2).left, 60);
+
+/* A week with no ceiling must not drag the ratio down -- it is not evidence. */
+db.get('stats').weekly.push({ season:E, week:2, team:1, points:80, maxPoints:null, opponent:2, result:'W' });
+ok('a ceiling-less week is excluded', db.stats(E).rows.find((x) => x.number === 1).efficiency, 0.9);
+
 print(fails ? `Records: ${fails} failed.` : 'Records passed.');
 if (fails) throw new Error('records');
