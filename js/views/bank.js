@@ -159,7 +159,7 @@ export function render(db, state = {}) {
   ${/* One card, because it is one graphic: the dial on the left and its own
        three segments on the right, each carrying the fact the dial cannot --
        what the prize money consists of, and who could take the pot. */''}
-  <div class="card bank-hero">
+  <div class="bank-hero">
     <div class="bh-dial">
       <div style="position:relative">
         ${gauge([

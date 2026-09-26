@@ -49,7 +49,7 @@ eq('its three claims are named',
 eq('buy-ins owed is not up there', /Owed now/.test(h), false);
 // the header says nothing the dial or a section below already says -- scoped to
 // the hero, since Empire pot and "at stake" both belong to the payouts section
-const hero = h.slice(h.indexOf('<div class="card bank-hero">'), h.indexOf('<div class="section-title">Buy-ins'));
+const hero = h.slice(h.indexOf('<div class="bank-hero">'), h.indexOf('<div class="section-title">Buy-ins'));
 // (twice in the hero: once in the legend, once in the gauge's aria-label)
 eq('nothing is tiled beside the dial', /class="tile/.test(hero), false);
 eq('the season at stake is not up there', /at stake/i.test(hero), false);

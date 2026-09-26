@@ -512,13 +512,13 @@ table.dt th.sticky{width:1%}
    glow under the arc is a filter that paints past it -- no height guess can
    settle that, only letting it out. It is pulled up so the arc's foot clears
    the legend rather than the legend being pulled up to meet it. */
-.gauge{position:relative;width:230px;max-width:82vw;margin:-10px auto 0;display:block;overflow:visible}
+.gauge{position:relative;width:268px;max-width:82vw;margin:-10px auto 0;display:block;overflow:visible}
 /* 44% of the taller box puts the figure where 52% of the short one did --
    just above the arc's centre */
 .gauge-val{
   position:absolute;left:0;right:0;top:44%;transform:translateY(-50%);text-align:center;pointer-events:none;
 }
-.gauge-val .big{font-family:var(--f-display);font-size:44px;font-weight:700;line-height:1;letter-spacing:-.01em}
+.gauge-val .big{font-family:var(--f-display);font-size:50px;font-weight:700;line-height:1;letter-spacing:-.01em}
 .gauge-val .lbl{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);margin-top:5px;font-weight:700}
 .gauge-legend{display:flex;justify-content:center;gap:18px;margin-top:8px;flex-wrap:wrap}
 .gauge-legend div{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-2)}
@@ -527,12 +527,16 @@ table.dt th.sticky{width:1%}
 /* One card, one graphic: the dial and its own segments spelled out beside it.
    The claims give the card a reason to be wide, rather than a narrow card
    sitting in a wide space. */
-.bank-hero{display:grid;grid-template-columns:1fr;gap:4px;padding:14px 16px 18px;
-  position:relative;overflow:hidden}
+/* No card. A box with a visible edge far from its contents reads as a box that
+   failed to fill, however its contents are aligned -- and there is nothing
+   honest left to put in one, since every candidate figure is already on screen
+   somewhere below. On the page itself, the space beside it is unremarkable. */
+.bank-hero{display:grid;grid-template-columns:1fr;gap:4px;
+  margin:0 0 6px;position:relative}
 .bank-hero::before{
-  content:"";position:absolute;left:14%;top:-52%;transform:translateX(-50%);
-  width:340px;height:340px;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,107,44,.16),transparent 62%);pointer-events:none;
+  content:"";position:absolute;left:24%;top:-42%;transform:translateX(-50%);
+  width:420px;height:420px;border-radius:50%;z-index:-1;
+  background:radial-gradient(circle,rgba(255,107,44,.13),transparent 64%);pointer-events:none;
 }
 .bh-dial{position:relative;display:flex;justify-content:center}
 .bh-claims{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
@@ -555,11 +559,9 @@ table.dt th.sticky{width:1%}
 .bh-claims b{font-family:var(--f-display);font-size:22px;font-weight:700;text-align:right;letter-spacing:-.01em}
 .bh-m{font-size:11.5px;color:var(--ink-3);line-height:1.45}
 @media (min-width:760px){
-  /* Side by side and centred as a pair: each column sizes to its own content,
-     so the dial and its claims sit in the middle of the card rather than
-     starting at the left edge with the slack all on the right. */
-  .bank-hero{grid-template-columns:auto auto;justify-content:center;
-    gap:26px;padding:16px 22px 18px}
+  /* side by side, starting at the page's own left edge like every other
+     section -- with no card there is nothing to centre inside */
+  .bank-hero{grid-template-columns:auto auto;justify-content:start;gap:34px;margin-bottom:10px}
 }
 @media (max-width:620px){
   .bh-claims li{grid-template-columns:10px 1fr auto;gap:6px 10px;padding:9px 2px}
