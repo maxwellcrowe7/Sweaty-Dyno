@@ -11,7 +11,11 @@ const PAD = { t: 14, r: 16, b: 26, l: 40 };
 
 function lineChart(rows, weeks, focus, key = 'byWeek') {
   if (!weeks.length) return '';
-  const W = 640, H = 240;
+  /* Taller where there is room for it. The viewBox fixes the aspect ratio, so a
+     desktop that wants more height needs a taller drawing, not a CSS height --
+     and a phone keeps the shorter one, since there every pixel is scroll. */
+  const wide = typeof window !== 'undefined' && window.matchMedia?.('(min-width:621px)').matches;
+  const W = 640, H = wide ? 290 : 240;
   const vals = rows.flatMap((r) => Object.values(r[key]));
   if (!vals.length) return '';
   const lo = Math.floor(Math.min(...vals) / 20) * 20 - 10;
@@ -298,7 +302,7 @@ export function render(db, state = {}) {
   <div class="section-title">Week by week</div>
   <div class="card wk-card">
     ${/* the toggle rides the header rather than costing the body its own row */''}
-    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3>
+    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Max PF' : 'Points for'}</h3>
       <div class="hd-right">
         ${/* phones only: the manager select shares the header line, so picking
              someone costs the card no row of its own */''}
@@ -308,13 +312,13 @@ export function render(db, state = {}) {
           </select>
         </div>
         ${st.hasCeiling ? `<div class="pills sub wk-pills">
-          <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
-          <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
+          <button data-metric="actual" aria-pressed="${metric === 'actual'}">Points for</button>
+          <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Max PF</button>
         </div>
         <div class="season-pick wk-pick">
           <select data-metric-sel aria-label="Chart">
-            <option value="actual" ${metric === 'actual' ? 'selected' : ''}>Actual</option>
-            <option value="ceiling" ${metric === 'ceiling' ? 'selected' : ''}>Ceiling</option>
+            <option value="actual" ${metric === 'actual' ? 'selected' : ''}>Points for</option>
+            <option value="ceiling" ${metric === 'ceiling' ? 'selected' : ''}>Max PF</option>
           </select>
         </div>` : ''}
       </div></div>
