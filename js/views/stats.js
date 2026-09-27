@@ -369,6 +369,9 @@ export function mount(root, db, go, setState) {
   const mKey = root.querySelector('[data-metric][aria-pressed="true"]')?.dataset.metric === 'ceiling'
     ? 'byWeekMax' : 'byWeek';
   let hover = null;
+  // read from the DOM rather than a captured value: the pills are the record of
+  // what is selected, and they are re-rendered whenever it changes
+  const focused = () => Number(root.querySelector('[data-focus][aria-pressed="true"]')?.dataset.focus) || null;
   const move = (ev) => {
     const p = ev.touches?.[0] ?? ev;
     const box = svg.getBoundingClientRect();
@@ -379,12 +382,22 @@ export function mount(root, db, go, setState) {
     if (wk == null) return;
     const ranked = rows.filter((r) => r[mKey][wk] != null).sort((a, b) => b[mKey][wk] - a[mKey][wk]);
     cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '1');
-    const on = hover == null ? null : rows.find((r) => r.number === hover);
+    const top = ranked.slice(0, 3);
+    /* The line you are following is the whole reason the chart is here, so its
+       score is always in the tooltip -- top three or not. The line under the
+       pointer joins it, and neither is repeated if it is already up there. */
+    const shown = new Set(top.map((r) => r.number));
+    const also = [focused(), hover]
+      .filter((n) => n != null && !shown.has(n))
+      .filter((n, i, a) => a.indexOf(n) === i)
+      .map((n) => rows.find((r) => r.number === n))
+      .filter(Boolean);
+
     tip.innerHTML = `<b style="font-family:var(--f-display);letter-spacing:.06em">WEEK ${wk}</b><br>`
-      + ranked.slice(0, 3).map((r, i) =>
+      + top.map((r, i) =>
         `<span style="color:var(--ink-3)">${i + 1}.</span> ${esc(r.manager)} <b>${pts(r[mKey][wk])}</b>`).join('<br>')
-      + (on ? `<div class="tip-hover">${esc(on.manager)} <b>${
-          on[mKey][wk] != null ? pts(on[mKey][wk]) : '&mdash;'}</b></div>` : '');
+      + also.map((r) => `<div class="tip-hover${r.number === focused() ? ' on' : ''}">${
+          esc(r.manager)} <b>${r[mKey][wk] != null ? pts(r[mKey][wk]) : '&mdash;'}</b></div>`).join('');
     tip.style.opacity = '1';
     const left = Math.min(box.width - 150, Math.max(0, (vx / W) * box.width - 60));
     tip.style.left = left + 'px';

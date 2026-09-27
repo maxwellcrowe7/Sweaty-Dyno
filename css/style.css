@@ -2089,3 +2089,6 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
    line is highlighted -- the same preview, said in words */
 .pills button.hot{border-color:var(--ink-3);color:var(--ink-1)}
 .tip-hover{margin-top:5px;padding-top:5px;border-top:1px solid var(--line);color:var(--ink-2)}
+.tip-hover + .tip-hover{margin-top:2px;padding-top:0;border-top:none}
+/* the line you are following, in the colour it is drawn */
+.tip-hover.on{color:var(--heat)}
