@@ -93,8 +93,10 @@ function standings(db, st, season) {
   const lastIn = po.rows.filter((r) => r.in).length;
   return `<div class="tw"><table class="dt seeds">
     <thead><tr><th class="sticky seed">#</th><th class="sticky t">Team</th>
-      <th class="n">Rec</th><th class="n">PF</th><th class="n">PA</th><th class="n">Diff</th>
-      <th class="n">All&#8209;play</th><th class="n">Back</th></tr></thead>
+      ${/* record and points for ARE the two seeding rules, so the gap that
+           settles the last spot belongs beside them, not at the far end */''}
+      <th class="n">Rec</th><th class="n">PF</th><th class="n">Back</th>
+      <th class="n">PA</th><th class="n">Diff</th><th class="n">All&#8209;play</th></tr></thead>
     <tbody>${po.rows.map((r, i) => `
       <tr class="${r.in ? 'in' : 'out'}${i + 1 === lastIn ? ' cut' : ''}">
         <td class="sticky seed">${r.in ? r.seed : ''}</td>
@@ -103,12 +105,12 @@ function standings(db, st, season) {
           ? '<span class="seed-tag" title="Took the last spot on points for">PTS</span>' : ''}</td>
         <td class="n" style="font-weight:700">${rec(r.wins, r.losses, r.ties)}</td>
         <td class="n">${pts(r.total)}</td>
-        <td class="n dim">${pts(r.pa)}</td>
-        <td class="n" style="color:${r.diff >= 0 ? 'var(--mint)' : 'var(--ink-3)'}">${
-          r.diff > 0 ? '+' : ''}${pts(r.diff)}</td>
-        <td class="n dim">${r.allPlayW}&ndash;${r.allPlayL}</td>
         <td class="n">${r.back == null ? '<span class="dimmer">&mdash;</span>'
           : `<span class="back">&minus;${pts(r.back)}</span>`}</td>
+        <td class="n dim">${pts(r.pa)}</td>
+        <td class="n" style="color:${r.diff >= 0 ? 'var(--mint)' : 'var(--red)'}">${
+          r.diff > 0 ? '+' : ''}${pts(r.diff)}</td>
+        <td class="n dim">${r.allPlayW}&ndash;${r.allPlayL}</td>
       </tr>`).join('')}
     </tbody></table></div>`;
 }
