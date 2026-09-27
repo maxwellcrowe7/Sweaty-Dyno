@@ -2071,9 +2071,12 @@ table.dt.h2h td.lost{color:var(--ink-3)}
 /* ---------- stats: the playoff cut ---------- */
 /* Two sticky columns: the seed is narrow enough to ride with the name without
    costing the table anything on a phone. */
-table.dt.seeds th.sticky.t, table.dt.seeds td.sticky.t{left:34px}
-table.dt.seeds .seed{width:34px;padding-right:0;color:var(--ink-3);
-  font-family:var(--f-display);font-weight:700;font-size:12px;text-align:center}
+table.dt.seeds th.sticky.t, table.dt.seeds td.sticky.t{left:48px}
+/* the seed and the name are one label in two cells, so only the pair gets a
+   rule -- the shared sticky shadow would otherwise draw a line between them */
+table.dt.seeds .seed{width:48px;min-width:48px;padding-right:0;box-shadow:none;
+  color:var(--ink-3);font-family:var(--f-display);font-weight:700;font-size:12px;text-align:center}
+table.dt.seeds th.sticky.seed{text-align:center}
 table.dt.seeds tr.in .seed{color:var(--ink-2)}
 /* the line across the table IS the cut -- brighter than the row rules, and the
    only thing on the page drawn in the accent */
@@ -6766,7 +6769,7 @@ function standings(db, st, season) {
   const po = db.playoffSeeds(season);
   const lastIn = po.rows.filter((r) => r.in).length;
   return `<div class="tw"><table class="dt seeds">
-    <thead><tr><th class="sticky">#</th><th class="sticky t">Team</th>
+    <thead><tr><th class="sticky seed">Seed</th><th class="sticky t">Team</th>
       <th class="n">Rec</th><th class="n">PF</th><th class="n">PA</th><th class="n">Diff</th>
       <th class="n">All&#8209;play</th><th class="n">Luck</th></tr></thead>
     <tbody>${po.rows.map((r, i) => `

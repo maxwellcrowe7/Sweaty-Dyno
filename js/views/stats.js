@@ -92,7 +92,7 @@ function standings(db, st, season) {
   const po = db.playoffSeeds(season);
   const lastIn = po.rows.filter((r) => r.in).length;
   return `<div class="tw"><table class="dt seeds">
-    <thead><tr><th class="sticky">#</th><th class="sticky t">Team</th>
+    <thead><tr><th class="sticky seed">Seed</th><th class="sticky t">Team</th>
       <th class="n">Rec</th><th class="n">PF</th><th class="n">PA</th><th class="n">Diff</th>
       <th class="n">All&#8209;play</th><th class="n">Luck</th></tr></thead>
     <tbody>${po.rows.map((r, i) => `
