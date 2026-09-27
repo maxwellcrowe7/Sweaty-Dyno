@@ -7094,21 +7094,20 @@ function mount(root, db, go, setState) {
     const ranked = rows.filter((r) => r[mKey][wk] != null).sort((a, b) => b[mKey][wk] - a[mKey][wk]);
     cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '1');
     const top = ranked.slice(0, 3);
-    /* The line you are following is the whole reason the chart is here, so its
-       score is always in the tooltip -- top three or not. The line under the
-       pointer joins it, and neither is repeated if it is already up there. */
+    /* One extra line under the top three, for the one manager you are asking
+       about: whoever is under the pointer, or the selected line when the
+       pointer is not on one. Never both -- the answer to "what did he score"
+       is one number, and the question is whichever line you are touching. */
+    const askedAbout = hover ?? focused();
     const shown = new Set(top.map((r) => r.number));
-    const also = [focused(), hover]
-      .filter((n) => n != null && !shown.has(n))
-      .filter((n, i, a) => a.indexOf(n) === i)
-      .map((n) => rows.find((r) => r.number === n))
-      .filter(Boolean);
+    const also = askedAbout != null && !shown.has(askedAbout)
+      ? rows.find((r) => r.number === askedAbout) : null;
 
     tip.innerHTML = `<b style="font-family:var(--f-display);letter-spacing:.06em">WEEK ${wk}</b><br>`
       + top.map((r, i) =>
         `<span style="color:var(--ink-3)">${i + 1}.</span> ${esc(r.manager)} <b>${pts(r[mKey][wk])}</b>`).join('<br>')
-      + also.map((r) => `<div class="tip-hover${r.number === focused() ? ' on' : ''}">${
-          esc(r.manager)} <b>${r[mKey][wk] != null ? pts(r[mKey][wk]) : '&mdash;'}</b></div>`).join('');
+      + (also ? `<div class="tip-hover${also.number === focused() ? ' on' : ''}">${
+          esc(also.manager)} <b>${also[mKey][wk] != null ? pts(also[mKey][wk]) : '&mdash;'}</b></div>` : '');
     tip.style.opacity = '1';
     const left = Math.min(box.width - 150, Math.max(0, (vx / W) * box.width - 60));
     tip.style.left = left + 'px';
