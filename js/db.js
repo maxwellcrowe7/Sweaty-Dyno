@@ -829,9 +829,10 @@ class Store {
     const byPoints = [...rest].sort((a, b) => b.total - a.total);
     const onPoints = byPoints.slice(0, pointsSeeds).map((r) => ({ ...r, how: 'points' }));
     const inIds = new Set(onPoints.map((r) => r.number));
-    // everyone left keeps their record order; the chase is a points question,
-    // answered in `chase` rather than by resorting the table under them
-    const out = rest.filter((r) => !inIds.has(r.number)).map((r) => ({ ...r, how: null }));
+    /* Below the line the order is points, not record: the last spot is settled
+       in points, so that is the ladder those teams are actually climbing, and
+       it is the only order in which "points back" reads down the column. */
+    const out = byPoints.filter((r) => !inIds.has(r.number)).map((r) => ({ ...r, how: null }));
 
     const seeded = [...onRecord, ...onPoints].map((r, i) => ({ ...r, seed: i + 1, in: true }));
     const missed = out.map((r) => ({ ...r, seed: null, in: false }));
@@ -845,8 +846,20 @@ class Store {
       ? { holder: last, chaser: next, gap: Math.round((last.total - next.total) * 100) / 100 }
       : null;
 
+    /* How far each team that missed is from the cut, in the currency the last
+       spot is actually settled in. A record is not a distance; points are, so
+       this is the only honest way to say how close somebody is. */
+    for (const r of missed)
+      r.back = last ? Math.round((last.total - r.total) * 100) / 100 : null;
+
+    /* A six-team bracket plays a four-team first round, so the top two sit it
+       out. Derived from the size of the field rather than stored, because it is
+       not a separate decision -- it is what is left over. */
+    const byes = Math.max(0, 2 ** Math.ceil(Math.log2(Math.max(1, spots))) - spots);
+    for (const r of seeded) r.bye = r.seed <= byes;
+
     return {
-      rows: [...seeded, ...missed], spots, pointsSeeds, chase,
+      rows: [...seeded, ...missed], spots, pointsSeeds, chase, byes,
       decided: this.seasonOver(season),
     };
   }

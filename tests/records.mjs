@@ -141,6 +141,13 @@ ok('T6 got there on points', seedOf(6).how, 'points');
 ok('T7 missed despite a better record than T6', [seedOf(7).wins, seedOf(7).in], [0, false]);
 ok('the chase names the nearest team', po.chase.chaser.number, 7);
 ok('and the gap', po.chase.gap, 240);            // T6 400 vs T7 160
+ok('points back is only for the teams that missed',
+  [seedOf(1).back ?? null, seedOf(7).back], [null, 240]);
+ok('below the line runs on points, so back reads down the column',
+  po.rows.filter((r) => !r.in).map((r) => r.back), [240, 242, 244, 246]);
+/* six spots play a four-team first round, so two sit it out */
+ok('two byes', po.byes, 2);
+ok('and they are the top two seeds', po.rows.filter((r) => r.bye).map((r) => r.seed), [1, 2]);
 
 /* A points seed is the only thing that makes the sixth row special; without one
    the cut is just the record. */

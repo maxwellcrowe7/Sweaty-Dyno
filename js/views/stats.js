@@ -92,13 +92,14 @@ function standings(db, st, season) {
   const po = db.playoffSeeds(season);
   const lastIn = po.rows.filter((r) => r.in).length;
   return `<div class="tw"><table class="dt seeds">
-    <thead><tr><th class="sticky seed">Seed</th><th class="sticky t">Team</th>
+    <thead><tr><th class="sticky seed">#</th><th class="sticky t">Team</th>
       <th class="n">Rec</th><th class="n">PF</th><th class="n">PA</th><th class="n">Diff</th>
-      <th class="n">All&#8209;play</th><th class="n">Luck</th></tr></thead>
+      <th class="n">All&#8209;play</th><th class="n">Back</th></tr></thead>
     <tbody>${po.rows.map((r, i) => `
       <tr class="${r.in ? 'in' : 'out'}${i + 1 === lastIn ? ' cut' : ''}">
         <td class="sticky seed">${r.in ? r.seed : ''}</td>
-        <td class="sticky t">${teamTag(r)}${r.how === 'points'
+        <td class="sticky t">${teamTag(r)}${r.bye
+          ? '<span class="seed-tag bye" title="First-round bye">BYE</span>' : ''}${r.how === 'points'
           ? '<span class="seed-tag" title="Took the last spot on points for">PTS</span>' : ''}</td>
         <td class="n" style="font-weight:700">${rec(r.wins, r.losses, r.ties)}</td>
         <td class="n">${pts(r.total)}</td>
@@ -106,7 +107,8 @@ function standings(db, st, season) {
         <td class="n" style="color:${r.diff >= 0 ? 'var(--mint)' : 'var(--ink-3)'}">${
           r.diff > 0 ? '+' : ''}${pts(r.diff)}</td>
         <td class="n dim">${r.allPlayW}&ndash;${r.allPlayL}</td>
-        <td class="n">${luckCell(r.luck)}</td>
+        <td class="n">${r.back == null ? '<span class="dimmer">&mdash;</span>'
+          : `<span class="back">&minus;${pts(r.back)}</span>`}</td>
       </tr>`).join('')}
     </tbody></table></div>`;
 }
@@ -296,10 +298,10 @@ export function render(db, state = {}) {
       </div>` : ''}
       <div class="s dim" style="font-size:12px">Top ${po.spots - po.pointsSeeds} by record; the last
       ${po.pointsSeeds === 1 ? 'spot goes' : `${po.pointsSeeds} spots go`} to the most points among
-      everyone else. Ties break on points for.
+      everyone else. Ties break on points for${po.byes ? `, and the top ${po.byes === 1 ? 'seed sits'
+      : `${po.byes} seeds sit`} out the first round` : ''}.
       <b>All-play</b> is your score against all nine others, every week &mdash; the record a schedule
-      cannot flatter. <b>Luck</b> is how many wins you are above or below what that record says you
-      deserve.</div></div>
+      cannot flatter. <b>Back</b> is how many points off that last spot you are.</div></div>
   </div>` : `
   <div class="card" style="margin-bottom:14px"><div class="card-bd">
     <div class="s dim" style="font-size:12.5px">${icon('alert')} No matchups pulled for ${S} yet, so there are

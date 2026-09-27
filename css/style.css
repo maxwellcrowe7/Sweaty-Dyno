@@ -2053,12 +2053,13 @@ table.dt.h2h td.lost{color:var(--ink-3)}
 /* ---------- stats: the playoff cut ---------- */
 /* Two sticky columns: the seed is narrow enough to ride with the name without
    costing the table anything on a phone. */
-table.dt.seeds th.sticky.t, table.dt.seeds td.sticky.t{left:48px}
+table.dt.seeds th.sticky.t, table.dt.seeds td.sticky.t{left:32px}
 /* the seed and the name are one label in two cells, so only the pair gets a
    rule -- the shared sticky shadow would otherwise draw a line between them */
-table.dt.seeds .seed{width:48px;min-width:48px;padding-right:0;box-shadow:none;
-  color:var(--ink-3);font-family:var(--f-display);font-weight:700;font-size:12px;text-align:center}
-table.dt.seeds th.sticky.seed{text-align:center}
+table.dt.seeds .seed{width:32px;min-width:32px;padding:10px 0 10px 12px;box-shadow:none;
+  color:var(--ink-3);font-family:var(--f-display);font-weight:700;font-size:12px;text-align:left}
+table.dt.seeds th.sticky.seed{text-align:left}
+table.dt.seeds .back{color:var(--ink-3);font-variant-numeric:tabular-nums}
 table.dt.seeds tr.in .seed{color:var(--ink-2)}
 /* the line across the table IS the cut -- brighter than the row rules, and the
    only thing on the page drawn in the accent */
@@ -2069,3 +2070,5 @@ table.dt.seeds tr.out td{opacity:.72}
   padding:1px 5px;border-radius:4px;vertical-align:1px;
   color:var(--gold);border:1px solid rgba(245,196,81,.32);background:rgba(245,196,81,.10);
 }
+/* a bye is a structural fact, not an achievement, so it is quieter than PTS */
+.seed-tag.bye{color:var(--ink-2);border-color:var(--line);background:var(--surface-3)}
