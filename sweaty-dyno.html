@@ -2112,10 +2112,14 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 .tip-hover.on{color:var(--heat)}
 /* the manager you are pointing at, marked where he already is rather than
    printed a second time below */
-.tip-i{color:var(--ink-3)}
-.tip-row.hot{color:var(--ink-1);font-weight:600}
+/* the whole list recedes so that one row can step forward: three equally
+   bright names give the eye nothing to land on */
+.tip-row{color:var(--ink-3)}
+.tip-row b{font-weight:600}
+.tip-i{opacity:.7}
+.tip-row.hot{color:var(--ink)}
 .tip-row.on{color:var(--heat)}
-.tip-row.on .tip-i,.tip-row.hot .tip-i{color:inherit;opacity:.65}
+.tip-row.hot b,.tip-row.on b{font-weight:800}
 
 </style>
 </head>
