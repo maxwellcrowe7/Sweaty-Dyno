@@ -6756,12 +6756,17 @@ function lineChart(rows, weeks, focus, key = 'byWeek') {
      and a phone keeps the shorter one, since there every pixel is scroll. */
   const wide = typeof window !== 'undefined' && window.matchMedia?.('(min-width:621px)').matches;
   const W = 640, H = wide ? 290 : 240;
+  /* Axis labels are drawn in viewBox units, and a phone shrinks the whole
+     drawing to a little over half size -- 10 units came out near 5.5px. So the
+     phone drawing gets bigger labels and a deeper bottom margin to hold them. */
+  const FS = wide ? 10 : 16;
+  const PB = wide ? PAD.b : 32;
   const vals = rows.flatMap((r) => Object.values(r[key]));
   if (!vals.length) return '';
   const lo = Math.floor(Math.min(...vals) / 20) * 20 - 10;
   const hi = Math.ceil(Math.max(...vals) / 20) * 20 + 10;
   const x = (w) => PAD.l + ((w - weeks[0]) / Math.max(1, weeks.at(-1) - weeks[0])) * (W - PAD.l - PAD.r);
-  const y = (v) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PAD.b);
+  const y = (v) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PB);
   const path = (r) => weeks.filter((w) => r[key][w] != null)
     .map((w, i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(r[key][w]).toFixed(1)}`).join(' ');
 
@@ -6777,10 +6782,10 @@ function lineChart(rows, weeks, focus, key = 'byWeek') {
       ${ticks.map((t) => `
         <line x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"
               stroke="#28323F" stroke-width="1"/>
-        <text x="${PAD.l - 8}" y="${(y(t) + 3.5).toFixed(1)}" text-anchor="end"
-              fill="#7C8BA0" font-size="10" font-family="Inter,sans-serif">${Math.round(t)}</text>`).join('')}
+        <text x="${PAD.l - 8}" y="${(y(t) + FS * 0.35).toFixed(1)}" text-anchor="end"
+              fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${Math.round(t)}</text>`).join('')}
       ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - 8}" text-anchor="middle"
-              fill="#7C8BA0" font-size="10" font-family="Inter,sans-serif">${w}</text>`).join('')}
+              fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${w}</text>`).join('')}
       ${rows.filter((r) => r.number !== focus).map((r) =>
         `<path class="ln" data-line="${r.number}" d="${path(r)}" fill="none" stroke="#3A4657"
                stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
@@ -6789,7 +6794,7 @@ function lineChart(rows, weeks, focus, key = 'byWeek') {
         ${weeks.filter((w) => f[key][w] != null).map((w) => `
           <circle cx="${x(w).toFixed(1)}" cy="${y(f[key][w]).toFixed(1)}" r="4"
                   fill="var(--heat)" stroke="#141B24" stroke-width="2"/>`).join('')}` : ''}
-      <line data-cross x1="0" x2="0" y1="${PAD.t}" y2="${H - PAD.b}" stroke="#5A6A80" stroke-width="1"
+      <line data-cross x1="0" x2="0" y1="${PAD.t}" y2="${H - PB}" stroke="#5A6A80" stroke-width="1"
             stroke-dasharray="3 3" opacity="0"/>
       ${/* A 1.5px line is not a target. These sit on top, invisible and twelve
            pixels wide, and are the only thing the pointer ever actually hits --
