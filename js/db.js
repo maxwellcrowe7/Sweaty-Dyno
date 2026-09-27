@@ -803,6 +803,54 @@ class Store {
     return { seasons, rows, hasData: rows.length > 0 };
   }
 
+  /**
+   * The playoff race: who is in, in seed order, and who is chasing.
+   *
+   * Five seeds go on record and the sixth on points for among everyone else,
+   * so a team can miss the cut on record and still play in January. That second
+   * rule is why this cannot just be the standings sorted by wins -- the table
+   * has to be built in two passes, and the sixth row got there a different way
+   * from the five above it.
+   *
+   * Record ties break on points for, which is also the sixth seed's own
+   * mechanism, so the table only ever answers to one tiebreaker.
+   */
+  playoffSeeds(season = this.season) {
+    const L = this.league;
+    const spots = Number(L.playoffSpots) || 6;
+    const pointsSeeds = Math.max(0, Math.min(spots, Number(L.pointsSeeds ?? 1)));
+    const recordSpots = spots - pointsSeeds;
+
+    const byRecord = this.stats(season).rows.filter((r) => r.games > 0)
+      .sort((a, b) => (b.wins + b.ties / 2) - (a.wins + a.ties / 2) || b.total - a.total);
+
+    const onRecord = byRecord.slice(0, recordSpots).map((r) => ({ ...r, how: 'record' }));
+    const rest = byRecord.slice(recordSpots);
+    const byPoints = [...rest].sort((a, b) => b.total - a.total);
+    const onPoints = byPoints.slice(0, pointsSeeds).map((r) => ({ ...r, how: 'points' }));
+    const inIds = new Set(onPoints.map((r) => r.number));
+    // everyone left keeps their record order; the chase is a points question,
+    // answered in `chase` rather than by resorting the table under them
+    const out = rest.filter((r) => !inIds.has(r.number)).map((r) => ({ ...r, how: null }));
+
+    const seeded = [...onRecord, ...onPoints].map((r, i) => ({ ...r, seed: i + 1, in: true }));
+    const missed = out.map((r) => ({ ...r, seed: null, in: false }));
+
+    /* Who is nearest the last points seed, and by how much. Only meaningful
+       while that seed is decided on points -- a league with none has a plain
+       cut line and nothing to chase. */
+    const last = onPoints.at(-1) ?? null;
+    const next = byPoints[pointsSeeds] ?? null;
+    const chase = last && next
+      ? { holder: last, chaser: next, gap: Math.round((last.total - next.total) * 100) / 100 }
+      : null;
+
+    return {
+      rows: [...seeded, ...missed], spots, pointsSeeds, chase,
+      decided: this.seasonOver(season),
+    };
+  }
+
   /** The title weeks: pulled and kept, but never mixed into regular-season form. */
   playoffWeeks(season = this.season) {
     return this.get('stats').weekly

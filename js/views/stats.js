@@ -85,15 +85,21 @@ const luckCell = (v) => v == null ? '<span class="dimmer">&mdash;</span>'
 const rec = (w, l, t) => `${w}&ndash;${l}${t ? `&ndash;${t}` : ''}`;
 
 /* ---------- the standings, which is what a record table is ---------- */
-function standings(db, st) {
-  const rows = [...st.rows].filter((r) => r.games > 0)
-    .sort((a, b) => (b.wins + b.ties / 2) - (a.wins + a.ties / 2) || b.total - a.total);
-  return `<div class="tw"><table class="dt">
-    <thead><tr><th class="sticky">Team</th>
+/* Sorted in seed order rather than by record, because that is the question
+   people actually bring to it. The five record seeds, then the points seed,
+   then everyone else in record order, with a line drawn across the cut. */
+function standings(db, st, season) {
+  const po = db.playoffSeeds(season);
+  const lastIn = po.rows.filter((r) => r.in).length;
+  return `<div class="tw"><table class="dt seeds">
+    <thead><tr><th class="sticky">#</th><th class="sticky t">Team</th>
       <th class="n">Rec</th><th class="n">PF</th><th class="n">PA</th><th class="n">Diff</th>
       <th class="n">All&#8209;play</th><th class="n">Luck</th></tr></thead>
-    <tbody>${rows.map((r) => `
-      <tr><td class="sticky">${teamTag(r)}</td>
+    <tbody>${po.rows.map((r, i) => `
+      <tr class="${r.in ? 'in' : 'out'}${i + 1 === lastIn ? ' cut' : ''}">
+        <td class="sticky seed">${r.in ? r.seed : ''}</td>
+        <td class="sticky t">${teamTag(r)}${r.how === 'points'
+          ? '<span class="seed-tag" title="Took the last spot on points for">PTS</span>' : ''}</td>
         <td class="n" style="font-weight:700">${rec(r.wins, r.losses, r.ties)}</td>
         <td class="n">${pts(r.total)}</td>
         <td class="n dim">${pts(r.pa)}</td>
@@ -246,6 +252,7 @@ export function render(db, state = {}) {
   /* The most wronged team in the league. It is the stat this page exists to
      settle, so it gets a tile rather than a column somebody has to go find. */
   const unlucky = [...withData].filter((r) => r.luck != null).sort((a, b) => a.luck - b.luck)[0];
+  const po = db.playoffSeeds(S);
 
   /* One card, three questions about the same ten managers, rather than three
      cards of identical bars. */
@@ -276,12 +283,23 @@ export function render(db, state = {}) {
   </div>
 
   ${st.hasRecords ? `
-  <div class="section-title">Standings</div>
-  <div class="card"><div class="card-bd flush">${standings(db, st)}</div>
+  <div class="section-title">${po.decided ? 'Final seeds' : 'Playoff race'}</div>
+  <div class="card"><div class="card-bd flush">${standings(db, st, S)}</div>
     <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px"><b>All-play</b> is your score against all nine others,
-      every week &mdash; the record a schedule cannot flatter. <b>Luck</b> is how many wins you are
-      above or below what that record says you deserve.</div></div>
+      ${/* the chase is a gap in points, which is the one thing the table cannot
+           be a column for -- and the part anybody refreshes the page for */''}
+      ${po.chase ? `<div class="s" style="font-size:12.5px;margin-bottom:8px">
+        <b>${esc(po.chase.holder.manager)}</b> holds the last spot on points.
+        <b>${esc(po.chase.chaser.manager)}</b> is ${pts(po.chase.gap)} behind${
+          po.decided ? '' : ' with ' + Math.max(0, st.regularSeasonWeeks - st.weeks.length)
+          + ' week' + (st.regularSeasonWeeks - st.weeks.length === 1 ? '' : 's') + ' to play'}.
+      </div>` : ''}
+      <div class="s dim" style="font-size:12px">Top ${po.spots - po.pointsSeeds} by record; the last
+      ${po.pointsSeeds === 1 ? 'spot goes' : `${po.pointsSeeds} spots go`} to the most points among
+      everyone else. Ties break on points for.
+      <b>All-play</b> is your score against all nine others, every week &mdash; the record a schedule
+      cannot flatter. <b>Luck</b> is how many wins you are above or below what that record says you
+      deserve.</div></div>
   </div>` : `
   <div class="card" style="margin-bottom:14px"><div class="card-bd">
     <div class="s dim" style="font-size:12.5px">${icon('alert')} No matchups pulled for ${S} yet, so there are

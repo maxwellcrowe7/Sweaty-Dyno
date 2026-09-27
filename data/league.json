@@ -75,6 +75,9 @@
   },
   "empireTitlesToWin": 2,
   "empireRequiresTitle": true,
+  "playoffSpots": 6,
+  "pointsSeeds": 1,
+  "_playoffNote": "How many teams make the playoffs, and how many of those spots go to the highest points for among everyone who missed on record. 6 and 1 means five seeds by record and a sixth on points.",
   "placementPayouts": {
     "default": {
       "1": 100,

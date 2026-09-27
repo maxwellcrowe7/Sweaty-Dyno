@@ -114,5 +114,41 @@ ok('T2 left 60 on the bench', ste.rows.find((x) => x.number === 2).left, 60);
 db.get('stats').weekly.push({ season:E, week:2, team:1, points:80, maxPoints:null, opponent:2, result:'W' });
 ok('a ceiling-less week is excluded', db.stats(E).rows.find((x) => x.number === 1).efficiency, 0.9);
 
+/* ---- the playoff cut ----
+   Six spots: five on record, the sixth on points for among everyone else. A
+   team can miss on record and play in January anyway, which is the whole
+   reason this is not the standings sorted by wins. */
+const P = 2097;
+const mk = (week, a, ap, b, bp) => ([
+  { season:P, week, team:a, points:ap, maxPoints:null, opponent:b, result: ap > bp ? 'W' : 'L' },
+  { season:P, week, team:b, points:bp, maxPoints:null, opponent:a, result: bp > ap ? 'W' : 'L' },
+]);
+/* T1..T5 win every week; T6..T10 lose every week. T6 loses to the one team
+   scoring more than him, so he goes 0-2 with the second-most points in the
+   league -- exactly the team the sixth seed exists for. */
+for (const wk of [1, 2]) db.get('stats').weekly.push(
+  ...mk(wk, 1, 210, 6, 200),                       // T6 scores 200 and still loses
+  ...mk(wk, 2, 118, 7, 80), ...mk(wk, 3, 116, 8, 79),
+  ...mk(wk, 4, 114, 9, 78), ...mk(wk, 5, 112, 10, 77),
+);
+const po = db.playoffSeeds(P);
+const seedOf = (n) => po.rows.find((r) => r.number === n);
+ok('six make it', po.rows.filter((r) => r.in).length, 6);
+ok('the five record seeds are the five winners',
+  po.rows.filter((r) => r.in && r.how === 'record').map((r) => r.number).sort(), [1, 2, 3, 4, 5]);
+ok('T6 is 0-2 and in anyway', [seedOf(6).wins, seedOf(6).in, seedOf(6).seed], [0, true, 6]);
+ok('T6 got there on points', seedOf(6).how, 'points');
+ok('T7 missed despite a better record than T6', [seedOf(7).wins, seedOf(7).in], [0, false]);
+ok('the chase names the nearest team', po.chase.chaser.number, 7);
+ok('and the gap', po.chase.gap, 240);            // T6 400 vs T7 160
+
+/* A points seed is the only thing that makes the sixth row special; without one
+   the cut is just the record. */
+db.league.pointsSeeds = 0;
+const po2 = db.playoffSeeds(P);
+ok('no points seed, no chase', po2.chase, null);
+ok('six by record', po2.rows.filter((r) => r.in).map((r) => r.number), [1, 2, 3, 4, 5, 6]);
+db.league.pointsSeeds = 1;
+
 print(fails ? `Records: ${fails} failed.` : 'Records passed.');
 if (fails) throw new Error('records');
