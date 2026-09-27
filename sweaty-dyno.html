@@ -2106,8 +2106,10 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 /* the pill for the line under the pointer, so the name is readable while the
    line is highlighted -- the same preview, said in words */
 .pills button.hot{border-color:var(--ink-3);color:var(--ink-1)}
-.tip-hover{margin-top:5px;padding-top:5px;border-top:1px solid var(--line);color:var(--ink-2)}
-.tip-hover + .tip-hover{margin-top:2px;padding-top:0;border-top:none}
+/* Same manager, same emphasis: this row and a marked row inside the top three
+   are the same answer in two places, so they are drawn identically. */
+.tip-hover{margin-top:5px;padding-top:5px;border-top:1px solid var(--line);color:var(--ink)}
+.tip-hover b{font-weight:800}
 /* the line you are following, in the colour it is drawn */
 .tip-hover.on{color:var(--heat)}
 /* the manager you are pointing at, marked where he already is rather than
