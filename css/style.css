@@ -2104,3 +2104,10 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 .tip-row.hot{color:var(--ink)}
 .tip-row.on{color:var(--heat)}
 .tip-row.hot b,.tip-row.on b{font-weight:800}
+
+/* week by week: pills on a desktop, a select on a phone */
+.wk-pick{display:none;margin-top:12px}
+@media (max-width:620px){
+  .wk-pills{display:none}
+  .wk-pick{display:flex}
+}

@@ -305,8 +305,18 @@ export function render(db, state = {}) {
       </div>` : ''}</div>
     <div class="card-bd">
       ${lineChart(withData, st.weeks, focus, wkKey)}
-      <div class="pills" style="margin-top:10px">
+      ${/* Pills where there is room for all ten; a select on a phone, where
+           they would scroll off sideways and hide most of the league. Both are
+           always rendered and CSS picks one -- the pills also stay the record of
+           who is selected, which the tooltip reads. */''}
+      <div class="pills wk-pills" style="margin-top:10px">
         ${st.rows.map((r) => `<button data-focus="${r.number}" aria-pressed="${r.number === focus}">${esc(r.manager)}</button>`).join('')}
+      </div>
+      <div class="season-pick wk-pick">
+        <span>Manager</span>
+        <select data-focus-sel aria-label="Manager">
+          ${st.rows.map((r) => `<option value="${r.number}" ${r.number === focus ? 'selected' : ''}>${esc(r.manager)}</option>`).join('')}
+        </select>
       </div>
     </div>
   </div>` : ''}
@@ -348,6 +358,8 @@ export function render(db, state = {}) {
 export function mount(root, db, go, setState) {
   root.querySelectorAll('[data-focus]').forEach((b) => b.addEventListener('click', () =>
     setState({ focusTeam: Number(b.dataset.focus) })));
+  root.querySelector('[data-focus-sel]')?.addEventListener('change', (e) =>
+    setState({ focusTeam: Number(e.target.value) }));
   root.querySelectorAll('[data-metric]').forEach((b) => b.addEventListener('click', () =>
     setState({ metric: b.dataset.metric })));
   root.querySelectorAll('[data-stab]').forEach((b) => b.addEventListener('click', () =>
