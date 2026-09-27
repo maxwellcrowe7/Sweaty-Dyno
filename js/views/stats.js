@@ -296,13 +296,22 @@ export function render(db, state = {}) {
 
   ${st.hasData ? `
   <div class="section-title">Week by week</div>
-  <div class="card">
+  <div class="card wk-card">
     ${/* the toggle rides the header rather than costing the body its own row */''}
     <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3>
-      ${st.hasCeiling ? `<div class="pills sub" style="margin-left:auto">
-        <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
-        <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
-      </div>` : ''}</div>
+      <div class="hd-right">
+        ${/* phones only: the manager select shares the header line, so picking
+             someone costs the card no row of its own */''}
+        <div class="season-pick wk-pick">
+          <select data-focus-sel aria-label="Manager">
+            ${st.rows.map((r) => `<option value="${r.number}" ${r.number === focus ? 'selected' : ''}>${esc(r.manager)}</option>`).join('')}
+          </select>
+        </div>
+        ${st.hasCeiling ? `<div class="pills sub">
+          <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
+          <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
+        </div>` : ''}
+      </div></div>
     <div class="card-bd">
       ${lineChart(withData, st.weeks, focus, wkKey)}
       ${/* Pills where there is room for all ten; a select on a phone, where
@@ -312,12 +321,7 @@ export function render(db, state = {}) {
       <div class="pills wk-pills" style="margin-top:10px">
         ${st.rows.map((r) => `<button data-focus="${r.number}" aria-pressed="${r.number === focus}">${esc(r.manager)}</button>`).join('')}
       </div>
-      <div class="season-pick wk-pick">
-        <span>Manager</span>
-        <select data-focus-sel aria-label="Manager">
-          ${st.rows.map((r) => `<option value="${r.number}" ${r.number === focus ? 'selected' : ''}>${esc(r.manager)}</option>`).join('')}
-        </select>
-      </div>
+
     </div>
   </div>` : ''}
 

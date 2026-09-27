@@ -1439,7 +1439,9 @@ del{text-decoration:line-through;text-decoration-color:var(--red);background:rgb
   [data-marks] .i-narrow{display:inline-flex}
   .rules-title{font-size:21px;gap:9px}
   .rules-meta{margin-bottom:11px;gap:9px}
-  .season-pick select{font-size:13px;padding:3px 7px}
+  /* smaller on a phone, but the right padding keeps room for the caret -- an
+     even 7px all round let the text run over it on every picker in the app */
+  .season-pick select{font-size:13px;padding:3px 20px 3px 8px;background-position:right 6px center}
 
   /* the rulebook itself reads narrower */
   .rules-doc .card-bd{padding:13px}
@@ -2124,10 +2126,15 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 .tip-row.hot b,.tip-row.on b{font-weight:800}
 
 /* week by week: pills on a desktop, a select on a phone */
-.wk-pick{display:none;margin-top:12px}
+.card-hd .hd-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.wk-pick{display:none}
 @media (max-width:620px){
   .wk-pills{display:none}
   .wk-pick{display:flex}
+  /* The toggle already says which chart this is, so on a phone the title gives
+     up its place: manager on the left, Actual/Ceiling on the right, one line. */
+  .wk-card .card-hd h3{display:none}
+  .wk-card .card-hd .hd-right{margin-left:0;width:100%;justify-content:space-between}
 }
 
 </style>
@@ -7027,13 +7034,22 @@ function render(db, state = {}) {
 
   ${st.hasData ? `
   <div class="section-title">Week by week</div>
-  <div class="card">
+  <div class="card wk-card">
     ${/* the toggle rides the header rather than costing the body its own row */''}
     <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3>
-      ${st.hasCeiling ? `<div class="pills sub" style="margin-left:auto">
-        <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
-        <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
-      </div>` : ''}</div>
+      <div class="hd-right">
+        ${/* phones only: the manager select shares the header line, so picking
+             someone costs the card no row of its own */''}
+        <div class="season-pick wk-pick">
+          <select data-focus-sel aria-label="Manager">
+            ${st.rows.map((r) => `<option value="${r.number}" ${r.number === focus ? 'selected' : ''}>${esc(r.manager)}</option>`).join('')}
+          </select>
+        </div>
+        ${st.hasCeiling ? `<div class="pills sub">
+          <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
+          <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
+        </div>` : ''}
+      </div></div>
     <div class="card-bd">
       ${lineChart(withData, st.weeks, focus, wkKey)}
       ${/* Pills where there is room for all ten; a select on a phone, where
@@ -7043,12 +7059,7 @@ function render(db, state = {}) {
       <div class="pills wk-pills" style="margin-top:10px">
         ${st.rows.map((r) => `<button data-focus="${r.number}" aria-pressed="${r.number === focus}">${esc(r.manager)}</button>`).join('')}
       </div>
-      <div class="season-pick wk-pick">
-        <span>Manager</span>
-        <select data-focus-sel aria-label="Manager">
-          ${st.rows.map((r) => `<option value="${r.number}" ${r.number === focus ? 'selected' : ''}>${esc(r.manager)}</option>`).join('')}
-        </select>
-      </div>
+
     </div>
   </div>` : ''}
 
