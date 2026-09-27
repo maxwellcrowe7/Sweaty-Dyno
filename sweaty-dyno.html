@@ -2095,6 +2095,10 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 /* a bye is a structural fact, not an achievement, so it is quieter than PTS */
 .seed-tag.bye{color:var(--ink-2);border-color:var(--line);background:var(--surface-3)}
 
+/* a toggle that lives in a card header, not above the body it controls */
+.card-hd .pills{margin:0;padding:0;overflow:visible}
+.card-hd .pills button{padding:4px 12px}
+
 </style>
 </head>
 <body>
@@ -6986,12 +6990,13 @@ function render(db, state = {}) {
   ${st.hasData ? `
   <div class="section-title">Week by week</div>
   <div class="card">
-    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3></div>
-    <div class="card-bd">
-      ${st.hasCeiling ? `<div class="pills" style="margin-bottom:10px">
+    ${/* the toggle rides the header rather than costing the body its own row */''}
+    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3>
+      ${st.hasCeiling ? `<div class="pills sub" style="margin-left:auto">
         <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
         <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
-      </div>` : ''}
+      </div>` : ''}</div>
+    <div class="card-bd">
       ${lineChart(withData, st.weeks, focus, wkKey)}
       <div class="pills" style="margin-top:10px">
         ${st.rows.map((r) => `<button data-focus="${r.number}" aria-pressed="${r.number === focus}">${esc(r.manager)}</button>`).join('')}

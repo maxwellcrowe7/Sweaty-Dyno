@@ -290,12 +290,13 @@ export function render(db, state = {}) {
   ${st.hasData ? `
   <div class="section-title">Week by week</div>
   <div class="card">
-    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3></div>
-    <div class="card-bd">
-      ${st.hasCeiling ? `<div class="pills" style="margin-bottom:10px">
+    ${/* the toggle rides the header rather than costing the body its own row */''}
+    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Weekly ceiling' : 'Points for'}</h3>
+      ${st.hasCeiling ? `<div class="pills sub" style="margin-left:auto">
         <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
         <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
-      </div>` : ''}
+      </div>` : ''}</div>
+    <div class="card-bd">
       ${lineChart(withData, st.weeks, focus, wkKey)}
       <div class="pills" style="margin-top:10px">
         ${st.rows.map((r) => `<button data-focus="${r.number}" aria-pressed="${r.number === focus}">${esc(r.manager)}</button>`).join('')}

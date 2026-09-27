@@ -2076,3 +2076,7 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 }
 /* a bye is a structural fact, not an achievement, so it is quieter than PTS */
 .seed-tag.bye{color:var(--ink-2);border-color:var(--line);background:var(--surface-3)}
+
+/* a toggle that lives in a card header, not above the body it controls */
+.card-hd .pills{margin:0;padding:0;overflow:visible}
+.card-hd .pills button{padding:4px 12px}
