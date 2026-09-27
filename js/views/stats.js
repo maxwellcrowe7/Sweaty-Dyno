@@ -76,12 +76,6 @@ function barChart(rows, key, label, unit = '') {
   </div>`;
 }
 
-/* Luck reads as a signed number of wins, so it needs its sign and its colour.
-   Positive means the schedule has been kind, which is not a compliment. */
-const luckCell = (v) => v == null ? '<span class="dimmer">&mdash;</span>'
-  : `<span style="color:${v > 0.3 ? 'var(--gold)' : v < -0.3 ? 'var(--mint)' : 'var(--ink-3)'}">${
-      v > 0 ? '+' : ''}${v.toFixed(1)}</span>`;
-
 const rec = (w, l, t) => `${w}&ndash;${l}${t ? `&ndash;${t}` : ''}`;
 
 /* ---------- the standings, which is what a record table is ---------- */
@@ -165,7 +159,7 @@ function allTime(db) {
     <thead><tr><th class="sticky">Team</th>
       <th class="n">Yrs</th><th class="n">Rec</th><th class="n">Win%</th>
       <th class="n">PF</th><th class="n">PA</th><th class="n">Avg</th>
-      <th class="n">All&#8209;play</th><th class="n">Luck</th><th class="n">Titles</th></tr></thead>
+      <th class="n">All&#8209;play</th><th class="n">Titles</th></tr></thead>
     <tbody>${byPct.map((r) => `
       <tr><td class="sticky">${teamTag(r)}</td>
         <td class="n dim">${r.seasons}</td>
@@ -175,7 +169,6 @@ function allTime(db) {
         <td class="n dim">${pts(r.pa)}</td>
         <td class="n dim">${pts(r.avg)}</td>
         <td class="n dim">${r.allPlayW}&ndash;${r.allPlayL}</td>
-        <td class="n">${luckCell(r.luck)}</td>
         <td class="n">${r.titles ? `${icon('crown')}`.repeat(1) + (r.titles > 1 ? ` <b>${r.titles}</b>` : '')
           : '<span class="dimmer">&mdash;</span>'}</td>
       </tr>`).join('')}
@@ -289,21 +282,6 @@ export function render(db, state = {}) {
   ${st.hasRecords ? `
   <div class="section-title">${po.decided ? 'Final seeds' : 'Playoff race'}</div>
   <div class="card"><div class="card-bd flush">${standings(db, st, S)}</div>
-    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      ${/* the chase is a gap in points, which is the one thing the table cannot
-           be a column for -- and the part anybody refreshes the page for */''}
-      ${po.chase ? `<div class="s" style="font-size:12.5px;margin-bottom:8px">
-        <b>${esc(po.chase.holder.manager)}</b> holds the last spot on points.
-        <b>${esc(po.chase.chaser.manager)}</b> is ${pts(po.chase.gap)} behind${
-          po.decided ? '' : ' with ' + Math.max(0, st.regularSeasonWeeks - st.weeks.length)
-          + ' week' + (st.regularSeasonWeeks - st.weeks.length === 1 ? '' : 's') + ' to play'}.
-      </div>` : ''}
-      <div class="s dim" style="font-size:12px">Top ${po.spots - po.pointsSeeds} by record; the last
-      ${po.pointsSeeds === 1 ? 'spot goes' : `${po.pointsSeeds} spots go`} to the most points among
-      everyone else. Ties break on points for${po.byes ? `, and the top ${po.byes === 1 ? 'seed sits'
-      : `${po.byes} seeds sit`} out the first round` : ''}.
-      <b>All-play</b> is your score against all nine others, every week &mdash; the record a schedule
-      cannot flatter. <b>Back</b> is how many points off that last spot you are.</div></div>
   </div>` : `
   <div class="card" style="margin-bottom:14px"><div class="card-bd">
     <div class="s dim" style="font-size:12.5px">${icon('alert')} No matchups pulled for ${S} yet, so there are
