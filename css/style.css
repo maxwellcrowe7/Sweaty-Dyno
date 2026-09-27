@@ -2113,8 +2113,9 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 @media (max-width:620px){
   .wk-pills{display:none}
   .wk-pick{display:flex}
-  /* The toggle already says which chart this is, so on a phone the title gives
-     up its place: manager on the left, Actual/Ceiling on the right, one line. */
-  .wk-card .card-hd h3{display:none}
-  .wk-card .card-hd .hd-right{margin-left:0;width:100%;justify-content:space-between}
+  /* two selects rather than a select and a pair of pills, so both fit on the
+     title's line and the card keeps its header */
+  .wk-card .card-hd{gap:8px}
+  .wk-card .card-hd h3{font-size:14px;white-space:nowrap}
+  .wk-card .card-hd .hd-right{gap:6px}
 }

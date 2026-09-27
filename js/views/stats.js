@@ -307,9 +307,15 @@ export function render(db, state = {}) {
             ${st.rows.map((r) => `<option value="${r.number}" ${r.number === focus ? 'selected' : ''}>${esc(r.manager)}</option>`).join('')}
           </select>
         </div>
-        ${st.hasCeiling ? `<div class="pills sub">
+        ${st.hasCeiling ? `<div class="pills sub wk-pills">
           <button data-metric="actual" aria-pressed="${metric === 'actual'}">Actual</button>
           <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Ceiling</button>
+        </div>
+        <div class="season-pick wk-pick">
+          <select data-metric-sel aria-label="Chart">
+            <option value="actual" ${metric === 'actual' ? 'selected' : ''}>Actual</option>
+            <option value="ceiling" ${metric === 'ceiling' ? 'selected' : ''}>Ceiling</option>
+          </select>
         </div>` : ''}
       </div></div>
     <div class="card-bd">
@@ -364,6 +370,8 @@ export function mount(root, db, go, setState) {
     setState({ focusTeam: Number(b.dataset.focus) })));
   root.querySelector('[data-focus-sel]')?.addEventListener('change', (e) =>
     setState({ focusTeam: Number(e.target.value) }));
+  root.querySelector('[data-metric-sel]')?.addEventListener('change', (e) =>
+    setState({ metric: e.target.value }));
   root.querySelectorAll('[data-metric]').forEach((b) => b.addEventListener('click', () =>
     setState({ metric: b.dataset.metric })));
   root.querySelectorAll('[data-stab]').forEach((b) => b.addEventListener('click', () =>
