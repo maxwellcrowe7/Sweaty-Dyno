@@ -389,12 +389,14 @@ export function mount(root, db, go, setState) {
        is one number, and the question is whichever line you are touching. */
     const askedAbout = hover ?? focused();
     const shown = new Set(top.map((r) => r.number));
+    // already up there: mark his row rather than printing him twice
     const also = askedAbout != null && !shown.has(askedAbout)
       ? rows.find((r) => r.number === askedAbout) : null;
 
     tip.innerHTML = `<b style="font-family:var(--f-display);letter-spacing:.06em">WEEK ${wk}</b><br>`
-      + top.map((r, i) =>
-        `<span style="color:var(--ink-3)">${i + 1}.</span> ${esc(r.manager)} <b>${pts(r[mKey][wk])}</b>`).join('<br>')
+        + top.map((r, i) => `<span class="tip-row${r.number === askedAbout
+          ? (r.number === focused() ? ' on' : ' hot') : ''}"><span class="tip-i">${i + 1}.</span> ${
+          esc(r.manager)} <b>${pts(r[mKey][wk])}</b></span>`).join('<br>')
       + (also ? `<div class="tip-hover${also.number === focused() ? ' on' : ''}">${
           esc(also.manager)} <b>${also[mKey][wk] != null ? pts(also[mKey][wk]) : '&mdash;'}</b></div>` : '');
     tip.style.opacity = '1';

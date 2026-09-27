@@ -2092,3 +2092,9 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 .tip-hover + .tip-hover{margin-top:2px;padding-top:0;border-top:none}
 /* the line you are following, in the colour it is drawn */
 .tip-hover.on{color:var(--heat)}
+/* the manager you are pointing at, marked where he already is rather than
+   printed a second time below */
+.tip-i{color:var(--ink-3)}
+.tip-row.hot{color:var(--ink-1);font-weight:600}
+.tip-row.on{color:var(--heat)}
+.tip-row.on .tip-i,.tip-row.hot .tip-i{color:inherit;opacity:.65}
