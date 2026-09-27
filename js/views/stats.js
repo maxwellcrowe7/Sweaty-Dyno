@@ -9,7 +9,7 @@ import { esc, icon, teamTag, pts, empty, teamColor, money, seasonPicker } from '
 
 const PAD = { t: 14, r: 16, b: 26, l: 40 };
 
-function lineChart(rows, weeks, focus, key = 'byWeek') {
+function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   if (!weeks.length) return '';
   /* Taller where there is room for it. The viewBox fixes the aspect ratio, so a
      desktop that wants more height needs a taller drawing, not a CSS height --
@@ -21,14 +21,28 @@ function lineChart(rows, weeks, focus, key = 'byWeek') {
      phone drawing gets bigger labels and a deeper bottom margin to hold them. */
   const FS = wide ? 10 : 16;
   const PB = wide ? PAD.b : 32;
-  const vals = rows.flatMap((r) => Object.values(r[key]));
+  /* Both: one manager against his own best lineup. The league's lines go --
+     the question is no longer how he compares with everyone else -- and the
+     scale is fitted to his two lines alone, so the gap between them reads. */
+  const fr = rows.find((r) => r.number === focus);
+  const vals = both
+    ? (fr ? [...Object.values(fr.byWeek), ...Object.values(fr.byWeekMax)] : [])
+    : rows.flatMap((r) => Object.values(r[key]));
   if (!vals.length) return '';
   const lo = Math.floor(Math.min(...vals) / 20) * 20 - 10;
   const hi = Math.ceil(Math.max(...vals) / 20) * 20 + 10;
   const x = (w) => PAD.l + ((w - weeks[0]) / Math.max(1, weeks.at(-1) - weeks[0])) * (W - PAD.l - PAD.r);
   const y = (v) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PB);
-  const path = (r) => weeks.filter((w) => r[key][w] != null)
-    .map((w, i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(r[key][w]).toFixed(1)}`).join(' ');
+  const path = (r, k = key) => weeks.filter((w) => r[k][w] != null)
+    .map((w, i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(r[k][w]).toFixed(1)}`).join(' ');
+  // the bench: the band between what he could have started and what he did
+  const band = (r) => {
+    const wk = weeks.filter((w) => r.byWeek[w] != null && r.byWeekMax[w] != null);
+    if (wk.length < 2) return '';
+    const top = wk.map((w, i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(r.byWeekMax[w]).toFixed(1)}`);
+    const bot = [...wk].reverse().map((w) => `L${x(w).toFixed(1)} ${y(r.byWeek[w]).toFixed(1)}`);
+    return `${top.join(' ')} ${bot.join(' ')} Z`;
+  };
 
   const ticks = [];
   for (let i = 0; i <= 4; i++) ticks.push(lo + ((hi - lo) / 4) * i);
@@ -46,20 +60,23 @@ function lineChart(rows, weeks, focus, key = 'byWeek') {
               fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${Math.round(t)}</text>`).join('')}
       ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - 8}" text-anchor="middle"
               fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${w}</text>`).join('')}
-      ${rows.filter((r) => r.number !== focus).map((r) =>
+      ${both ? '' : rows.filter((r) => r.number !== focus).map((r) =>
         `<path class="ln" data-line="${r.number}" d="${path(r)}" fill="none" stroke="#3A4657"
                stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
-      ${f ? `<path d="${path(f)}" fill="none" stroke="var(--heat)" stroke-width="2.5"
+      ${both && f ? `<path d="${band(f)}" fill="rgba(255,107,44,.13)" stroke="none"/>
+        <path d="${path(f, 'byWeekMax')}" fill="none" stroke="var(--heat)" stroke-opacity=".6"
+              stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round" stroke-linecap="round"/>` : ''}
+      ${f ? `<path d="${path(f, both ? 'byWeek' : key)}" fill="none" stroke="var(--heat)" stroke-width="2.5"
               stroke-linejoin="round" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(255,107,44,.4))"/>
-        ${weeks.filter((w) => f[key][w] != null).map((w) => `
-          <circle cx="${x(w).toFixed(1)}" cy="${y(f[key][w]).toFixed(1)}" r="4"
+        ${weeks.filter((w) => f[both ? 'byWeek' : key][w] != null).map((w) => `
+          <circle cx="${x(w).toFixed(1)}" cy="${y(f[both ? 'byWeek' : key][w]).toFixed(1)}" r="4"
                   fill="var(--heat)" stroke="#141B24" stroke-width="2"/>`).join('')}` : ''}
       <line data-cross x1="0" x2="0" y1="${PAD.t}" y2="${H - PB}" stroke="#5A6A80" stroke-width="1"
             stroke-dasharray="3 3" opacity="0"/>
       ${/* A 1.5px line is not a target. These sit on top, invisible and twelve
            pixels wide, and are the only thing the pointer ever actually hits --
            so a line can be hovered and clicked at the width it is drawn. */''}
-      ${rows.filter((r) => r.number !== focus).map((r) =>
+      ${both ? '' : rows.filter((r) => r.number !== focus).map((r) =>
         `<path class="ln-hit" data-hit="${r.number}" d="${path(r)}" fill="none" stroke="transparent"
                stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
     </svg>
@@ -248,7 +265,7 @@ export function render(db, state = {}) {
   const focus = state.focusTeam
     || Number(state.params?.team)
     || [...st.rows].sort((a, b) => b.total - a.total)[0]?.number || 1;
-  const metric = st.hasCeiling && state.metric === 'ceiling' ? 'ceiling' : 'actual';
+  const metric = st.hasCeiling && ['ceiling', 'both'].includes(state.metric) ? state.metric : 'actual';
   const wkKey = metric === 'ceiling' ? 'byWeekMax' : 'byWeek';
   const sync = db.get('stats').lastSleeperSync;
   const withData = st.rows.filter((r) => r.games > 0);
@@ -307,7 +324,7 @@ export function render(db, state = {}) {
   <div class="section-title">Week by week</div>
   <div class="card wk-card">
     ${/* the toggle rides the header rather than costing the body its own row */''}
-    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Max PF' : 'Points for'}</h3>
+    <div class="card-hd"><h3>${metric === 'ceiling' ? 'Max PF' : metric === 'both' ? 'PF vs Max PF' : 'Points for'}</h3>
       <div class="hd-right">
         ${/* phones only: the manager select shares the header line, so picking
              someone costs the card no row of its own */''}
@@ -319,16 +336,18 @@ export function render(db, state = {}) {
         ${st.hasCeiling ? `<div class="pills sub wk-pills">
           <button data-metric="actual" aria-pressed="${metric === 'actual'}">Points for</button>
           <button data-metric="ceiling" aria-pressed="${metric === 'ceiling'}">Max PF</button>
+          <button data-metric="both" aria-pressed="${metric === 'both'}">Both</button>
         </div>
         <div class="season-pick wk-pick">
           <select data-metric-sel aria-label="Chart">
             <option value="actual" ${metric === 'actual' ? 'selected' : ''}>Points for</option>
             <option value="ceiling" ${metric === 'ceiling' ? 'selected' : ''}>Max PF</option>
+            <option value="both" ${metric === 'both' ? 'selected' : ''}>Both</option>
           </select>
         </div>` : ''}
       </div></div>
     <div class="card-bd">
-      ${lineChart(withData, st.weeks, focus, wkKey)}
+      ${lineChart(withData, st.weeks, focus, wkKey, metric === 'both')}
       ${/* Pills where there is room for all ten; a select on a phone, where
            they would scroll off sideways and hide most of the league. Both are
            always rendered and CSS picks one -- the pills also stay the record of
@@ -399,8 +418,8 @@ export function mount(root, db, go, setState) {
   const rows = st.rows.filter((r) => r.games > 0);
   const W = +svg.dataset.w;
 
-  const mKey = root.querySelector('[data-metric][aria-pressed="true"]')?.dataset.metric === 'ceiling'
-    ? 'byWeekMax' : 'byWeek';
+  const mode = root.querySelector('[data-metric][aria-pressed="true"]')?.dataset.metric || 'actual';
+  const mKey = mode === 'ceiling' ? 'byWeekMax' : 'byWeek';
   let hover = null;
   // read from the DOM rather than a captured value: the pills are the record of
   // what is selected, and they are re-rendered whenever it changes
@@ -415,6 +434,20 @@ export function mount(root, db, go, setState) {
     if (wk == null) return;
     const ranked = rows.filter((r) => r[mKey][wk] != null).sort((a, b) => b[mKey][wk] - a[mKey][wk]);
     cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '1');
+    /* In Both there is no league to rank -- the tooltip is one manager's week:
+       what he scored, what he could have, and what the difference cost him. */
+    if (mode === 'both') {
+      const me = rows.find((r) => r.number === focused());
+      const a = me?.byWeek[wk], c = me?.byWeekMax[wk];
+      tip.innerHTML = `<b style="font-family:var(--f-display);letter-spacing:.06em">WEEK ${wk}</b><br>`
+        + `<span class="tip-row">Points for <b>${a != null ? pts(a) : '&mdash;'}</b></span><br>`
+        + `<span class="tip-row">Max PF <b>${c != null ? pts(c) : '&mdash;'}</b></span>`
+        + `<div class="tip-hover on">Left on bench <b>${a != null && c != null ? pts(c - a) : '&mdash;'}</b></div>`;
+      tip.style.opacity = '1';
+      tip.style.left = Math.min(box.width - 150, Math.max(0, (vx / W) * box.width - 60)) + 'px';
+      tip.style.top = '8px';
+      return;
+    }
     const top = ranked.slice(0, 3);
     /* One extra line under the top three, for the one manager you are asking
        about: whoever is under the pointer, or the selected line when the
