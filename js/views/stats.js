@@ -38,7 +38,8 @@ function lineChart(rows, weeks, focus, key = 'byWeek') {
       ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - 8}" text-anchor="middle"
               fill="#7C8BA0" font-size="10" font-family="Inter,sans-serif">${w}</text>`).join('')}
       ${rows.filter((r) => r.number !== focus).map((r) =>
-        `<path d="${path(r)}" fill="none" stroke="#3A4657" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
+        `<path class="ln" data-line="${r.number}" d="${path(r)}" fill="none" stroke="#3A4657"
+               stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
       ${f ? `<path d="${path(f)}" fill="none" stroke="var(--heat)" stroke-width="2.5"
               stroke-linejoin="round" stroke-linecap="round" filter="drop-shadow(0 0 6px rgba(255,107,44,.4))"/>
         ${weeks.filter((w) => f[key][w] != null).map((w) => `
@@ -46,6 +47,12 @@ function lineChart(rows, weeks, focus, key = 'byWeek') {
                   fill="var(--heat)" stroke="#141B24" stroke-width="2"/>`).join('')}` : ''}
       <line data-cross x1="0" x2="0" y1="${PAD.t}" y2="${H - PAD.b}" stroke="#5A6A80" stroke-width="1"
             stroke-dasharray="3 3" opacity="0"/>
+      ${/* A 1.5px line is not a target. These sit on top, invisible and twelve
+           pixels wide, and are the only thing the pointer ever actually hits --
+           so a line can be hovered and clicked at the width it is drawn. */''}
+      ${rows.filter((r) => r.number !== focus).map((r) =>
+        `<path class="ln-hit" data-hit="${r.number}" d="${path(r)}" fill="none" stroke="transparent"
+               stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}
     </svg>
     <div data-tip style="position:absolute;pointer-events:none;opacity:0;transition:opacity .12s;
       background:var(--surface-3);border:1px solid var(--line);border-radius:8px;padding:7px 10px;
@@ -361,6 +368,7 @@ export function mount(root, db, go, setState) {
 
   const mKey = root.querySelector('[data-metric][aria-pressed="true"]')?.dataset.metric === 'ceiling'
     ? 'byWeekMax' : 'byWeek';
+  let hover = null;
   const move = (ev) => {
     const p = ev.touches?.[0] ?? ev;
     const box = svg.getBoundingClientRect();
@@ -371,9 +379,12 @@ export function mount(root, db, go, setState) {
     if (wk == null) return;
     const ranked = rows.filter((r) => r[mKey][wk] != null).sort((a, b) => b[mKey][wk] - a[mKey][wk]);
     cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '1');
+    const on = hover == null ? null : rows.find((r) => r.number === hover);
     tip.innerHTML = `<b style="font-family:var(--f-display);letter-spacing:.06em">WEEK ${wk}</b><br>`
       + ranked.slice(0, 3).map((r, i) =>
-        `<span style="color:var(--ink-3)">${i + 1}.</span> ${esc(r.manager)} <b>${pts(r[mKey][wk])}</b>`).join('<br>');
+        `<span style="color:var(--ink-3)">${i + 1}.</span> ${esc(r.manager)} <b>${pts(r[mKey][wk])}</b>`).join('<br>')
+      + (on ? `<div class="tip-hover">${esc(on.manager)} <b>${
+          on[mKey][wk] != null ? pts(on[mKey][wk]) : '&mdash;'}</b></div>` : '');
     tip.style.opacity = '1';
     const left = Math.min(box.width - 150, Math.max(0, (vx / W) * box.width - 60));
     tip.style.left = left + 'px';
@@ -385,4 +396,22 @@ export function mount(root, db, go, setState) {
   svg.addEventListener('touchstart', move, { passive: true });
   svg.addEventListener('touchmove', move, { passive: true });
   svg.addEventListener('touchend', leave);
+
+  /* Both directions: pick a name to find the line, or point at a line to find
+     the name. Hovering previews what a click would select -- the line comes
+     forward and its pill lights up -- so the chart is readable without having
+     to guess and click through ten managers. */
+  svg.querySelectorAll('[data-hit]').forEach((hit) => {
+    const n = hit.dataset.hit;
+    const line = svg.querySelector(`[data-line="${n}"]`);
+    const pill = root.querySelector(`[data-focus="${n}"]`);
+    const set = (on) => {
+      line?.classList.toggle('hot', on);
+      pill?.classList.toggle('hot', on);
+      hover = on ? Number(n) : null;
+    };
+    hit.addEventListener('mouseenter', () => set(true));
+    hit.addEventListener('mouseleave', () => set(false));
+    hit.addEventListener('click', () => setState({ focusTeam: Number(n) }));
+  });
 }

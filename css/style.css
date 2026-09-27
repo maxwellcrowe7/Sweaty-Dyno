@@ -2080,3 +2080,12 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 /* a toggle that lives in a card header, not above the body it controls */
 .card-hd .pills{margin:0;padding:0;overflow:visible}
 .card-hd .pills button{padding:4px 12px}
+
+/* ---------- stats: picking a line off the chart ---------- */
+.ln{transition:stroke .12s,stroke-width .12s}
+.ln.hot{stroke:var(--ink-2);stroke-width:2.5}
+.ln-hit{cursor:pointer}
+/* the pill for the line under the pointer, so the name is readable while the
+   line is highlighted -- the same preview, said in words */
+.pills button.hot{border-color:var(--ink-3);color:var(--ink-1)}
+.tip-hover{margin-top:5px;padding-top:5px;border-top:1px solid var(--line);color:var(--ink-2)}
