@@ -7115,12 +7115,17 @@ function mount(root, db, go, setState) {
     // already up there: mark his row rather than printing him twice
     const also = askedAbout != null && !shown.has(askedAbout)
       ? rows.find((r) => r.number === askedAbout) : null;
+    // `ranked` is everyone who scored that week, so his index is his place
+    const alsoRank = also ? ranked.findIndex((r) => r.number === also.number) + 1 : 0;
 
     tip.innerHTML = `<b style="font-family:var(--f-display);letter-spacing:.06em">WEEK ${wk}</b><br>`
         + top.map((r, i) => `<span class="tip-row${r.number === askedAbout
           ? (r.number === focused() ? ' on' : ' hot') : ''}"><span class="tip-i">${i + 1}.</span> ${
           esc(r.manager)} <b>${pts(r[mKey][wk])}</b></span>`).join('<br>')
       + (also ? `<div class="tip-hover${also.number === focused() ? ' on' : ''}">${
+          /* his place that week, so the row reads as a continuation of the list
+             above rather than a figure with no standing */''}${
+          alsoRank ? `<span class="tip-i">${alsoRank}.</span> ` : ''}${
           esc(also.manager)} <b>${also[mKey][wk] != null ? pts(also[mKey][wk]) : '&mdash;'}</b></div>` : '');
     tip.style.opacity = '1';
     const left = Math.min(box.width - 150, Math.max(0, (vx / W) * box.width - 60));
