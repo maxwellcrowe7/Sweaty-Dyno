@@ -2071,7 +2071,7 @@ table.dt.h2h td.lost{color:var(--ink-3)}
 /* ---------- stats: the playoff cut ---------- */
 /* Two sticky columns: the seed is narrow enough to ride with the name without
    costing the table anything on a phone. */
-table.dt.seeds th.sticky.t, table.dt.seeds td.sticky.t{left:40px}
+table.dt.seeds th.sticky.t, table.dt.seeds td.sticky.t{left:40px;box-shadow:1px 0 0 var(--line)}
 /* the seed and the name are one label in two cells, so only the pair gets a
    rule -- the shared sticky shadow would otherwise draw a line between them */
 table.dt.seeds .seed{width:40px;min-width:40px;padding:10px 0 10px 20px;box-shadow:none;
@@ -2082,7 +2082,11 @@ table.dt.seeds tr.in .seed{color:var(--ink-2)}
 /* the line across the table IS the cut -- brighter than the row rules, and the
    only thing on the page drawn in the accent */
 table.dt.seeds tr.cut td{border-bottom:2px solid var(--heat)}
-table.dt.seeds tr.out td{opacity:.72}
+/* A missed season is drawn with a recessed background and quieter ink, never
+   with opacity: these cells are the frozen columns, and a translucent cell
+   shows the rest of the table sliding along underneath it. */
+table.dt.seeds tr.out td{background:var(--bg-2);color:var(--ink-3)}
+table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 .seed-tag{
   margin-left:7px;font-size:9.5px;font-weight:700;letter-spacing:.08em;
   padding:1px 5px;border-radius:4px;vertical-align:1px;
