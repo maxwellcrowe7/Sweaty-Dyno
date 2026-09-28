@@ -122,10 +122,18 @@ function lineupBars(st, key) {
   const hi = Math.max(...rows.map((r) => r.max));
   const w = (v) => ((v / (hi - lo)) * 100).toFixed(2);
 
+  /* A proper axis along the bottom, ticked at round figures, rather than two
+     loose numbers over the top. The floor is always labelled -- it is the one
+     thing about the scale nobody would guess -- and a tick too close to it or
+     to the end is dropped rather than printed on top of its neighbour. */
+  const range = hi - lo;
+  const step = [50, 100, 200, 250, 500, 1000, 2000].find((v) => range / v <= 5) || 5000;
+  const at = (v) => ((v - lo) / range) * 100;
+  const ticks = [{ v: lo, p: 0 }];
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step)
+    if (at(v) > 15 && at(v) < 96) ticks.push({ v, p: at(v) });
+
   return `
-    ${/* the axis says where the bars start, since it is not zero */''}
-    <div class="lu-axis"><span></span><span class="lu-scale"><i>${pts(lo).replace(/\.00$/, '')}</i><i>${
-      pts(hi).replace(/\.\d+$/, '')}</i></span><span></span></div>
     <div class="rows">${rows.map((r) => `
       <div class="row lu">
         <span class="lu-who">${teamTag(r)}</span>
@@ -138,7 +146,10 @@ function lineupBars(st, key) {
         </span>
         <b class="lu-fig">${fmt(get(r))}</b>
       </div>`).join('')}
-    </div>`;
+    </div>
+    <div class="lu-axis"><span></span><span class="lu-scale">${ticks.map((t) =>
+      `<i style="left:${t.p.toFixed(2)}%"${t.p === 0 ? ' class="first"' : ''}>${
+        t.v.toLocaleString('en-US')}</i>`).join('')}</span><span></span></div>`;
 }
 
 const rec = (w, l, t) => `${w}&ndash;${l}${t ? `&ndash;${t}` : ''}`;

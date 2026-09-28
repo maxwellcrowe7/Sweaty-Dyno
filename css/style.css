@@ -2124,10 +2124,15 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 /* Same grid and bar as the Bank ledger: name, one shared track, the figure. */
 .row.lu,.lu-axis{display:grid;grid-template-columns:100px minmax(0,1fr) 84px;
   align-items:center;gap:8px;padding:9px 20px 9px 16px}
-.lu-axis{padding-top:12px;padding-bottom:2px}
-.lu-scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--ink-3);
-  font-variant-numeric:tabular-nums}
-.lu-scale i{font-style:normal}
+.lu-axis{padding-top:0;padding-bottom:12px}
+/* the axis line sits right under the last bar, each tick a short mark with its
+   figure beneath -- centred on its mark, except the floor, which starts there */
+.lu-scale{position:relative;height:24px;border-top:1px solid var(--line)}
+.lu-scale i{position:absolute;top:0;transform:translateX(-50%);padding-top:7px;
+  font-style:normal;font-size:10.5px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lu-scale i::before{content:"";position:absolute;top:0;left:50%;width:1px;height:4px;background:var(--line)}
+.lu-scale i.first{transform:none}
+.lu-scale i.first::before{left:0}
 .lu-who{min-width:0;font-size:14px}
 .lu-pf{background:linear-gradient(90deg,#C43D0E,var(--heat))}
 /* the bench is the same colour, emptied out -- part of his bar, not the track */
@@ -2139,6 +2144,6 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
   .lu-who{grid-row:1;grid-column:1;font-size:13px}
   .lu-fig{grid-row:1;grid-column:2;font-size:15px}
   .lu-bar{grid-row:2;grid-column:1 / -1;height:11px;margin-top:1px}
-  .lu-axis{grid-template-columns:minmax(0,1fr);padding:10px 14px 0}
+  .lu-axis{grid-template-columns:minmax(0,1fr);padding:2px 14px 12px}
   .lu-axis > span:first-child,.lu-axis > span:last-child{display:none}
 }
