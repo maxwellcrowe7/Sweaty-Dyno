@@ -287,6 +287,47 @@ function allTime(db) {
   </div>`;
 }
 
+/* ---------- results: every matchup of the season, one cell each ----------
+   Rows in seed order, so reading down matches the playoff race above. Each
+   cell is that week's score, coloured by how the matchup went -- which means
+   something from week one, unlike marking a manager's best and worst weeks,
+   which paints the whole grid when there are only two of them. Tapping a score
+   says who it was against. The week's top score league-wide is bold. */
+function resultsGrid(db, st, season) {
+  const order = db.playoffSeeds(season).rows;
+  const byTeam = new Map();
+  const top = {};
+  for (const w of st.weekly) {
+    if (!byTeam.has(w.team)) byTeam.set(w.team, {});
+    byTeam.get(w.team)[w.week] = w;
+    top[w.week] = Math.max(top[w.week] ?? -Infinity, w.points);
+  }
+  const name = (n) => db.team(n, season)?.manager ?? `T${n}`;
+  return `<div class="tw"><table class="dt res">
+    <thead><tr><th class="sticky">Team</th>
+      <th class="n">Avg</th><th class="n hl">High</th><th class="n hl">Low</th>
+      ${st.weeks.map((w) => `<th class="n wk">W${w}</th>`).join('')}</tr></thead>
+    <tbody>${order.map((r) => {
+      const mine = byTeam.get(r.number) || {};
+      return `<tr><td class="sticky">${teamTag(r)}</td>
+        <td class="n">${r.avg != null ? pts(r.avg) : '&mdash;'}</td>
+        <td class="n dim hl">${r.high != null ? pts(r.high) : '&mdash;'}</td>
+        <td class="n dim hl">${r.low != null ? pts(r.low) : '&mdash;'}</td>
+        ${st.weeks.map((wk) => {
+          const g = mine[wk];
+          if (!g) return '<td class="n wk"><span class="dimmer">&mdash;</span></td>';
+          const opp = g.opponent != null ? byTeam.get(g.opponent)?.[wk] : null;
+          const cls = { W: 'won', L: 'lost', T: 'tied' }[g.result] || '';
+          return `<td class="n wk"><button class="res-cell ${cls}${g.points === top[wk] ? ' top' : ''}"
+            data-res data-wk="${wk}" data-me="${esc(r.manager)}" data-mp="${pts(g.points)}"
+            data-r="${g.result || ''}" ${opp ? `data-opp="${esc(name(g.opponent))}" data-op="${pts(opp.points)}"` : ''}
+            >${pts(g.points)}</button></td>`;
+        }).join('')}
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+}
+
 export function render(db, state = {}) {
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
@@ -411,20 +452,8 @@ export function render(db, state = {}) {
   </div>` : ''}
 
   ${st.hasData ? `
-  <div class="section-title">The numbers</div>
-  <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
-    <thead><tr><th class="sticky">Team</th>
-      ${st.weeks.map((w) => `<th class="n">W${w}</th>`).join('')}
-      <th class="n">Total</th><th class="n">Avg</th><th class="n">High</th><th class="n">Low</th></tr></thead>
-    <tbody>${[...withData].sort((a, b) => b.total - a.total).map((r) => `
-      <tr><td class="sticky">${teamTag(r)}</td>
-        ${st.weeks.map((w) => `<td class="n ${r.byWeek[w] === r.high ? 'pos' : r.byWeek[w] === r.low ? 'dim' : ''}">${r.byWeek[w] != null ? pts(r.byWeek[w]) : '<span class="dimmer">&mdash;</span>'}</td>`).join('')}
-        <td class="n" style="font-weight:700">${pts(r.total)}</td>
-        <td class="n">${pts(r.avg)}</td>
-        <td class="n pos">${pts(r.high)}</td>
-        <td class="n dim">${pts(r.low)}</td>
-      </tr>`).join('')}
-    </tbody></table></div></div></div>` : ''}
+  <div class="section-title">Results</div>
+  <div class="card"><div class="card-bd flush">${resultsGrid(db, st, S)}</div></div>` : ''}
 
   <div class="s dimmer" style="font-size:11.5px;margin-top:16px;text-align:center">
     ${sync ? `Last Sleeper sync ${esc(sync)}` : 'Not yet synced with Sleeper'}
@@ -434,6 +463,40 @@ export function render(db, state = {}) {
 export function mount(root, db, go, setState) {
   root.querySelectorAll('[data-focus]').forEach((b) => b.addEventListener('click', () =>
     setState({ focusTeam: Number(b.dataset.focus) })));
+
+  /* Results: tap a score for the matchup behind it. The popover lives on the
+     page, not in the table -- the grid scrolls sideways, and anything inside it
+     would be cut off above the first rows. */
+  const pop = document.createElement('div');
+  pop.className = 'res-pop';
+  pop.hidden = true;
+  document.body.append(pop);
+  let openCell = null;
+  const shut = () => { pop.hidden = true; openCell?.classList.remove('on'); openCell = null; };
+  root.querySelectorAll('[data-res]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (openCell === b) return shut();
+    shut();
+    const d = b.dataset;
+    const said = { W: 'Won', L: 'Lost', T: 'Tied' }[d.r] || 'No matchup';
+    pop.innerHTML = `<b class="res-hd">Week ${d.wk} &middot; ${said}</b>
+      <span class="res-ln me">${d.me} <b>${d.mp}</b></span>
+      ${d.opp ? `<span class="res-ln">${d.opp} <b>${d.op}</b></span>` : ''}`;
+    pop.hidden = false;
+    const r = b.getBoundingClientRect();
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    const left = Math.max(8, Math.min(window.innerWidth - pw - 8, r.left + r.width / 2 - pw / 2));
+    // above the cell unless that would leave the screen, then below it
+    const top = r.top - ph - 8 < 8 ? r.bottom + 8 : r.top - ph - 8;
+    pop.style.left = `${left + window.scrollX}px`;
+    pop.style.top = `${top + window.scrollY}px`;
+    b.classList.add('on');
+    openCell = b;
+  }));
+  root.querySelector('.dt.res')?.closest('.tw')?.addEventListener('scroll', shut, { passive: true });
+  root._resShut = () => { shut(); };
+  root._resPop = pop;
+  document.addEventListener('click', root._resShut);
   root.querySelector('[data-focus-sel]')?.addEventListener('change', (e) =>
     setState({ focusTeam: Number(e.target.value) }));
   root.querySelector('[data-metric-sel]')?.addEventListener('change', (e) =>
