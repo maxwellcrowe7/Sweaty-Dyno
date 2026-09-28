@@ -2170,5 +2170,3 @@ table.dt.res td.wk{padding:4px 4px}
 .res-ln{display:flex;justify-content:space-between;gap:14px;color:var(--ink-3)}
 .res-ln.me{color:var(--ink)}
 .res-ln b{font-variant-numeric:tabular-nums}
-/* on a phone the results are the point, so high and low give way to them */
-@media (max-width:620px){ table.dt.res .hl{display:none} }

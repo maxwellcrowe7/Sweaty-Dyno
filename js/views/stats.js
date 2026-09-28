@@ -305,14 +305,14 @@ function resultsGrid(db, st, season) {
   const name = (n) => db.team(n, season)?.manager ?? `T${n}`;
   return `<div class="tw"><table class="dt res">
     <thead><tr><th class="sticky">Team</th>
-      <th class="n">Avg</th><th class="n hl">High</th><th class="n hl">Low</th>
+      <th class="n">Avg</th><th class="n">High</th><th class="n">Low</th>
       ${st.weeks.map((w) => `<th class="n wk">W${w}</th>`).join('')}</tr></thead>
     <tbody>${order.map((r) => {
       const mine = byTeam.get(r.number) || {};
       return `<tr><td class="sticky">${teamTag(r)}</td>
         <td class="n">${r.avg != null ? pts(r.avg) : '&mdash;'}</td>
-        <td class="n dim hl">${r.high != null ? pts(r.high) : '&mdash;'}</td>
-        <td class="n dim hl">${r.low != null ? pts(r.low) : '&mdash;'}</td>
+        <td class="n dim">${r.high != null ? pts(r.high) : '&mdash;'}</td>
+        <td class="n dim">${r.low != null ? pts(r.low) : '&mdash;'}</td>
         ${st.weeks.map((wk) => {
           const g = mine[wk];
           if (!g) return '<td class="n wk"><span class="dimmer">&mdash;</span></td>';
