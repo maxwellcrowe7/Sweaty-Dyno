@@ -86,27 +86,59 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   </div>`;
 }
 
-function barChart(rows, key, label, unit = '') {
-  const data = rows.filter((r) => r[key] != null).sort((a, b) => b[key] - a[key]);
-  if (!data.length) return '';
-  const max = Math.max(...data.map((r) => r[key]));
-  return `<div class="rows">
-    ${data.map((r) => `
-      <div class="row" style="padding:9px 16px;align-items:center">
-        <div style="width:96px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600">
-<span class="tnum" style="margin-right:7px">T${r.number}</span>${esc(r.manager)}
-        </div>
-        <div style="flex:1;min-width:0">
-          <div style="height:16px;background:var(--surface-3);border-radius:4px;overflow:hidden">
-            <i style="display:block;height:100%;width:${(r[key] / max * 100).toFixed(1)}%;
-               background:linear-gradient(90deg,#C43D0E,var(--heat));border-radius:4px"></i>
-          </div>
-        </div>
-        <div style="width:76px;flex:none;text-align:right;font-family:var(--f-display);font-weight:700;font-size:15px">
-          ${unit === '%' ? (r[key] * 100).toFixed(1) + '%' : pts(r[key])}
-        </div>
+/* ---------- lineups: one bar per manager, all four numbers at once ----------
+   The whole bar is his Max PF, the filled part the points he actually started,
+   the rest what he left on the bench -- so efficiency is simply how full the bar
+   is. The toggle picks which of the four is printed beside it and how the list
+   is sorted; the bar itself never changes. */
+const LU = [
+  ['eff', 'Efficiency', (r) => r.eff, 'desc', (v) => (v * 100).toFixed(1) + '%'],
+  ['pf', 'Points for', (r) => r.pf, 'desc', pts],
+  ['max', 'Max PF', (r) => r.max, 'desc', pts],
+  ['bench', 'Bench', (r) => r.bench, 'asc', pts],
+];
+
+/* Where the bars start. Everyone's Max PF sits within a few hundred points of
+   everyone else's, so bars from zero come out near-identical; starting at half
+   the lowest points-for keeps the whole of every bar on screen while spreading
+   first from last. Recomputed from the data every render, so it moves with the
+   season -- a hundred-odd in week two, eight hundred by week fourteen -- and
+   rounded to a figure worth printing on the axis. */
+function luFloor(rows) {
+  const low = Math.min(...rows.map((r) => r.pf));
+  const half = low / 2;
+  const step = half >= 500 ? 100 : half >= 100 ? 50 : 10;
+  return Math.max(0, Math.floor(half / step) * step);
+}
+
+function lineupBars(st, key) {
+  const rows = st.rows.filter((r) => r.games > 0 && r.maxTotal != null).map((r) => ({
+    ...r, max: r.maxTotal, bench: r.left, pf: r.maxTotal - r.left, eff: r.efficiency,
+  }));
+  if (!rows.length) return '';
+  const [, , get, dir, fmt] = LU.find(([k]) => k === key) || LU[0];
+  rows.sort((a, b) => (dir === 'asc' ? get(a) - get(b) : get(b) - get(a)));
+  const lo = luFloor(rows);
+  const hi = Math.max(...rows.map((r) => r.max));
+  const w = (v) => ((v / (hi - lo)) * 100).toFixed(2);
+
+  return `
+    ${/* the axis says where the bars start, since it is not zero */''}
+    <div class="lu-axis"><span></span><span class="lu-scale"><i>${pts(lo).replace(/\.00$/, '')}</i><i>${
+      pts(hi).replace(/\.\d+$/, '')}</i></span><span></span></div>
+    <div class="rows">${rows.map((r) => `
+      <div class="row lu">
+        <span class="lu-who">${teamTag(r)}</span>
+        <span class="led-bar lu-bar">
+          <button class="lu-pf" data-luseg style="width:${w(r.pf - lo)}%"
+            aria-label="Points for ${pts(r.pf)}"><em>Points for <b>${pts(r.pf)}</b></em></button>
+          <button class="lu-bench" data-luseg style="width:${w(r.bench)}%"
+            aria-label="Bench ${pts(r.bench)}, Max PF ${pts(r.max)}"><em>Bench <b>${pts(r.bench)}</b>
+            &middot; Max PF <b>${pts(r.max)}</b></em></button>
+        </span>
+        <b class="lu-fig">${fmt(get(r))}</b>
       </div>`).join('')}
-  </div>`;
+    </div>`;
 }
 
 const rec = (w, l, t) => `${w}&ndash;${l}${t ? `&ndash;${t}` : ''}`;
@@ -286,13 +318,8 @@ export function render(db, state = {}) {
 
   /* One card, three questions about the same ten managers, rather than three
      cards of identical bars. */
-  const LINEUP = [
-    ['maxPF', 'Max PF', 'Every week\'s best possible lineup, added up.', st.hasMaxPF],
-    ['left', 'Left on bench', 'Ceiling minus what was actually started. Lower is better.', st.hasCeiling],
-    ['efficiency', 'Efficiency', 'Points as a share of the ceiling.', st.hasEfficiency],
-  ].filter(([, , , ok]) => ok);
-  const lk = LINEUP.some(([k]) => k === state.lineup) ? state.lineup : LINEUP[0]?.[0];
-  const lkRow = LINEUP.find(([k]) => k === lk);
+  const lk = LU.some(([k]) => k === state.lineup) ? state.lineup : 'eff';
+  const lkLabel = LU.find(([k]) => k === lk)[1];
 
   return bar + `
   <div class="tiles">
@@ -359,17 +386,17 @@ export function render(db, state = {}) {
     </div>
   </div>` : ''}
 
-  ${LINEUP.length ? `
+  ${st.hasCeiling ? `
   <div class="section-title">Lineups</div>
   <div class="card">
-    <div class="card-bd" style="padding-bottom:0">
-      <div class="pills">${LINEUP.map(([k, label]) =>
-        `<button data-lineup="${k}" aria-pressed="${k === lk}">${label}</button>`).join('')}</div>
-    </div>
-    <div class="card-bd flush">${barChart(
-      lk === 'efficiency' ? withData : st.rows, lk, lkRow[1], lk === 'efficiency' ? '%' : '')}</div>
-    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px">${lkRow[2]}</div></div>
+    <div class="card-hd"><h3>${lkLabel}</h3>
+      <div class="hd-right">
+        <div class="pills sub wk-pills">${LU.map(([k, label]) =>
+          `<button data-lineup="${k}" aria-pressed="${k === lk}">${label}</button>`).join('')}</div>
+        <div class="season-pick wk-pick"><select data-lineup-sel aria-label="Lineup figure">${LU.map(([k, label]) =>
+          `<option value="${k}" ${k === lk ? 'selected' : ''}>${label}</option>`).join('')}</select></div>
+      </div></div>
+    <div class="card-bd flush">${lineupBars(st, lk)}</div>
   </div>` : ''}
 
   ${st.hasData ? `
@@ -406,6 +433,20 @@ export function mount(root, db, go, setState) {
     setState({ statTab: b.dataset.stab })));
   root.querySelectorAll('[data-lineup]').forEach((b) => b.addEventListener('click', () =>
     setState({ lineup: b.dataset.lineup })));
+  root.querySelector('[data-lineup-sel]')?.addEventListener('change', (e) =>
+    setState({ lineup: e.target.value }));
+  /* a segment says what it is worth when you tap it, the same as the Bank
+     ledger's bars; one open at a time, and a tap anywhere else closes it */
+  const shutLu = (except) => root.querySelectorAll('.lu-bar button.on')
+    .forEach((b) => { if (b !== except) b.classList.remove('on'); });
+  root.querySelectorAll('[data-luseg]').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const on = !b.classList.contains('on');
+    shutLu();
+    b.classList.toggle('on', on);
+  }));
+  root._luShut = () => shutLu();
+  document.addEventListener('click', root._luShut);
   root.querySelector('[data-go]')?.addEventListener('click', (e) => go(e.currentTarget.dataset.go));
 
   /* crosshair + tooltip */
