@@ -2159,6 +2159,9 @@ table.dt.res td.wk{padding:4px 4px}
 .res-cell.top{font-weight:800}
 .res-cell:hover,.res-cell.on{background:var(--surface-3)}
 .res-cell.won:hover,.res-cell.won.on{background:rgba(61,220,151,.18)}
+/* display:flex out-ranks the browser's own [hidden] rule, so closing has to
+   be said explicitly -- without this the popover never went away */
+.res-pop[hidden]{display:none}
 .res-pop{position:absolute;z-index:40;min-width:150px;padding:8px 11px;border-radius:8px;
   background:var(--surface-3);border:1px solid var(--line);box-shadow:var(--shadow);
   font-size:12px;display:flex;flex-direction:column;gap:2px;white-space:nowrap}
