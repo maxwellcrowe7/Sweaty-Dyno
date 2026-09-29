@@ -93,7 +93,9 @@ export function render(db) {
          a ribbon of its own rather than sharing the block's space */''}
     ${last ? `<div class="hm-ribbon"><span class="k">Wk ${last.week}</span>
       <span class="hm-rib-name">${esc(last.name || '')}</span>
-      <b>${nm(last.results['1'].team)}</b>${last.results['1'].value ? `<span>${esc(last.results['1'].value)}</span>` : ''}</div>` : ''}
+      ${/* the winner, not what won it: "310 yards" fits, "Josh Allen, 42.9
+           points, 43% market share" does not, and the Games tab has it whole */''}
+      <b>${nm(last.results['1'].team)}</b></div>` : ''}
     </div>
   </div>`;
 
