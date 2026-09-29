@@ -261,7 +261,7 @@ function allTime(db) {
       </tr>`).join('')}
     </tbody></table></div></div></div>
 
-  <div class="section-title">Head to head<span class="sub-n dim">Regular season</span></div>
+  <div class="section-title">Head to head</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt h2h">
     <thead><tr><th class="sticky">&nbsp;</th>
       ${grid.map((c) => `<th class="n" title="${esc(c.manager)}">T${c.number}</th>`).join('')}</tr></thead>
@@ -377,12 +377,13 @@ export function render(db, state = {}) {
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
   const bar = `
-  <div class="view-hd stats-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}${
-      /* where the season stands -- nothing else on the page says it */''}${
-      `<span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}</span>`}</h2>
-    ${/* All-time has no season to pick, but keeps the picker's space -- held
-         invisibly -- so the pills and everything under them sit at the same
-         height on both sides, including on a phone where it wraps a line */''}
+  ${/* Title and picker share the first line at every width. The tag -- where
+       things stand, and that every figure on the page is regular season --
+       sits beside the title where there is room and drops under it on a phone.
+       All-time keeps the picker's space, held invisibly, so both sides line up. */''}
+  <div class="view-hd stats-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}</h2>
+    <span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
+      &middot; Regular season only</span>
     ${tab === 'season' ? seasonPicker(db) : `<div class="pick-ghost" aria-hidden="true" inert>${seasonPicker(db)}</div>`}</div>
   <div class="pill-bar">
     <div class="pills">
