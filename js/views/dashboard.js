@@ -99,19 +99,14 @@ export function render(db) {
     </div>
   </div>`;
 
-  /* ---- the guillotine: how many are left, who went last, who nearly did ----
-     The whole run lives on the Games tab; here it is three facts. The strip
+  /* ---- the guillotine: how many are left and who went last ----
+     The whole run lives on the Games tab; here it is two facts. The strip
      of names is the pool -- still in bright, chopped faded with their week. */
   const run = db.guillotineRun(S);
   const G = db.minigames(S).guillotine;
   const settled = run ? run.weeks.filter((w) => w.settled) : [];
   const lastChop = settled.at(-1);
-  // the survivor who came nearest to going, the week the last one went
-  const nearMiss = lastChop ? (() => {
-    const cut = lastChop.scores.find((x) => x.chopped);
-    const next = lastChop.scores.filter((x) => !x.chopped).sort((a, b) => a.points - b.points)[0];
-    return cut && next ? { team: next.team, by: Math.round((next.points - cut.points) * 100) / 100, cut } : null;
-  })() : null;
+  const lastCut = lastChop?.scores.find((x) => x.chopped);
   const choppedWeek = new Map(settled.map((w) => [w.chopped, w.week]));
   const guil = !run || !run.entrants.length ? '' : `
   <div class="hm-guil">
@@ -122,8 +117,7 @@ export function render(db) {
         : `<div class="hm-left"><span class="hm-big">${run.survivors.length}</span><span class="hm-of">/${run.entrants.length}</span>
           <span class="hm-left-k">left</span></div>`}
       ${lastChop ? `<div class="hm-chop"><span class="k">Wk ${lastChop.week} chopped</span>
-        <b>${nm(lastChop.chopped)} <span>${pts(nearMiss?.cut.points ?? 0)}</span></b>
-        ${nearMiss && !run.winner ? `<span class="hm-close">Close call: ${nm(nearMiss.team)} +${pts(nearMiss.by)}</span>` : ''}
+        <b>${nm(lastChop.chopped)} <span>${pts(lastCut?.points ?? 0)}</span></b>
       </div>` : `<div class="hm-sub">First chop week ${run.startWeek}</div>`}
     </div>
     ${/* an even grid, never a ragged wrap: ten names are two full rows of five.
