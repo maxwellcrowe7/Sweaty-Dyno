@@ -144,14 +144,15 @@ function guillotineCard(db, G, S, admin) {
       </div>
     </div>
     <div class="guil-bd">
-    <div class="card-bd" style="padding-bottom:12px">
+    <div class="card-bd guil-top" style="padding-bottom:12px">
       <div class="s dim" style="font-size:12.5px;line-height:1.55">${esc(G.rules || '')}</div>
-      <div class="guil-pool">
+      ${/* an even grid as on Home: ten names are two full rows of five */''}
+      <div class="guil-pool" style="--cols:${Math.ceil(pool.length / 2)}">
         ${pool.map((t) => {
           const wk = chopWeek.get(t);
           const cls = wk != null ? 'out' : t === run.winner ? 'win' : 'alive';
           return `<span class="gp ${cls}">${cls === 'win' ? icon('crown') : ''}${
-            esc(db.team(t)?.manager ?? `T${t}`)}${wk != null ? `<span class="wk">W${wk}</span>` : ''}</span>`;
+            `<b>${esc(db.team(t)?.manager ?? `T${t}`)}</b>`}${wk != null ? `<span class="wk">W${wk}</span>` : ''}</span>`;
         }).join('')}
       </div>
     </div>

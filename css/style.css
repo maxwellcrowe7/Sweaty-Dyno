@@ -1957,11 +1957,22 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 .guil:not(.open) .card-hd{border-bottom:none;border-radius:var(--r-lg)}
 
 /* the pool: who is still in, who has gone */
-.guil-pool{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}
+.guil-pool{display:grid;grid-template-columns:repeat(var(--cols,5),minmax(0,1fr));gap:6px;margin-top:13px}
 .gp{
-  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;min-width:0;
   font-size:12px;font-weight:600;padding:4px 9px;border-radius:99px;
   border:1px solid var(--line);background:var(--surface-2);color:var(--ink);
+}
+/* a long name gives way before its week does */
+.gp b{font-weight:inherit;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gp .wk,.gp svg{flex:none}
+/* phone width: tighter chips, each column as wide as its own names */
+.guil-top{container-type:inline-size}
+@container (max-width:440px){
+  .guil-pool{gap:3px;margin-inline:-7px;grid-template-columns:repeat(var(--cols,5),auto)}
+  .gp{padding:3px 3px;gap:3px;font-size:10.5px;letter-spacing:-.01em}
+  .gp .wk{letter-spacing:0}
+  .gp svg{width:11px;height:11px}
 }
 .gp .wk{font-family:var(--f-display);font-size:9.5px;letter-spacing:.08em;color:var(--ink-3)}
 .gp svg{width:13px;height:13px}
