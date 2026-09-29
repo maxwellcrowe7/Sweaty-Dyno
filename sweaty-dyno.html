@@ -463,7 +463,9 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .race-row .ttl svg{width:16px;height:16px;stroke-width:2.1}
 .race-row .ttl .on{color:var(--gold)}
 /* a title still to win: the crown's outline, in the grey of an empty bar */
-.race-row .ttl .off,.hm-crowns .off{color:var(--surface-3)}
+/* dark enough to sit back into the card: it says a slot is there, it
+   should not compete with the gold ones for the eye */
+.race-row .ttl .off,.hm-crowns .off{color:var(--line-soft)}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
