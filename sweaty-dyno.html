@@ -2197,13 +2197,17 @@ table.dt.res td.wk{padding:4px 4px}
 .pill-bar + .tiles{margin-top:16px}
 /* title, tag, picker on one line on a desktop; on a phone the tag drops to
    its own line under the title and the picker stays up beside it */
+/* The tag rides in a wrapper so that on a phone the wrapper -- not the pill --
+   takes the full line: capping the pill at its own width let a short tag stay
+   up beside the title while a long one wrapped, so the sides disagreed. */
 .stats-hd h2{margin-right:0}
-.stats-hd .chip.stage{margin:0 auto 0 0;font-size:10.5px;letter-spacing:.06em}
+.stats-hd .stage-line{margin-right:auto;display:flex}
+.stats-hd .chip.stage{margin:0;font-size:10.5px;letter-spacing:.06em}
 .stats-hd .season-pick,.stats-hd .pick-ghost{order:2}
 @media (max-width:620px){
   .stats-hd{row-gap:8px}
   .stats-hd h2{margin-right:auto}
-  .stats-hd .chip.stage{order:3;flex-basis:100%;flex-grow:0;width:max-content;max-width:max-content}
+  .stats-hd .stage-line{order:3;flex:0 0 100%;margin-right:0}
 }
 /* the matchup tiles are buttons, but must still look like tiles */
 /* a button centres its contents vertically, so a tile taller than its text
@@ -7318,8 +7322,8 @@ function render(db, state = {}) {
        sits beside the title where there is room and drops under it on a phone.
        All-time keeps the picker's space, held invisibly, so both sides line up. */''}
   <div class="view-hd stats-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}</h2>
-    <span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
-      &middot; Regular season only</span>
+    <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
+      &middot; Regular season only</span></div>
     ${tab === 'season' ? seasonPicker(db) : `<div class="pick-ghost" aria-hidden="true" inert>${seasonPicker(db)}</div>`}</div>
   <div class="pill-bar">
     <div class="pills">

@@ -382,8 +382,8 @@ export function render(db, state = {}) {
        sits beside the title where there is room and drops under it on a phone.
        All-time keeps the picker's space, held invisibly, so both sides line up. */''}
   <div class="view-hd stats-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}</h2>
-    <span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
-      &middot; Regular season only</span>
+    <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
+      &middot; Regular season only</span></div>
     ${tab === 'season' ? seasonPicker(db) : `<div class="pick-ghost" aria-hidden="true" inert>${seasonPicker(db)}</div>`}</div>
   <div class="pill-bar">
     <div class="pills">
