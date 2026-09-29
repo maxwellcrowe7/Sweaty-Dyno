@@ -447,7 +447,9 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 /* a title still to win: the crown's outline, in the grey of an empty bar */
 /* dark enough to sit back into the card: it says a slot is there, it
    should not compete with the gold ones for the eye */
-.race-row .ttl .off,.hm-crowns .off{color:var(--line-soft)}
+/* translucent, not a fixed grey: the Empire card is lighter at the top, and a
+   solid shade vanished there while still showing lower down */
+.race-row .ttl .off,.hm-crowns .off{color:rgba(255,255,255,.07)}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
