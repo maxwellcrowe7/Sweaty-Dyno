@@ -2237,8 +2237,8 @@ table.dt.h2h td.wk{padding:4px 4px}
    ============================================================ */
 /* a block's name and the tab it came from, on one line */
 .hm-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 8px}
-.hm-hd > span{font-family:var(--f-display);font-size:12px;font-weight:700;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--ink-3)}
+.hm-hd > span{font-family:var(--f-display);font-size:15px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-2)}
 .hm-go{display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 8px;border-radius:99px;
   border:1px solid var(--line);background:var(--surface);color:var(--ink-3);font:inherit;font-size:11px;
   font-weight:600;cursor:pointer}
@@ -2262,36 +2262,53 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-sub{font-size:11.5px;color:var(--ink-3)}
 
 /* playoff race */
-.row.hm-seed{padding:8px 16px;gap:10px}
-.hm-n{width:14px;flex:none;font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--ink-3)}
-.hm-rec{font-family:var(--f-display);font-size:16px;font-weight:700;min-width:36px;text-align:right}
-.row.hm-seed.cut{border-bottom:2px solid var(--heat)}
-.row.hm-seed.out{background:var(--bg-2);color:var(--ink-3)}
-.row.hm-seed.out .hm-rec{color:var(--ink-3)}
-.hm-back{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
-.hm-seed .seed-tag{margin-left:0}
+/* all ten in the height of six: the six in on the left, the rest on the
+   right, and the orange rule between them is the cut */
+.hm-race-bd{display:grid;grid-template-columns:1fr 1fr}
+.hm-rc{padding:6px 0}
+.hm-rc.out{border-left:2px solid var(--heat);background:var(--bg-2)}
+.hm-seed{display:flex;align-items:center;gap:7px;padding:6px 14px;min-width:0}
+.hm-seed + .hm-seed{border-top:1px solid var(--line-soft)}
+.hm-n{width:12px;flex:none;font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--ink-3)}
+.hm-nm{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hm-rec{font-family:var(--f-display);font-size:15px;font-weight:700;margin-left:auto;padding-left:6px}
+.hm-rc.out .hm-nm,.hm-rc.out .hm-rec{color:var(--ink-3)}
+.hm-back{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-left:auto}
+.hm-back + .hm-rec{margin-left:0}
+.hm-seed .seed-tag{margin-left:0;font-size:8.5px;padding:1px 4px}
 
 /* minigame */
-.hm-game-bd{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
+.hm-game-bd{display:flex;align-items:center;gap:16px}
 .hm-name{font-family:var(--f-display);font-size:17px;font-weight:700;margin-top:6px}
 .hm-sub{margin-top:2px}
-.hm-last{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:11px;color:var(--ink-3);
-  text-align:right;white-space:nowrap}
-.hm-last b{font-size:13px;color:var(--ink)}
-.hm-last .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+/* last week's result: a strip across the foot of the card, its own reading */
+.hm-ribbon{display:flex;align-items:baseline;gap:9px;padding:9px 16px;border-top:1px solid var(--line-soft);
+  background:var(--bg-2);font-size:12px;color:var(--ink-3);white-space:nowrap;min-width:0}
+.hm-ribbon .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.hm-ribbon .hm-rib-name{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hm-ribbon b{color:var(--mint);margin-left:auto;font-size:13px}
 
 /* moves */
-.row.hm-mv{padding:9px 16px;gap:10px}
+.row.hm-mv{padding:9px 16px;gap:10px;align-items:flex-start}
 .hm-mv .t{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;min-width:0;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hm-mv .s{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hm-mv .grow{min-width:0}
-.hm-ic{width:18px;flex:none;color:var(--ink-3);display:flex;justify-content:center}
+/* the icon sits on the first line, level with the player or first side */
+.hm-ic{width:18px;height:20px;flex:none;color:var(--ink-3);display:flex;align-items:center;justify-content:center}
 .hm-ic.plus{color:var(--mint);font-family:var(--f-display);font-weight:700;font-size:18px}
 .hm-ic .ic{width:16px;height:16px}
-.hm-date{font-size:11px;color:var(--ink-3);white-space:nowrap}
-.hm-bid{font-family:var(--f-display);font-weight:700;font-size:14px;color:var(--mint)}
-.hm-bid.fa{color:var(--ink-3);font-size:12px}
+.hm-date{font-size:11px;color:var(--ink-3);white-space:nowrap;line-height:20px}
+.hm-sides{display:flex;flex-direction:column;gap:3px}
+.hm-side{display:grid;grid-template-columns:64px minmax(0,1fr);align-items:center;gap:8px;min-height:20px;font-size:13px}
+.hm-side b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* direct child only: the position chip inside is a span too, and a
+   descendant rule would repaint it in the row's grey */
+.hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.hm-side em{font-style:normal;color:var(--ink-3);font-size:11px}
+.hm-mv .t{min-height:20px}
+.hm-bid{font-weight:700;color:var(--mint)}
+.hm-bid.fa{color:var(--ink-3)}
 .hm-cond{display:flex;align-items:center;gap:7px;padding:9px 16px;border-top:1px solid var(--line-soft);
   font-size:12px;color:var(--violet)}
 .hm-cond .ic{width:14px;height:14px}
@@ -2301,6 +2318,8 @@ table.dt.h2h td.wk{padding:4px 4px}
 .row.hm-er{padding:7px 16px;gap:12px}
 .hm-er .tname{width:96px;flex:none}
 .hm-pts{font-family:var(--f-display);font-size:15px;color:var(--violet);min-width:24px;text-align:right}
+.hm-crowns{width:34px;flex:none;display:flex;gap:1px;color:var(--gold)}
+.hm-crowns .ic{width:15px;height:15px}
 
 /* bank */
 .hm-bank-bd{display:flex;align-items:center;gap:18px}
@@ -2329,13 +2348,16 @@ table.dt.h2h td.wk{padding:4px 4px}
 
 /* guillotine */
 .hm-guil{order:3}
-.hm-guil-bd{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
-.hm-of{font-size:17px;color:var(--ink-3);margin-left:2px}
-.hm-chop{display:flex;gap:18px;text-align:right}
-.hm-chop > div{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:11px;color:var(--ink-3);white-space:nowrap}
-.hm-chop .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
-.hm-chop b{font-size:14px;color:var(--ink)}
-.hm-chop b.neg{color:var(--red)}
+.hm-guil-bd{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.hm-left{display:flex;align-items:baseline}
+.hm-left .hm-big{font-size:40px}
+.hm-of{font-family:var(--f-display);font-size:20px;font-weight:700;color:var(--ink-3);margin-left:2px}
+.hm-left-k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink-3);margin-left:8px}
+.hm-chop{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;white-space:nowrap}
+.hm-chop .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink-3)}
+.hm-chop b{font-size:15px;color:var(--red)}
+.hm-chop b span{font-weight:500;font-size:12px;color:var(--ink-3);margin-left:3px}
+.hm-close{font-size:11px;color:var(--ink-3)}
 /* the pool: everyone still in, then the fallen, faded, with the week they went */
 .hm-pool{display:flex;flex-wrap:wrap;gap:5px;padding:10px 14px 12px;border-top:1px solid var(--line-soft)}
 .hm-pool span{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;

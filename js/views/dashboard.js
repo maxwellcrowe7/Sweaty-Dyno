@@ -55,22 +55,25 @@ export function render(db) {
       <div class="m">${h.closest ? `${nm(h.closest.team)} over ${nm(h.closest.opponent)}` : ''}</div></div>
   </div>`;
 
-  /* ---- playoff race: the six in, and the two nearest out ---- */
+  /* ---- playoff race: all ten, in two columns with the cut between them ----
+     The six in on the left, the rest on the right with how far back they are,
+     and the orange rule down the middle is the cut line itself. */
   const po = db.playoffSeeds(S);
   const inn = po.rows.filter((r) => r.in);
-  const out = po.rows.filter((r) => !r.in).slice(0, 2);
+  const out = po.rows.filter((r) => !r.in);
   const race = !st.hasRecords ? '' : `
   <div class="hm-race">
     ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart')}
-    <div class="card"><div class="card-bd flush"><div class="rows">
-      ${inn.map((r, i) => `<div class="row hm-seed${i === inn.length - 1 ? ' cut' : ''}">
-        <span class="hm-n">${r.seed}</span>${teamTag(r)}
+    <div class="card"><div class="hm-race-bd">
+      <div class="hm-rc">${inn.map((r) => `<div class="hm-seed">
+        <span class="hm-n">${r.seed}</span><span class="hm-nm">${nm(r.number)}</span>
         ${r.bye ? '<span class="seed-tag bye">BYE</span>' : ''}${r.how === 'points' ? '<span class="seed-tag">PTS</span>' : ''}
-        <div class="grow"></div><b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}
-      ${out.map((r) => `<div class="row hm-seed out">
-        <span class="hm-n"></span>${teamTag(r)}<div class="grow"></div>
-        <span class="hm-back">&minus;${pts(r.back)}</span><b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}
-    </div></div></div>
+        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>
+      <div class="hm-rc out">${out.map((r) => `<div class="hm-seed">
+        <span class="hm-nm">${nm(r.number)}</span>
+        <span class="hm-back">&minus;${pts(r.back)}</span>
+        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>
+    </div></div>
   </div>`;
 
   /* ---- this week's minigame, and who took the last one ---- */
@@ -82,12 +85,16 @@ export function render(db) {
   <div class="hm-game">
     ${hd(next?.week ? `Week ${next.week} minigame` : 'Minigames', 'minigames', 'Games', 'dice')}
     <div class="card"><div class="card-bd hm-game-bd">
-      ${next ? `<div><div class="hm-big mint">${money(next.payout?.['1'] || 0)}</div>
-        <div class="hm-name">${esc(next.name || 'To be set')}</div>
+      ${next ? `<div class="hm-big mint">${money(next.payout?.['1'] || 0)}</div>
+        <div><div class="hm-name">${esc(next.name || 'To be set')}</div>
         ${next.summary ? `<div class="hm-sub">${esc(next.summary)}</div>` : ''}</div>` : '<div class="hm-sub">Slate finished</div>'}
-      ${last ? `<div class="hm-last"><span class="k">Wk ${last.week} winner</span><b>${nm(last.results['1'].team)}</b>
-        <span>${esc(last.name || '')}</span></div>` : ''}
-    </div></div>
+    </div>
+    ${/* last week's result is a different fact from this week's game, so it gets
+         a ribbon of its own rather than sharing the block's space */''}
+    ${last ? `<div class="hm-ribbon"><span class="k">Wk ${last.week}</span>
+      <span class="hm-rib-name">${esc(last.name || '')}</span>
+      <b>${nm(last.results['1'].team)}</b>${last.results['1'].value ? `<span>${esc(last.results['1'].value)}</span>` : ''}</div>` : ''}
+    </div>
   </div>`;
 
   /* ---- the guillotine: how many are left, who went last, who nearly did ----
@@ -109,14 +116,12 @@ export function render(db) {
     ${hd('Guillotine', 'minigames', 'Games', 'blade')}
     <div class="card"><div class="card-bd hm-guil-bd">
       ${run.winner ? `<div><div class="hm-big mint">${nm(run.winner)}</div>
-          <div class="hm-sub">last one standing &middot; ${money(G?.payout?.['1'] || 0)}</div></div>`
-        : `<div><div class="hm-big">${run.survivors.length}<span class="hm-of">/${run.entrants.length}</span></div>
-          <div class="hm-sub">left &middot; ${money(G?.payout?.['1'] || 0)} to the last</div></div>`}
-      ${lastChop ? `<div class="hm-chop">
-        <div><span class="k">Wk ${lastChop.week} chopped</span><b class="neg">${nm(lastChop.chopped)}</b>
-          <span>${pts(nearMiss?.cut.points ?? 0)}</span></div>
-        ${nearMiss && !run.winner ? `<div><span class="k">Close call</span><b>${nm(nearMiss.team)}</b>
-          <span>+${pts(nearMiss.by)}</span></div>` : ''}
+          <div class="hm-sub">last one standing</div></div>`
+        : `<div class="hm-left"><span class="hm-big">${run.survivors.length}</span><span class="hm-of">/${run.entrants.length}</span>
+          <span class="hm-left-k">left</span></div>`}
+      ${lastChop ? `<div class="hm-chop"><span class="k">Wk ${lastChop.week} chopped</span>
+        <b>${nm(lastChop.chopped)} <span>${pts(nearMiss?.cut.points ?? 0)}</span></b>
+        ${nearMiss && !run.winner ? `<span class="hm-close">Close call: ${nm(nearMiss.team)} +${pts(nearMiss.by)}</span>` : ''}
       </div>` : `<div class="hm-sub">First chop week ${run.startWeek}</div>`}
     </div>
     <div class="hm-pool">${[...run.survivors, ...settled.map((w) => w.chopped)].map((n) => choppedWeek.has(n)
@@ -132,19 +137,24 @@ export function render(db) {
     ...waivers.map((w) => ({ kind: 'move', date: w.date, w })),
   ].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
   const openCond = db.conditions().filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key)).length;
+  /* One shape for every move: an icon on the first line, the move itself, and
+     the date on the right. A trade lists each side with what it received, so
+     the card says who got what rather than a pile of assets under two names. */
+  const asset = (r) => `${r.player ? posChip(db.position(r.label)) + ' ' : ''}${esc(r.label)}`;
   const moveRow = (m) => {
     if (m.kind === 'trade') {
-      const pieces = m.t.sides.flatMap((s) => s.receives).map((r) => r.label);
       return `<div class="row hm-mv"><span class="hm-ic">${icon('swap')}</span>
-        <div class="grow"><div class="t">${m.t.sides.map((s) => nm(s.team)).join(' &harr; ')}</div>
-          <div class="s">${esc(pieces.slice(0, 2).join(', '))}${pieces.length > 2 ? ` +${pieces.length - 2}` : ''}</div></div>
+        <div class="grow hm-sides">${m.t.sides.map((sd) => `<div class="hm-side">
+          <b>${nm(sd.team)}</b><span>${sd.receives.slice(0, 1).map(asset).join('')}${
+            sd.receives.length > 1 ? ` <em>+${sd.receives.length - 1}</em>` : ''}</span></div>`).join('')}</div>
         <span class="hm-date">${fmtDate(m.date)}</span></div>`;
     }
     const w = m.w;
     return `<div class="row hm-mv"><span class="hm-ic plus">+</span>
       <div class="grow"><div class="t">${posChip(db.position(w.player))} ${esc(w.player)}</div>
-        <div class="s">${nm(w.team)}${w.dropped ? ` &middot; drops ${esc(w.dropped)}` : ''}</div></div>
-      <span class="hm-bid${w.type === 'free_agent' ? ' fa' : ''}">${w.type === 'free_agent' ? 'FA' : money(w.faab || 0)}</span></div>`;
+        <div class="s">${nm(w.team)} &middot; <span class="hm-bid${w.type === 'free_agent' ? ' fa' : ''}">${
+          w.type === 'free_agent' ? 'FA' : money(w.faab || 0)}</span>${w.dropped ? ` &middot; drops ${esc(w.dropped)}` : ''}</div></div>
+      <span class="hm-date">${fmtDate(m.date)}</span></div>`;
   };
   const movesCard = `
   <div class="hm-moves">
@@ -163,10 +173,12 @@ export function render(db) {
     ${hd('Empire race', 'empire', 'Empire', 'crown')}
     <div class="card"><div class="card-bd flush">
       <div class="hm-pot"><span class="hm-big violet">${money(emp.pot)}</span>
-        <span class="hm-sub">${emp.claimed ? 'claimed' : `${emp.threshold} pts or ${emp.titlesToWin} titles`}</span></div>
+        <span class="hm-sub">${emp.claimed ? 'claimed' : `${emp.titlesToWin} titles, or a title and ${emp.threshold} pts`}</span></div>
       <div class="rows">${emp.board.slice(0, 4).map((t) => `<div class="row hm-er">
         ${teamTag(t)}<div class="grow"><div class="meter violet"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div></div>
-        <b class="hm-pts">${t.total}</b></div>`).join('')}</div>
+        <b class="hm-pts">${t.total}</b>
+        ${/* titles, as on the Empire page: one crown each, beside the points */''}
+        <span class="hm-crowns">${icon('crown').repeat(t.titles || 0)}</span></div>`).join('')}</div>
     </div></div>
   </div>`;
 
