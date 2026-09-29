@@ -2176,21 +2176,12 @@ table.dt.res td.wk{padding:4px 4px}
 
 /* ---------- stats: season highlights ---------- */
 /* room between the Season/All-time pills and whatever block comes next */
-.pill-bar + .tiles{margin-top:16px}
+.pill-bar + .tiles,.stage-line + .tiles{margin-top:14px}
 /* title, tag, picker on one line on a desktop; on a phone the tag drops to
    its own line under the title and the picker stays up beside it */
-/* The tag rides in a wrapper so that on a phone the wrapper -- not the pill --
-   takes the full line: capping the pill at its own width let a short tag stay
-   up beside the title while a long one wrapped, so the sides disagreed. */
-.stats-hd h2{margin-right:0}
-.stats-hd .stage-line{margin-right:auto;display:flex}
-.stats-hd .chip.stage{margin:0;font-size:10.5px;letter-spacing:.06em}
-.stats-hd .season-pick,.stats-hd .pick-ghost{order:2}
-@media (max-width:620px){
-  .stats-hd{row-gap:8px}
-  .stats-hd h2{margin-right:auto}
-  .stats-hd .stage-line{order:3;flex:0 0 100%;margin-right:0}
-}
+/* the stats tag: under the Season/All-time pills, above the side it describes */
+.stage-line{display:flex;margin-top:12px}
+.stage-line .chip.stage{margin:0;font-size:10.5px;letter-spacing:.06em}
 /* the matchup tiles are buttons, but must still look like tiles */
 /* a button centres its contents vertically, so a tile taller than its text
    would float it mid-tile; stacked from the top like every other tile */

@@ -2194,21 +2194,12 @@ table.dt.res td.wk{padding:4px 4px}
 
 /* ---------- stats: season highlights ---------- */
 /* room between the Season/All-time pills and whatever block comes next */
-.pill-bar + .tiles{margin-top:16px}
+.pill-bar + .tiles,.stage-line + .tiles{margin-top:14px}
 /* title, tag, picker on one line on a desktop; on a phone the tag drops to
    its own line under the title and the picker stays up beside it */
-/* The tag rides in a wrapper so that on a phone the wrapper -- not the pill --
-   takes the full line: capping the pill at its own width let a short tag stay
-   up beside the title while a long one wrapped, so the sides disagreed. */
-.stats-hd h2{margin-right:0}
-.stats-hd .stage-line{margin-right:auto;display:flex}
-.stats-hd .chip.stage{margin:0;font-size:10.5px;letter-spacing:.06em}
-.stats-hd .season-pick,.stats-hd .pick-ghost{order:2}
-@media (max-width:620px){
-  .stats-hd{row-gap:8px}
-  .stats-hd h2{margin-right:auto}
-  .stats-hd .stage-line{order:3;flex:0 0 100%;margin-right:0}
-}
+/* the stats tag: under the Season/All-time pills, above the side it describes */
+.stage-line{display:flex;margin-top:12px}
+.stage-line .chip.stage{margin:0;font-size:10.5px;letter-spacing:.06em}
 /* the matchup tiles are buttons, but must still look like tiles */
 /* a button centres its contents vertically, so a tile taller than its text
    would float it mid-tile; stacked from the top like every other tile */
@@ -7317,20 +7308,20 @@ function render(db, state = {}) {
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
   const bar = `
-  ${/* Title and picker share the first line at every width. The tag -- where
-       things stand, and that every figure on the page is regular season --
-       sits beside the title where there is room and drops under it on a phone.
-       All-time keeps the picker's space, held invisibly, so both sides line up. */''}
-  <div class="view-hd stats-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}</h2>
-    <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
-      &middot; Regular season only</span></div>
+  ${/* Same shape as Transactions: one title whichever side is showing, the
+       picker beside it, the Season/All-time pills under that. Everything down
+       to the pills is identical on both sides -- All-time holds the picker's
+       space invisibly -- and everything from the tag down is the side itself. */''}
+  <div class="view-hd"><h2>Stats</h2>
     ${tab === 'season' ? seasonPicker(db) : `<div class="pick-ghost" aria-hidden="true" inert>${seasonPicker(db)}</div>`}</div>
   <div class="pill-bar">
     <div class="pills">
       <button data-stab="season" aria-pressed="${tab === 'season'}">Season</button>
       <button data-stab="all" aria-pressed="${tab === 'all'}">All-time</button>
     </div>
-  </div>`;
+  </div>
+  <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
+    &middot; Regular season only</span></div>`;
 
   if (tab === 'all') return bar + allTime(db);
 
