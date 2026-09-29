@@ -1966,6 +1966,10 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 /* a long name gives way before its week does */
 .gp b{font-weight:inherit;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .gp .wk,.gp svg{flex:none}
+/* a desktop-wide card has room for the whole pool on one line */
+@container (min-width:900px){
+  .guil-pool{grid-template-columns:repeat(var(--all,10),minmax(0,1fr))}
+}
 /* phone width: tighter chips, each column as wide as its own names */
 .guil-top{container-type:inline-size}
 @container (max-width:440px){

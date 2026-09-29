@@ -146,8 +146,9 @@ function guillotineCard(db, G, S, admin) {
     <div class="guil-bd">
     <div class="card-bd guil-top" style="padding-bottom:12px">
       <div class="s dim" style="font-size:12.5px;line-height:1.55">${esc(G.rules || '')}</div>
-      ${/* an even grid as on Home: ten names are two full rows of five */''}
-      <div class="guil-pool" style="--cols:${Math.ceil(pool.length / 2)}">
+      ${/* an even grid as on Home: ten names are two full rows of five, or one
+           row of ten where the card is wide enough to hold them */''}
+      <div class="guil-pool" style="--cols:${Math.ceil(pool.length / 2)};--all:${pool.length}">
         ${pool.map((t) => {
           const wk = chopWeek.get(t);
           const cls = wk != null ? 'out' : t === run.winner ? 'win' : 'alive';
