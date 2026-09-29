@@ -179,8 +179,9 @@ export function render(db) {
       <div class="rows">${emp.board.slice(0, 4).map((t) => `<div class="row hm-er">
         ${teamTag(t)}<div class="grow"><div class="meter violet"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div></div>
         <b class="hm-pts">${t.total}</b>
-        ${/* titles, as on the Empire page: one crown each, beside the points */''}
-        <span class="hm-crowns">${icon('crown').repeat(t.titles || 0)}</span></div>`).join('')}</div>
+        ${/* as on the Empire page: a crown per title needed, earned ones gold */''}
+        <span class="hm-crowns">${Array.from({ length: Math.max(emp.titlesToWin, t.titles || 0) }, (_, i) =>
+          icon('crown', i < (t.titles || 0) ? 'on' : 'off')).join('')}</span></div>`).join('')}</div>
     </div></div>
   </div>`;
 

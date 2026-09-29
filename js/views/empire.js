@@ -51,7 +51,7 @@ export function render(db) {
     <div class="s dimmer" style="font-size:11px;margin-top:8px">${money(L.empireContribution[String(db.season)] || 0)} set aside each season</div>
   </div>
 
-  ${/* One line per manager: name, bar, points, then a crown per title held.
+  ${/* One line per manager: name, bar, points, then a crown per title needed.
        The slot is always as wide as the pot demands, so an earned crown lands
        in the same column on every row and the empty space says what is left. */''}
   <div class="race">
@@ -60,8 +60,10 @@ export function render(db) {
         <span class="who">${esc(t.manager)}</span>
         <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
         <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
+        ${/* every crown the pot demands: earned in gold, the rest a grey
+             shadow, so the row says what is still owed */''}
         <span class="ttl" style="--slots:${slots}">${
-          Array.from({ length: t.titles }, () => icon('crown', 'on')).join('')}</span>
+          Array.from({ length: slots }, (_, i) => icon('crown', i < t.titles ? 'on' : 'off')).join('')}</span>
       </div>`).join('')}
   </div>
   </div>

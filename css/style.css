@@ -444,6 +444,8 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 }
 .race-row .ttl svg{width:16px;height:16px;stroke-width:2.1}
 .race-row .ttl .on{color:var(--gold)}
+/* a title still to win: the crown's outline, in the grey of an empty bar */
+.race-row .ttl .off,.hm-crowns .off{color:var(--surface-3)}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
@@ -2318,7 +2320,8 @@ table.dt.h2h td.wk{padding:4px 4px}
 .row.hm-er{padding:7px 16px;gap:12px}
 .hm-er .tname{width:96px;flex:none}
 .hm-pts{font-family:var(--f-display);font-size:15px;color:var(--violet);min-width:24px;text-align:right}
-.hm-crowns{width:34px;flex:none;display:flex;gap:1px;color:var(--gold)}
+.hm-crowns{flex:none;display:flex;gap:3px}
+.hm-crowns .on{color:var(--gold)}
 .hm-crowns .ic{width:15px;height:15px}
 
 /* bank */
