@@ -2196,3 +2196,20 @@ button.tile.on,button.tile:not(:disabled):hover{border-color:var(--ink-3)}
 table.dt.h2h td.wk{padding:4px 4px}
 .res-ln i{font-style:normal;color:var(--ink-3)}
 .res-ln.w b{color:var(--mint)}
+
+/* ---------- stats: streak tile ---------- */
+/* two rows in the space the other tiles give their one big figure */
+.st-tile{display:flex;flex-direction:column}
+.st-row{display:flex;align-items:baseline;gap:9px;padding:3px 0 0;margin:0;background:none;border:0;
+  font:inherit;color:var(--ink-3);text-align:left;cursor:pointer;min-width:0;width:100%}
+.st-row + .st-row{padding-top:1px}
+.st-row span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.st-row.none{cursor:default}
+.st-row:not(.none):hover span,.st-row.on span{color:var(--ink)}
+.st-v{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.1;flex:none;min-width:34px}
+.st-v.W{color:var(--mint)}
+.st-v.L{color:var(--red)}
+@media (max-width:620px){
+  .st-v{font-size:16px;min-width:28px}
+  .st-row span{font-size:10.5px}
+}

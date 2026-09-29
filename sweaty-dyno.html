@@ -2215,6 +2215,23 @@ table.dt.h2h td.wk{padding:4px 4px}
 .res-ln i{font-style:normal;color:var(--ink-3)}
 .res-ln.w b{color:var(--mint)}
 
+/* ---------- stats: streak tile ---------- */
+/* two rows in the space the other tiles give their one big figure */
+.st-tile{display:flex;flex-direction:column}
+.st-row{display:flex;align-items:baseline;gap:9px;padding:3px 0 0;margin:0;background:none;border:0;
+  font:inherit;color:var(--ink-3);text-align:left;cursor:pointer;min-width:0;width:100%}
+.st-row + .st-row{padding-top:1px}
+.st-row span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.st-row.none{cursor:default}
+.st-row:not(.none):hover span,.st-row.on span{color:var(--ink)}
+.st-v{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.1;flex:none;min-width:34px}
+.st-v.W{color:var(--mint)}
+.st-v.L{color:var(--red)}
+@media (max-width:620px){
+  .st-v{font-size:16px;min-width:28px}
+  .st-row span{font-size:10.5px}
+}
+
 </style>
 </head>
 <body>
@@ -3823,7 +3840,7 @@ class Store {
   seasonHighlights(season = this.season) {
     const st = this.stats(season);
     const over = this.seasonOver(season) || st.weeks.length >= st.regularSeasonWeeks;
-    return this.highlightsFrom(st.weekly, st.rows.map((r) => r.number), !over);
+    return this.highlightsFrom(st.weekly, st.rows.map((r) => r.number), !over, over ? null : season);
   }
 
   /** The same highlights across every season -- the streak is the longest
@@ -3831,7 +3848,9 @@ class Store {
   allTimeHighlights() {
     const seasons = [...new Set(this.get('stats').weekly.map((w) => w.season))].sort((a, b) => a - b);
     const games = seasons.flatMap((s) => this.stats(s).weekly);
-    const h = this.highlightsFrom(games, this.teams().map((t) => t.number), false);
+    // a streak that is still going carries on into the live season, if any
+    const live = this.seasonOver(this.league.currentSeason) ? null : this.league.currentSeason;
+    const h = this.highlightsFrom(games, this.teams().map((t) => t.number), false, live);
     // the game with the most points in it, both sides together
     const at = new Map(games.map((g) => [`${g.season}:${g.week}:${g.team}`, g]));
     const pairs = games.filter((g) => g.result === 'W' && g.opponent != null)
@@ -3842,7 +3861,7 @@ class Store {
     return { ...h, seasons: seasons.length, weeks };
   }
 
-  highlightsFrom(games, teams, current) {
+  highlightsFrom(games, teams, current, liveSeason = null) {
     const key = (g, team = g.team) => `${g.season}:${g.week}:${team}`;
     const at = new Map(games.map((g) => [key(g), g]));
     const top = games.length ? games.reduce((a, b) => (b.points > a.points ? b : a)) : null;
@@ -3855,26 +3874,36 @@ class Store {
     const blowout = wins.length ? wins.reduce((a, b) => (b.margin > a.margin ? b : a)) : null;
     const closest = wins.length ? wins.reduce((a, b) => (b.margin < a.margin ? b : a)) : null;
 
-    /* Streaks. While a season is live the one worth saying is the one still
-       running; otherwise, the longest anybody put together. */
-    const streakOf = (team) => {
+    /* Streaks, winning and losing. While a season is live the ones worth
+       saying are those still running; otherwise the longest anybody put
+       together. Each run keeps where it started and ended, and is marked live
+       when it reaches a team's latest game in a season still being played. */
+    const runsOf = (team, want) => {
       const seq = games.filter((g) => g.team === team && g.result)
-        .sort((a, b) => a.season - b.season || a.week - b.week).map((g) => g.result);
-      if (current) {
-        let n = 0;
-        for (let i = seq.length - 1; i >= 0 && seq[i] === 'W'; i--) n++;
-        return n;
-      }
-      let best = 0, run = 0;
-      for (const r of seq) { run = r === 'W' ? run + 1 : 0; best = Math.max(best, run); }
-      return best;
+        .sort((a, b) => a.season - b.season || a.week - b.week);
+      const out = [];
+      let from = null, n = 0;
+      seq.forEach((g, i) => {
+        if (g.result === want) { if (!n) from = g; n++; return; }
+        if (n) out.push({ team, n, from, to: seq[i - 1], tail: false });
+        n = 0;
+      });
+      if (n) out.push({ team, n, from, to: seq.at(-1), tail: true });
+      return out.map((r) => ({ ...r, live: r.tail && liveSeason != null && r.to.season === liveSeason }));
     };
-    const runs = teams.map((team) => ({ team, n: streakOf(team) }));
-    const longest = Math.max(0, ...runs.map((x) => x.n));
-    const streak = longest ? { n: longest, teams: runs.filter((x) => x.n === longest).map((x) => x.team),
-                               current } : null;
+    const pick = (want) => {
+      const best = teams.map((team) => {
+        const rs = runsOf(team, want);
+        if (current) return rs.find((r) => r.tail) || null;
+        // his longest; the most recent of equals
+        return rs.reduce((a, r) => (!a || r.n >= a.n ? r : a), null);
+      }).filter(Boolean);
+      const n = Math.max(0, ...best.map((r) => r.n));
+      return n ? { n, runs: best.filter((r) => r.n === n) } : null;
+    };
+    const streaks = { W: pick('W'), L: pick('L'), current };
 
-    return { top, blowout, closest, streak };
+    return { top, blowout, closest, streaks };
   }
 
   /** Where a season stands: "Week 3 of 14", "Playoffs" or "Final". */
@@ -7129,9 +7158,7 @@ function allTime(db) {
       <div class="k">Closest game</div>
       <div class="v">${hl.closest ? pts(hl.closest.margin) : '&mdash;'}</div>
       <div class="m">${hl.closest ? `${nm(hl.closest.team)} over ${nm(hl.closest.opponent)} &middot; ${hl.closest.season} Wk ${hl.closest.week}` : 'needs matchups'}</div></button>
-    <div class="tile violet"><div class="k">Longest streak</div>
-      <div class="v">${hl.streak ? `W${hl.streak.n}` : '&mdash;'}</div>
-      <div class="m">${hl.streak ? who(hl.streak.teams) : 'nobody on a run'}</div></div>
+    ${streakTile(db, hl.streaks, { title: 'Longest streaks', withYear: true })}
   </div>
 
   <div class="section-title">Franchises</div>
@@ -7233,6 +7260,32 @@ function resultsGrid(db, st, season) {
     </tbody></table></div>`;
 }
 
+/* ---------- streak tile, shared by the Season and All-time headers ----------
+   Two rows -- the winning streak and the losing one -- so it stays the height
+   of the tiles beside it. Each row opens the spans behind it: where every tied
+   streak started and ended, or "present" when it is still going. */
+function streakTile(db, streaks, { title, withYear }) {
+  const nm = (n) => esc(db.team(n)?.manager ?? `T${n}`);
+  const when = (g) => `${withYear ? g.season + ' ' : ''}Wk ${g.week}`;
+  const span = (r) => {
+    if (r.live) return `${when(r.from)} &ndash; present`;
+    if (r.from === r.to) return when(r.from);
+    // the year is said again only when the run crosses into another season
+    const end = withYear && r.to.season !== r.from.season ? when(r.to) : `Wk ${r.to.week}`;
+    return `${when(r.from)} &ndash; ${end}`;
+  };
+  const row = (k, st) => {
+    if (!st) return `<div class="st-row none"><b class="st-v ${k}">&mdash;</b><span>nobody</span></div>`;
+    const names = st.runs.length > 2 ? `${st.runs.length} teams` : st.runs.map((r) => nm(r.team)).join(', ');
+    const pop = `<b class="res-hd">${k === 'W' ? 'Win' : 'Losing'} streak &middot; ${k}${st.n}</b>`
+      + st.runs.map((r) => `<span class="res-ln"><i>${nm(r.team)}</i><b>${span(r)}</b></span>`).join('');
+    return `<button class="st-row" data-res data-pophtml="${esc(pop)}">
+      <b class="st-v ${k}">${k}${st.n}</b><span>${names}</span></button>`;
+  };
+  return `<div class="tile violet st-tile"><div class="k">${title}</div>
+    ${row('W', streaks.W)}${row('L', streaks.L)}</div>`;
+}
+
 /** "2 seasons · 16 weeks": how much history the all-time figures stand on. */
 const allSpan = (db) => {
   const { seasons, weeks } = db.allTimeHighlights();
@@ -7301,9 +7354,7 @@ function render(db, state = {}) {
       <div class="k">Closest game</div>
       <div class="v">${hl.closest ? pts(hl.closest.margin) : '&mdash;'}</div>
       <div class="m">${hl.closest ? `${nm(hl.closest.team)} over ${nm(hl.closest.opponent)} &middot; Wk ${hl.closest.week}` : 'needs matchups'}</div></button>
-    <div class="tile violet"><div class="k">${hl.streak?.current === false ? 'Longest streak' : 'Win streak'}</div>
-      <div class="v">${hl.streak ? `W${hl.streak.n}` : '&mdash;'}</div>
-      <div class="m">${hl.streak ? who(hl.streak.teams) : 'nobody on a run'}</div></div>
+    ${streakTile(db, hl.streaks, { title: hl.streaks.current ? 'Streaks' : 'Longest streaks', withYear: false })}
   </div>
 
   ${st.hasRecords ? `

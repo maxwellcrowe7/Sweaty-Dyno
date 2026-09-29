@@ -164,7 +164,13 @@ const hl = db.seasonHighlights(S);
 ok('top week is the best regular-season score', [hl.top.team, hl.top.week, hl.top.points], [1, 3, 120]);
 ok('biggest blowout', [hl.blowout.team, hl.blowout.opponent, hl.blowout.week, hl.blowout.margin], [3, 4, 2, 55]);
 ok('closest game', [hl.closest.margin, hl.closest.week], [10, 1]);
-ok('a live season counts the streak still running', [hl.streak.n, hl.streak.teams, hl.streak.current], [2, [3], true]);
+/* Live season: the runs still going. T3 won wk1 and wk2; T4 lost both; T1
+   won then lost, and its unpaired wk3 is no result, so it sits on L1. */
+ok('a live season counts the win streak still running',
+  [hl.streaks.W.n, hl.streaks.W.runs.map((r) => r.team), hl.streaks.current], [2, [3], true]);
+ok('and the losing one', [hl.streaks.L.n, hl.streaks.L.runs.map((r) => r.team)], [2, [4]]);
+ok('a streak knows where it started and that it is still going',
+  [hl.streaks.W.runs[0].from.week, hl.streaks.W.runs[0].to.week, hl.streaks.W.runs[0].live], [1, 2, true]);
 ok('playoff weeks put the season in the playoffs', db.seasonStage(S), 'Playoffs');
 
 print(fails ? `Records: ${fails} failed.` : 'Records passed.');

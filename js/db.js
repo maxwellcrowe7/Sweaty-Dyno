@@ -876,7 +876,7 @@ class Store {
   seasonHighlights(season = this.season) {
     const st = this.stats(season);
     const over = this.seasonOver(season) || st.weeks.length >= st.regularSeasonWeeks;
-    return this.highlightsFrom(st.weekly, st.rows.map((r) => r.number), !over);
+    return this.highlightsFrom(st.weekly, st.rows.map((r) => r.number), !over, over ? null : season);
   }
 
   /** The same highlights across every season -- the streak is the longest
@@ -884,7 +884,9 @@ class Store {
   allTimeHighlights() {
     const seasons = [...new Set(this.get('stats').weekly.map((w) => w.season))].sort((a, b) => a - b);
     const games = seasons.flatMap((s) => this.stats(s).weekly);
-    const h = this.highlightsFrom(games, this.teams().map((t) => t.number), false);
+    // a streak that is still going carries on into the live season, if any
+    const live = this.seasonOver(this.league.currentSeason) ? null : this.league.currentSeason;
+    const h = this.highlightsFrom(games, this.teams().map((t) => t.number), false, live);
     // the game with the most points in it, both sides together
     const at = new Map(games.map((g) => [`${g.season}:${g.week}:${g.team}`, g]));
     const pairs = games.filter((g) => g.result === 'W' && g.opponent != null)
@@ -895,7 +897,7 @@ class Store {
     return { ...h, seasons: seasons.length, weeks };
   }
 
-  highlightsFrom(games, teams, current) {
+  highlightsFrom(games, teams, current, liveSeason = null) {
     const key = (g, team = g.team) => `${g.season}:${g.week}:${team}`;
     const at = new Map(games.map((g) => [key(g), g]));
     const top = games.length ? games.reduce((a, b) => (b.points > a.points ? b : a)) : null;
@@ -908,26 +910,36 @@ class Store {
     const blowout = wins.length ? wins.reduce((a, b) => (b.margin > a.margin ? b : a)) : null;
     const closest = wins.length ? wins.reduce((a, b) => (b.margin < a.margin ? b : a)) : null;
 
-    /* Streaks. While a season is live the one worth saying is the one still
-       running; otherwise, the longest anybody put together. */
-    const streakOf = (team) => {
+    /* Streaks, winning and losing. While a season is live the ones worth
+       saying are those still running; otherwise the longest anybody put
+       together. Each run keeps where it started and ended, and is marked live
+       when it reaches a team's latest game in a season still being played. */
+    const runsOf = (team, want) => {
       const seq = games.filter((g) => g.team === team && g.result)
-        .sort((a, b) => a.season - b.season || a.week - b.week).map((g) => g.result);
-      if (current) {
-        let n = 0;
-        for (let i = seq.length - 1; i >= 0 && seq[i] === 'W'; i--) n++;
-        return n;
-      }
-      let best = 0, run = 0;
-      for (const r of seq) { run = r === 'W' ? run + 1 : 0; best = Math.max(best, run); }
-      return best;
+        .sort((a, b) => a.season - b.season || a.week - b.week);
+      const out = [];
+      let from = null, n = 0;
+      seq.forEach((g, i) => {
+        if (g.result === want) { if (!n) from = g; n++; return; }
+        if (n) out.push({ team, n, from, to: seq[i - 1], tail: false });
+        n = 0;
+      });
+      if (n) out.push({ team, n, from, to: seq.at(-1), tail: true });
+      return out.map((r) => ({ ...r, live: r.tail && liveSeason != null && r.to.season === liveSeason }));
     };
-    const runs = teams.map((team) => ({ team, n: streakOf(team) }));
-    const longest = Math.max(0, ...runs.map((x) => x.n));
-    const streak = longest ? { n: longest, teams: runs.filter((x) => x.n === longest).map((x) => x.team),
-                               current } : null;
+    const pick = (want) => {
+      const best = teams.map((team) => {
+        const rs = runsOf(team, want);
+        if (current) return rs.find((r) => r.tail) || null;
+        // his longest; the most recent of equals
+        return rs.reduce((a, r) => (!a || r.n >= a.n ? r : a), null);
+      }).filter(Boolean);
+      const n = Math.max(0, ...best.map((r) => r.n));
+      return n ? { n, runs: best.filter((r) => r.n === n) } : null;
+    };
+    const streaks = { W: pick('W'), L: pick('L'), current };
 
-    return { top, blowout, closest, streak };
+    return { top, blowout, closest, streaks };
   }
 
   /** Where a season stands: "Week 3 of 14", "Playoffs" or "Final". */

@@ -237,9 +237,7 @@ function allTime(db) {
       <div class="k">Closest game</div>
       <div class="v">${hl.closest ? pts(hl.closest.margin) : '&mdash;'}</div>
       <div class="m">${hl.closest ? `${nm(hl.closest.team)} over ${nm(hl.closest.opponent)} &middot; ${hl.closest.season} Wk ${hl.closest.week}` : 'needs matchups'}</div></button>
-    <div class="tile violet"><div class="k">Longest streak</div>
-      <div class="v">${hl.streak ? `W${hl.streak.n}` : '&mdash;'}</div>
-      <div class="m">${hl.streak ? who(hl.streak.teams) : 'nobody on a run'}</div></div>
+    ${streakTile(db, hl.streaks, { title: 'Longest streaks', withYear: true })}
   </div>
 
   <div class="section-title">Franchises</div>
@@ -341,6 +339,32 @@ function resultsGrid(db, st, season) {
     </tbody></table></div>`;
 }
 
+/* ---------- streak tile, shared by the Season and All-time headers ----------
+   Two rows -- the winning streak and the losing one -- so it stays the height
+   of the tiles beside it. Each row opens the spans behind it: where every tied
+   streak started and ended, or "present" when it is still going. */
+function streakTile(db, streaks, { title, withYear }) {
+  const nm = (n) => esc(db.team(n)?.manager ?? `T${n}`);
+  const when = (g) => `${withYear ? g.season + ' ' : ''}Wk ${g.week}`;
+  const span = (r) => {
+    if (r.live) return `${when(r.from)} &ndash; present`;
+    if (r.from === r.to) return when(r.from);
+    // the year is said again only when the run crosses into another season
+    const end = withYear && r.to.season !== r.from.season ? when(r.to) : `Wk ${r.to.week}`;
+    return `${when(r.from)} &ndash; ${end}`;
+  };
+  const row = (k, st) => {
+    if (!st) return `<div class="st-row none"><b class="st-v ${k}">&mdash;</b><span>nobody</span></div>`;
+    const names = st.runs.length > 2 ? `${st.runs.length} teams` : st.runs.map((r) => nm(r.team)).join(', ');
+    const pop = `<b class="res-hd">${k === 'W' ? 'Win' : 'Losing'} streak &middot; ${k}${st.n}</b>`
+      + st.runs.map((r) => `<span class="res-ln"><i>${nm(r.team)}</i><b>${span(r)}</b></span>`).join('');
+    return `<button class="st-row" data-res data-pophtml="${esc(pop)}">
+      <b class="st-v ${k}">${k}${st.n}</b><span>${names}</span></button>`;
+  };
+  return `<div class="tile violet st-tile"><div class="k">${title}</div>
+    ${row('W', streaks.W)}${row('L', streaks.L)}</div>`;
+}
+
 /** "2 seasons · 16 weeks": how much history the all-time figures stand on. */
 const allSpan = (db) => {
   const { seasons, weeks } = db.allTimeHighlights();
@@ -410,9 +434,7 @@ export function render(db, state = {}) {
       <div class="k">Closest game</div>
       <div class="v">${hl.closest ? pts(hl.closest.margin) : '&mdash;'}</div>
       <div class="m">${hl.closest ? `${nm(hl.closest.team)} over ${nm(hl.closest.opponent)} &middot; Wk ${hl.closest.week}` : 'needs matchups'}</div></button>
-    <div class="tile violet"><div class="k">${hl.streak?.current === false ? 'Longest streak' : 'Win streak'}</div>
-      <div class="v">${hl.streak ? `W${hl.streak.n}` : '&mdash;'}</div>
-      <div class="m">${hl.streak ? who(hl.streak.teams) : 'nobody on a run'}</div></div>
+    ${streakTile(db, hl.streaks, { title: hl.streaks.current ? 'Streaks' : 'Longest streaks', withYear: false })}
   </div>
 
   ${st.hasRecords ? `
