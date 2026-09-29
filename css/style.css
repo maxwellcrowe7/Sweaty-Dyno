@@ -449,7 +449,7 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
    should not compete with the gold ones for the eye */
 /* translucent, not a fixed grey: the Empire card is lighter at the top, and a
    solid shade vanished there while still showing lower down */
-.race-row .ttl .off,.hm-crowns .off{color:rgba(255,255,255,.07)}
+.race-row .ttl .off,.hm-crowns .off{color:rgba(255,255,255,.05)}
 
 /* meter */
 .meter{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden}
