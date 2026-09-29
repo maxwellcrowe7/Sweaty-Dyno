@@ -2223,9 +2223,10 @@ table.dt.h2h td.wk{padding:4px 4px}
    names -- so it reads at the same scale as its neighbours. */
 .st-tile{display:flex;flex-direction:column}
 .st-pair{display:grid;grid-template-columns:1fr 1fr;margin-top:5px}
-.st-row{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:0;margin:0;background:none;border:0;
-  font:inherit;color:var(--ink-3);text-align:left;cursor:pointer;min-width:0}
-.st-row + .st-row{padding-left:12px;border-left:1px solid var(--line)}
+/* each half centred in its own side, so the pair balances on the rule */
+.st-row{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 6px;margin:0;background:none;border:0;
+  font:inherit;color:var(--ink-3);text-align:center;cursor:pointer;min-width:0}
+.st-row + .st-row{border-left:1px solid var(--line)}
 .st-row span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .st-row.none{cursor:default}
 .st-row:not(.none):hover span,.st-row.on span{color:var(--ink)}
@@ -2234,7 +2235,6 @@ table.dt.h2h td.wk{padding:4px 4px}
 .st-v.L{color:var(--red)}
 @media (max-width:620px){
   .st-v{font-size:19px}
-  .st-row + .st-row{padding-left:9px}
   .st-row span{font-size:10.5px}
 }
 }
