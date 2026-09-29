@@ -2638,8 +2638,11 @@ const I = {
   swap:'M3 8h16M16 5l3 3-3 3M19 16H3M6 13l-3 3 3 3',
   // a line climbing a pair of axes -- up, down, up -- from the corner where
   // they meet to an arrowhead in the opposite corner, so it has the whole box
-  // to rise across rather than a cramped patch in the middle
-  chart:'M3 3v18h18M3 21l6-8 4.5 4L21 3M16 3h5v5',
+  // to rise across rather than a cramped patch in the middle. The last climb
+  // runs at exactly 45 degrees: a right-angled arrowhead only sits true on a
+  // 45-degree line, and a steeper one made the tip look knocked off the end.
+  // The dip is kept shallow so it stays well clear of the x-axis.
+  chart:'M3 3v18h18M3 21l6-11 3 3 9-9M16 4h5v5',
   crown:'M3 17h18M4 7l4 4 4-6 4 6 4-4-1.5 10h-13z',
   users:'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 20v-2a4 4 0 0 0-3-3.87M16 2.1a4 4 0 0 1 0 7.75',
   // one person, drawn symmetrically about x=12 so it sits centred in a circle --
