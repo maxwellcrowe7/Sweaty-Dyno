@@ -2198,7 +2198,10 @@ table.dt.res td.wk{padding:4px 4px}
 .view-hd h2 .chip.stage{margin:0 0 0 10px;vertical-align:3px;font-family:var(--f-body, inherit);
   font-size:10.5px;letter-spacing:.06em}
 /* the matchup tiles are buttons, but must still look like tiles */
-button.tile{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+/* a button centres its contents vertically, so a tile taller than its text
+   would float it mid-tile; stacked from the top like every other tile */
+button.tile{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;
+  display:flex;flex-direction:column;justify-content:flex-start}
 button.tile:disabled{cursor:default}
 button.tile.on,button.tile:not(:disabled):hover{border-color:var(--ink-3)}
 .hl-tiles .tile .v{font-size:24px}
@@ -2216,20 +2219,24 @@ table.dt.h2h td.wk{padding:4px 4px}
 .res-ln.w b{color:var(--mint)}
 
 /* ---------- stats: streak tile ---------- */
-/* two rows in the space the other tiles give their one big figure */
+/* Two halves side by side, each built like a tile of its own -- figure, then
+   names -- so it reads at the same scale as its neighbours. */
 .st-tile{display:flex;flex-direction:column}
-.st-row{display:flex;align-items:baseline;gap:9px;padding:3px 0 0;margin:0;background:none;border:0;
-  font:inherit;color:var(--ink-3);text-align:left;cursor:pointer;min-width:0;width:100%}
-.st-row + .st-row{padding-top:1px}
-.st-row span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.st-pair{display:grid;grid-template-columns:1fr 1fr;margin-top:5px}
+.st-row{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:0;margin:0;background:none;border:0;
+  font:inherit;color:var(--ink-3);text-align:left;cursor:pointer;min-width:0}
+.st-row + .st-row{padding-left:12px;border-left:1px solid var(--line)}
+.st-row span{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .st-row.none{cursor:default}
 .st-row:not(.none):hover span,.st-row.on span{color:var(--ink)}
-.st-v{font-family:var(--f-display);font-size:20px;font-weight:700;line-height:1.1;flex:none;min-width:34px}
+.st-v{font-family:var(--f-display);font-size:24px;font-weight:700;line-height:1.05}
 .st-v.W{color:var(--mint)}
 .st-v.L{color:var(--red)}
 @media (max-width:620px){
-  .st-v{font-size:16px;min-width:28px}
+  .st-v{font-size:19px}
+  .st-row + .st-row{padding-left:9px}
   .st-row span{font-size:10.5px}
+}
 }
 
 </style>
@@ -7282,8 +7289,10 @@ function streakTile(db, streaks, { title, withYear }) {
     return `<button class="st-row" data-res data-pophtml="${esc(pop)}">
       <b class="st-v ${k}">${k}${st.n}</b><span>${names}</span></button>`;
   };
+  /* side by side: each half is a figure over its names, the same stack as
+     every other tile, with a rule between them */
   return `<div class="tile violet st-tile"><div class="k">${title}</div>
-    ${row('W', streaks.W)}${row('L', streaks.L)}</div>`;
+    <div class="st-pair">${row('W', streaks.W)}${row('L', streaks.L)}</div></div>`;
 }
 
 /** "2 seasons · 16 weeks": how much history the all-time figures stand on. */

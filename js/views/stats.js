@@ -361,8 +361,10 @@ function streakTile(db, streaks, { title, withYear }) {
     return `<button class="st-row" data-res data-pophtml="${esc(pop)}">
       <b class="st-v ${k}">${k}${st.n}</b><span>${names}</span></button>`;
   };
+  /* side by side: each half is a figure over its names, the same stack as
+     every other tile, with a rule between them */
   return `<div class="tile violet st-tile"><div class="k">${title}</div>
-    ${row('W', streaks.W)}${row('L', streaks.L)}</div>`;
+    <div class="st-pair">${row('W', streaks.W)}${row('L', streaks.L)}</div></div>`;
 }
 
 /** "2 seasons · 16 weeks": how much history the all-time figures stand on. */
