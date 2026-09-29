@@ -2194,12 +2194,19 @@ table.dt.res td.wk{padding:4px 4px}
 
 /* ---------- stats: season highlights ---------- */
 /* room between the Season/All-time pills and whatever block comes next */
-.pill-bar + .tiles,.stage-line + .tiles{margin-top:14px}
+.pill-bar + .tiles{margin-top:14px}
 /* title, tag, picker on one line on a desktop; on a phone the tag drops to
    its own line under the title and the picker stays up beside it */
 /* the stats tag: under the Season/All-time pills, above the side it describes */
-.stage-line{display:flex;margin-top:12px}
+.stage-line{display:flex}
 .stage-line .chip.stage{margin:0;font-size:10.5px;letter-spacing:.06em}
+.stats-bar{column-gap:14px}
+/* the wrapper, not the pill, takes the full line -- so it wraps on every
+   phone width, not just the ones where it happens not to fit */
+@media (max-width:620px){
+  .stats-bar{row-gap:12px}
+  .stats-bar .stage-line{flex:0 0 100%}
+}
 /* the matchup tiles are buttons, but must still look like tiles */
 /* a button centres its contents vertically, so a tile taller than its text
    would float it mid-tile; stacked from the top like every other tile */
@@ -7314,14 +7321,16 @@ function render(db, state = {}) {
        space invisibly -- and everything from the tag down is the side itself. */''}
   <div class="view-hd"><h2>Stats</h2>
     ${tab === 'season' ? seasonPicker(db) : `<div class="pick-ghost" aria-hidden="true" inert>${seasonPicker(db)}</div>`}</div>
-  <div class="pill-bar">
+  ${/* the tag sits right of the pills on a desktop, and takes its own line
+       under them on a phone */''}
+  <div class="pill-bar stats-bar">
     <div class="pills">
       <button data-stab="season" aria-pressed="${tab === 'season'}">Season</button>
       <button data-stab="all" aria-pressed="${tab === 'all'}">All-time</button>
     </div>
-  </div>
-  <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
-    &middot; Regular season only</span></div>`;
+    <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
+      &middot; Regular season only</span></div>
+  </div>`;
 
   if (tab === 'all') return bar + allTime(db);
 

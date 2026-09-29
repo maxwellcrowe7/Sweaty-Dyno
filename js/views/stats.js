@@ -383,14 +383,16 @@ export function render(db, state = {}) {
        space invisibly -- and everything from the tag down is the side itself. */''}
   <div class="view-hd"><h2>Stats</h2>
     ${tab === 'season' ? seasonPicker(db) : `<div class="pick-ghost" aria-hidden="true" inert>${seasonPicker(db)}</div>`}</div>
-  <div class="pill-bar">
+  ${/* the tag sits right of the pills on a desktop, and takes its own line
+       under them on a phone */''}
+  <div class="pill-bar stats-bar">
     <div class="pills">
       <button data-stab="season" aria-pressed="${tab === 'season'}">Season</button>
       <button data-stab="all" aria-pressed="${tab === 'all'}">All-time</button>
     </div>
-  </div>
-  <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
-    &middot; Regular season only</span></div>`;
+    <div class="stage-line"><span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}
+      &middot; Regular season only</span></div>
+  </div>`;
 
   if (tab === 'all') return bar + allTime(db);
 
