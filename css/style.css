@@ -2170,3 +2170,21 @@ table.dt.res td.wk{padding:4px 4px}
 .res-ln{display:flex;justify-content:space-between;gap:14px;color:var(--ink-3)}
 .res-ln.me{color:var(--ink)}
 .res-ln b{font-variant-numeric:tabular-nums}
+
+/* ---------- stats: season highlights ---------- */
+/* room between the Season/All-time pills and whatever block comes next */
+.pill-bar + .tiles{margin-top:16px}
+.view-hd h2 .chip.stage{margin:0 0 0 10px;vertical-align:3px;font-family:var(--f-body, inherit);
+  font-size:10.5px;letter-spacing:.06em}
+/* the matchup tiles are buttons, but must still look like tiles */
+button.tile{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+button.tile:disabled{cursor:default}
+button.tile.on,button.tile:not(:disabled):hover{border-color:var(--ink-3)}
+.hl-tiles .tile .v{font-size:24px}
+.hl-tiles .tile .m{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:620px){
+  .hl-tiles{gap:8px}
+  .hl-tiles .tile{padding:10px 11px}
+  .hl-tiles .tile .v{font-size:19px;margin-top:3px}
+  .hl-tiles .tile .m{font-size:10.5px;margin-top:2px}
+}

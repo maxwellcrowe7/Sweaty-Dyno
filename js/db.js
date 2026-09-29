@@ -864,6 +864,59 @@ class Store {
     };
   }
 
+  /**
+   * The season's highlights -- the things nothing further down the Stats page
+   * spells out: the best single score, the biggest and smallest winning
+   * margins, and the longest win streak (current while the season is live,
+   * longest once it is over). Regular season only, like everything it sits
+   * above.
+   */
+  seasonHighlights(season = this.season) {
+    const st = this.stats(season);
+    const games = st.weekly;
+    const at = new Map(games.map((g) => [`${g.week}:${g.team}`, g]));
+    const top = games.length ? games.reduce((a, b) => (b.points > a.points ? b : a)) : null;
+
+    // one entry per matchup, from the winner's side
+    const wins = games.filter((g) => g.result === 'W' && g.opponent != null)
+      .map((g) => ({ ...g, opp: at.get(`${g.week}:${g.opponent}`) }))
+      .filter((g) => g.opp)
+      .map((g) => ({ ...g, margin: Math.round((g.points - g.opp.points) * 100) / 100 }));
+    const blowout = wins.length ? wins.reduce((a, b) => (b.margin > a.margin ? b : a)) : null;
+    const closest = wins.length ? wins.reduce((a, b) => (b.margin < a.margin ? b : a)) : null;
+
+    /* Streaks. While the season is live the one worth saying is the one still
+       running; once it is over, the longest anybody put together. */
+    const over = this.seasonOver(season) || st.weeks.length >= st.regularSeasonWeeks;
+    const streakOf = (team) => {
+      const seq = games.filter((g) => g.team === team && g.result)
+        .sort((a, b) => a.week - b.week).map((g) => g.result);
+      if (!over) {
+        let n = 0;
+        for (let i = seq.length - 1; i >= 0 && seq[i] === 'W'; i--) n++;
+        return n;
+      }
+      let best = 0, run = 0;
+      for (const r of seq) { run = r === 'W' ? run + 1 : 0; best = Math.max(best, run); }
+      return best;
+    };
+    const runs = st.rows.map((r) => ({ team: r.number, n: streakOf(r.number) }));
+    const longest = Math.max(0, ...runs.map((x) => x.n));
+    const streak = longest ? { n: longest, teams: runs.filter((x) => x.n === longest).map((x) => x.team),
+                               current: !over } : null;
+
+    return { top, blowout, closest, streak };
+  }
+
+  /** Where a season stands: "Week 3 of 14", "Playoffs" or "Final". */
+  seasonStage(season = this.season) {
+    const st = this.stats(season);
+    if (this.seasonOver(season)) return 'Final';
+    if (this.playoffWeeks(season).length || st.weeks.length >= st.regularSeasonWeeks) return 'Playoffs';
+    if (!st.weeks.length) return 'Not started';
+    return `Week ${st.weeks.length + 1} of ${st.regularSeasonWeeks}`;
+  }
+
   /** The title weeks: pulled and kept, but never mixed into regular-season form. */
   playoffWeeks(season = this.season) {
     return this.get('stats').weekly

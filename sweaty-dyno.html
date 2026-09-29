@@ -2189,6 +2189,24 @@ table.dt.res td.wk{padding:4px 4px}
 .res-ln.me{color:var(--ink)}
 .res-ln b{font-variant-numeric:tabular-nums}
 
+/* ---------- stats: season highlights ---------- */
+/* room between the Season/All-time pills and whatever block comes next */
+.pill-bar + .tiles{margin-top:16px}
+.view-hd h2 .chip.stage{margin:0 0 0 10px;vertical-align:3px;font-family:var(--f-body, inherit);
+  font-size:10.5px;letter-spacing:.06em}
+/* the matchup tiles are buttons, but must still look like tiles */
+button.tile{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+button.tile:disabled{cursor:default}
+button.tile.on,button.tile:not(:disabled):hover{border-color:var(--ink-3)}
+.hl-tiles .tile .v{font-size:24px}
+.hl-tiles .tile .m{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:620px){
+  .hl-tiles{gap:8px}
+  .hl-tiles .tile{padding:10px 11px}
+  .hl-tiles .tile .v{font-size:19px;margin-top:3px}
+  .hl-tiles .tile .m{font-size:10.5px;margin-top:2px}
+}
+
 </style>
 </head>
 <body>
@@ -3783,6 +3801,59 @@ class Store {
       rows: [...seeded, ...missed], spots, pointsSeeds, chase, byes,
       decided: this.seasonOver(season),
     };
+  }
+
+  /**
+   * The season's highlights -- the things nothing further down the Stats page
+   * spells out: the best single score, the biggest and smallest winning
+   * margins, and the longest win streak (current while the season is live,
+   * longest once it is over). Regular season only, like everything it sits
+   * above.
+   */
+  seasonHighlights(season = this.season) {
+    const st = this.stats(season);
+    const games = st.weekly;
+    const at = new Map(games.map((g) => [`${g.week}:${g.team}`, g]));
+    const top = games.length ? games.reduce((a, b) => (b.points > a.points ? b : a)) : null;
+
+    // one entry per matchup, from the winner's side
+    const wins = games.filter((g) => g.result === 'W' && g.opponent != null)
+      .map((g) => ({ ...g, opp: at.get(`${g.week}:${g.opponent}`) }))
+      .filter((g) => g.opp)
+      .map((g) => ({ ...g, margin: Math.round((g.points - g.opp.points) * 100) / 100 }));
+    const blowout = wins.length ? wins.reduce((a, b) => (b.margin > a.margin ? b : a)) : null;
+    const closest = wins.length ? wins.reduce((a, b) => (b.margin < a.margin ? b : a)) : null;
+
+    /* Streaks. While the season is live the one worth saying is the one still
+       running; once it is over, the longest anybody put together. */
+    const over = this.seasonOver(season) || st.weeks.length >= st.regularSeasonWeeks;
+    const streakOf = (team) => {
+      const seq = games.filter((g) => g.team === team && g.result)
+        .sort((a, b) => a.week - b.week).map((g) => g.result);
+      if (!over) {
+        let n = 0;
+        for (let i = seq.length - 1; i >= 0 && seq[i] === 'W'; i--) n++;
+        return n;
+      }
+      let best = 0, run = 0;
+      for (const r of seq) { run = r === 'W' ? run + 1 : 0; best = Math.max(best, run); }
+      return best;
+    };
+    const runs = st.rows.map((r) => ({ team: r.number, n: streakOf(r.number) }));
+    const longest = Math.max(0, ...runs.map((x) => x.n));
+    const streak = longest ? { n: longest, teams: runs.filter((x) => x.n === longest).map((x) => x.team),
+                               current: !over } : null;
+
+    return { top, blowout, closest, streak };
+  }
+
+  /** Where a season stands: "Week 3 of 14", "Playoffs" or "Final". */
+  seasonStage(season = this.season) {
+    const st = this.stats(season);
+    if (this.seasonOver(season)) return 'Final';
+    if (this.playoffWeeks(season).length || st.weeks.length >= st.regularSeasonWeeks) return 'Playoffs';
+    if (!st.weeks.length) return 'Not started';
+    return `Week ${st.weeks.length + 1} of ${st.regularSeasonWeeks}`;
   }
 
   /** The title weeks: pulled and kept, but never mixed into regular-season form. */
@@ -7122,7 +7193,9 @@ function render(db, state = {}) {
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
   const bar = `
-  <div class="view-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}</h2>
+  <div class="view-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}${
+      /* where the season stands -- nothing else on the page says it */''}${
+      tab === 'season' ? `<span class="chip stage">${esc(db.seasonStage(db.season))}</span>` : ''}</h2>
     ${tab === 'season' ? seasonPicker(db) : ''}</div>
   <div class="pill-bar">
     <div class="pills">
@@ -7150,12 +7223,13 @@ function render(db, state = {}) {
       <div style="text-align:center;margin-top:-14px"><button class="btn" data-go="admin">${icon('sync')} Set up Sleeper</button></div>`;
   }
 
-  const lead = [...withData].sort((a, b) => b.total - a.total)[0];
-  const eff = [...st.rows].filter((r) => r.efficiency != null).sort((a, b) => b.efficiency - a.efficiency)[0];
-  const best = st.weekly.length ? st.weekly.reduce((a, b) => (b.points > a.points ? b : a)) : null;
-  /* The most wronged team in the league. It is the stat this page exists to
-     settle, so it gets a tile rather than a column somebody has to go find. */
-  const unlucky = [...withData].filter((r) => r.luck != null).sort((a, b) => a.luck - b.luck)[0];
+  const hl = db.seasonHighlights(S);
+  const nm = (n) => esc(db.team(n, S)?.manager ?? `T${n}`);
+  /* A matchup tile opens the same popover as a Results cell, so a game reads
+     the same wherever it is tapped. */
+  const game = (g) => g ? `data-res data-wk="${g.week}" data-me="${nm(g.team)}" data-mp="${pts(g.points)}"
+    data-r="W" data-opp="${nm(g.opponent)}" data-op="${pts(g.opp.points)}"` : '';
+  const who = (teams) => teams.length > 2 ? `${teams.length} teams` : teams.map(nm).join(', ');
   const po = db.playoffSeeds(S);
 
   /* One card, three questions about the same ten managers, rather than three
@@ -7163,22 +7237,24 @@ function render(db, state = {}) {
   const lk = LU.some(([k]) => k === state.lineup) ? state.lineup : 'eff';
   const lkLabel = LU.find(([k]) => k === lk)[1];
 
+  /* Highlights, not leaders: every leader is the first row of a section below,
+     so the header carries the things nothing below spells out. */
   return bar + `
-  <div class="tiles">
-    <div class="tile accent"><div class="k">Points leader</div>
-      <div class="v" style="font-size:23px">${esc(lead?.manager ?? '--')}</div>
-      <div class="m">${lead ? pts(lead.total) + ' through wk ' + st.weeks.at(-1) : 'no scores yet'}</div></div>
-    <div class="tile gold"><div class="k">Most unlucky</div>
-      <div class="v" style="font-size:23px">${esc(unlucky?.manager ?? '--')}</div>
-      <div class="m">${unlucky ? `${unlucky.luck.toFixed(1)} wins vs ${unlucky.allPlayW}&ndash;${
-        unlucky.allPlayL} all-play` : 'needs matchups'}</div></div>
-    <div class="tile mint"><div class="k">Best manager</div>
-      <div class="v" style="font-size:23px">${eff ? esc(eff.manager) : '&mdash;'}</div>
-      <div class="m">${eff ? (eff.efficiency * 100).toFixed(1) + '% of ceiling'
-        : 'no ceilings yet — pull from Sleeper'}</div></div>
-    <div class="tile"><div class="k">Top week</div>
-      <div class="v">${best ? pts(best.points) : '--'}</div>
-      <div class="m">${best ? esc(db.team(best.team)?.manager) + ' &middot; wk ' + best.week : ''}</div></div>
+  <div class="tiles hl-tiles">
+    <div class="tile accent"><div class="k">Top week</div>
+      <div class="v">${hl.top ? pts(hl.top.points) : '&mdash;'}</div>
+      <div class="m">${hl.top ? `${nm(hl.top.team)} &middot; Wk ${hl.top.week}` : 'no scores yet'}</div></div>
+    <button class="tile mint hl-game" ${game(hl.blowout)} ${hl.blowout ? '' : 'disabled'}>
+      <div class="k">Biggest blowout</div>
+      <div class="v">${hl.blowout ? '+' + pts(hl.blowout.margin) : '&mdash;'}</div>
+      <div class="m">${hl.blowout ? `${nm(hl.blowout.team)} over ${nm(hl.blowout.opponent)} &middot; Wk ${hl.blowout.week}` : 'needs matchups'}</div></button>
+    <button class="tile gold hl-game" ${game(hl.closest)} ${hl.closest ? '' : 'disabled'}>
+      <div class="k">Closest game</div>
+      <div class="v">${hl.closest ? pts(hl.closest.margin) : '&mdash;'}</div>
+      <div class="m">${hl.closest ? `${nm(hl.closest.team)} over ${nm(hl.closest.opponent)} &middot; Wk ${hl.closest.week}` : 'needs matchups'}</div></button>
+    <div class="tile violet"><div class="k">${hl.streak?.current === false ? 'Longest streak' : 'Win streak'}</div>
+      <div class="v">${hl.streak ? `W${hl.streak.n}` : '&mdash;'}</div>
+      <div class="m">${hl.streak ? who(hl.streak.teams) : 'nobody on a run'}</div></div>
   </div>
 
   ${st.hasRecords ? `

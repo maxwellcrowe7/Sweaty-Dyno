@@ -157,5 +157,15 @@ ok('no points seed, no chase', po2.chase, null);
 ok('six by record', po2.rows.filter((r) => r.in).map((r) => r.number), [1, 2, 3, 4, 5, 6]);
 db.league.pointsSeeds = 1;
 
+/* ---- season highlights, from the 2099 fixture above ----
+   wk1: T1 100-90 T2, T3 80-70 T4 (both by 10). wk2: T2 110-60 T1, T3 105-50 T4.
+   wk3: T1 120 unpaired. wk15: playoffs, never counted. */
+const hl = db.seasonHighlights(S);
+ok('top week is the best regular-season score', [hl.top.team, hl.top.week, hl.top.points], [1, 3, 120]);
+ok('biggest blowout', [hl.blowout.team, hl.blowout.opponent, hl.blowout.week, hl.blowout.margin], [3, 4, 2, 55]);
+ok('closest game', [hl.closest.margin, hl.closest.week], [10, 1]);
+ok('a live season counts the streak still running', [hl.streak.n, hl.streak.teams, hl.streak.current], [2, [3], true]);
+ok('playoff weeks put the season in the playoffs', db.seasonStage(S), 'Playoffs');
+
 print(fails ? `Records: ${fails} failed.` : 'Records passed.');
 if (fails) throw new Error('records');
