@@ -2250,7 +2250,7 @@ table.dt.h2h td.wk{padding:4px 4px}
    empire and the bank side by side under them. A phone reads them in order. */
 .hm-grid{display:flex;flex-direction:column}
 .hm-col{display:contents}
-.hm-race{order:1} .hm-game{order:2} .hm-moves{order:3} .hm-emp{order:4} .hm-bank{order:5}
+.hm-race{order:1} .hm-game{order:2} .hm-moves{order:4} .hm-emp{order:5} .hm-bank{order:6}
 @media (min-width:900px){
   .hm-grid{flex-direction:row;gap:14px;align-items:flex-start}
   .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
@@ -2326,3 +2326,19 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-rules .ic{width:16px;height:16px;color:var(--gold)}
 .hm-title h2{margin-right:0}
 .hm-title .chip.stage{font-size:10.5px;letter-spacing:.06em;margin:0 auto 0 4px}
+
+/* guillotine */
+.hm-guil{order:3}
+.hm-guil-bd{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
+.hm-of{font-size:17px;color:var(--ink-3);margin-left:2px}
+.hm-chop{display:flex;gap:18px;text-align:right}
+.hm-chop > div{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:11px;color:var(--ink-3);white-space:nowrap}
+.hm-chop .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.hm-chop b{font-size:14px;color:var(--ink)}
+.hm-chop b.neg{color:var(--red)}
+/* the pool: everyone still in, then the fallen, faded, with the week they went */
+.hm-pool{display:flex;flex-wrap:wrap;gap:5px;padding:10px 14px 12px;border-top:1px solid var(--line-soft)}
+.hm-pool span{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;
+  background:var(--surface-3);color:var(--ink)}
+.hm-pool span.gone{background:none;border:1px dashed var(--line);color:var(--ink-3);font-weight:500}
+.hm-pool i{font-style:normal;margin-left:5px;color:var(--red);opacity:.8}

@@ -90,6 +90,41 @@ export function render(db) {
     </div></div>
   </div>`;
 
+  /* ---- the guillotine: how many are left, who went last, who nearly did ----
+     The whole run lives on the Games tab; here it is three facts. The strip
+     of names is the pool -- still in bright, chopped faded with their week. */
+  const run = db.guillotineRun(S);
+  const G = db.minigames(S).guillotine;
+  const settled = run ? run.weeks.filter((w) => w.settled) : [];
+  const lastChop = settled.at(-1);
+  // the survivor who came nearest to going, the week the last one went
+  const nearMiss = lastChop ? (() => {
+    const cut = lastChop.scores.find((x) => x.chopped);
+    const next = lastChop.scores.filter((x) => !x.chopped).sort((a, b) => a.points - b.points)[0];
+    return cut && next ? { team: next.team, by: Math.round((next.points - cut.points) * 100) / 100, cut } : null;
+  })() : null;
+  const choppedWeek = new Map(settled.map((w) => [w.chopped, w.week]));
+  const guil = !run || !run.entrants.length ? '' : `
+  <div class="hm-guil">
+    ${hd('Guillotine', 'minigames', 'Games', 'blade')}
+    <div class="card"><div class="card-bd hm-guil-bd">
+      ${run.winner ? `<div><div class="hm-big mint">${nm(run.winner)}</div>
+          <div class="hm-sub">last one standing &middot; ${money(G?.payout?.['1'] || 0)}</div></div>`
+        : `<div><div class="hm-big">${run.survivors.length}<span class="hm-of">/${run.entrants.length}</span></div>
+          <div class="hm-sub">left &middot; ${money(G?.payout?.['1'] || 0)} to the last</div></div>`}
+      ${lastChop ? `<div class="hm-chop">
+        <div><span class="k">Wk ${lastChop.week} chopped</span><b class="neg">${nm(lastChop.chopped)}</b>
+          <span>${pts(nearMiss?.cut.points ?? 0)}</span></div>
+        ${nearMiss && !run.winner ? `<div><span class="k">Close call</span><b>${nm(nearMiss.team)}</b>
+          <span>+${pts(nearMiss.by)}</span></div>` : ''}
+      </div>` : `<div class="hm-sub">First chop week ${run.startWeek}</div>`}
+    </div>
+    <div class="hm-pool">${[...run.survivors, ...settled.map((w) => w.chopped)].map((n) => choppedWeek.has(n)
+      ? `<span class="gone">${nm(n)}<i>W${choppedWeek.get(n)}</i></span>`
+      : `<span>${nm(n)}</span>`).join('')}</div>
+    </div>
+  </div>`;
+
   /* ---- latest moves: trades and pickups together, newest first ---- */
   const { trades, waivers } = db.trades(S);
   const moves = [
@@ -171,7 +206,7 @@ export function render(db) {
   ${/* Two columns on a desktop, filled so they end near the same height; on a
        phone the columns dissolve and the blocks read in priority order */''}
   <div class="hm-grid">
-    <div class="hm-col">${race}${empire}</div>
+    <div class="hm-col">${race}${guil}${empire}</div>
     <div class="hm-col">${game}${movesCard}${bank}</div>
   </div>`;
 }
