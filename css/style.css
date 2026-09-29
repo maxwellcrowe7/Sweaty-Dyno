@@ -2252,19 +2252,16 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-go:hover{color:var(--ink);border-color:var(--ink-3)}
 .view-hd + .hm-hd,.hm-rules + .hm-hd{margin-top:4px}
 
-/* desktop: three rows of two, each pair starting and ending on the same line.
-   Pairs are matched by natural height -- race with moves, guillotine with the
-   game, empire with the bank -- and the shorter card of each stretches, its
-   rows spreading to fill. A phone reads them in order. */
+/* desktop: two columns, every card at its natural height, and the shorter
+   column's cards share out the difference so both columns end on one line.
+   A phone reads them in order. */
 .hm-grid{display:flex;flex-direction:column}
 .hm-col{display:contents}
 .hm-race{order:1} .hm-game{order:2} .hm-moves{order:4} .hm-emp{order:5} .hm-bank{order:6}
 @media (min-width:900px){
-  .hm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;
-    grid-template-areas:"race moves" "guil game" "emp bank"}
-  .hm-race{grid-area:race} .hm-moves{grid-area:moves} .hm-guil{grid-area:guil}
-  .hm-game{grid-area:game} .hm-emp{grid-area:emp} .hm-bank{grid-area:bank}
-  .hm-col > div{display:flex;flex-direction:column;min-width:0}
+  .hm-grid{flex-direction:row;gap:14px;align-items:stretch}
+  .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+  .hm-col > div{flex:1 1 auto;display:flex;flex-direction:column;min-width:0}
   .hm-col > div > .card{flex:1;display:flex;flex-direction:column}
   .hm-col > div > .card > .card-bd{flex:1}
   .hm-race-bd,.hm-moves .card-bd,.hm-emp .card-bd{display:flex;flex-direction:column}
