@@ -1,3 +1,4 @@
+import { markRulesSeen, rulesSignature } from './dashboard.js';
 import { esc, icon, empty, openModal, toast, seasonPicker, fmt, unfmt,
   formatBar, wireRichBar } from '../util.js';
 
@@ -189,6 +190,8 @@ export function render(db, state = {}) {
   const diff = db.rulesDiff(year);
   const showDiff = MARKS;
   const tab = P.tab === 'changes' && diff ? 'changes' : 'rules';
+  // opening the changes is having seen them -- Home stops mentioning them
+  if (tab === 'changes') markRulesSeen(year, rulesSignature(diff));
   const admin = db.isAdmin;
 
   const editing = admin && EDITING;

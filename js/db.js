@@ -942,6 +942,21 @@ class Store {
     return { top, blowout, closest, streaks };
   }
 
+  /**
+   * The three claims on the cash in the bank: prize money every started season
+   * has set aside and not yet handed over, the empire pot, and what is left --
+   * free money carrying forward. The Bank dial and the Home card both draw this.
+   */
+  bankClaims() {
+    const all = this.bank();
+    const rows = this.balanceSheet().filter((r) => r.active);
+    const placement = rows.reduce((a, r) => a + (r.place - r.placePaid), 0);
+    const minigames = rows.reduce((a, r) => a + (r.mini - r.miniPaid), 0);
+    const prizes = placement + minigames;
+    return { cash: all.cash, empire: all.earmarked, prizes, placement, minigames,
+             free: all.cash - all.earmarked - prizes };
+  }
+
   /** Where a season stands: "Week 3 of 14", "Playoffs" or "Final". */
   seasonStage(season = this.season) {
     const st = this.stats(season);

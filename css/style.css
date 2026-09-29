@@ -2231,3 +2231,98 @@ table.dt.h2h td.wk{padding:4px 4px}
 }
 .pick-ghost{visibility:hidden}
 
+
+/* ============================================================
+   HOME
+   ============================================================ */
+/* a block's name and the tab it came from, on one line */
+.hm-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 8px}
+.hm-hd > span{font-family:var(--f-display);font-size:12px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-3)}
+.hm-go{display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 8px;border-radius:99px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-3);font:inherit;font-size:11px;
+  font-weight:600;cursor:pointer}
+.hm-go .ic{width:13px;height:13px}
+.hm-go:hover{color:var(--ink);border-color:var(--ink-3)}
+.view-hd + .hm-hd,.hm-rules + .hm-hd{margin-top:4px}
+
+/* desktop: race tall on the left; the game and the moves stacked beside it;
+   empire and the bank side by side under them. A phone reads them in order. */
+.hm-grid{display:flex;flex-direction:column}
+.hm-col{display:contents}
+.hm-race{order:1} .hm-game{order:2} .hm-moves{order:3} .hm-emp{order:4} .hm-bank{order:5}
+@media (min-width:900px){
+  .hm-grid{flex-direction:row;gap:14px;align-items:flex-start}
+  .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+}
+.hm-grid .card{margin-top:0}
+
+.hm-big{font-family:var(--f-display);font-size:30px;font-weight:700;line-height:1}
+.hm-big.mint{color:var(--mint)} .hm-big.violet{color:var(--violet)}
+.hm-sub{font-size:11.5px;color:var(--ink-3)}
+
+/* playoff race */
+.row.hm-seed{padding:8px 16px;gap:10px}
+.hm-n{width:14px;flex:none;font-family:var(--f-display);font-weight:700;font-size:13px;color:var(--ink-3)}
+.hm-rec{font-family:var(--f-display);font-size:16px;font-weight:700;min-width:36px;text-align:right}
+.row.hm-seed.cut{border-bottom:2px solid var(--heat)}
+.row.hm-seed.out{background:var(--bg-2);color:var(--ink-3)}
+.row.hm-seed.out .hm-rec{color:var(--ink-3)}
+.hm-back{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.hm-seed .seed-tag{margin-left:0}
+
+/* minigame */
+.hm-game-bd{display:flex;align-items:flex-end;justify-content:space-between;gap:14px}
+.hm-name{font-family:var(--f-display);font-size:17px;font-weight:700;margin-top:6px}
+.hm-sub{margin-top:2px}
+.hm-last{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:11px;color:var(--ink-3);
+  text-align:right;white-space:nowrap}
+.hm-last b{font-size:13px;color:var(--ink)}
+.hm-last .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+
+/* moves */
+.row.hm-mv{padding:9px 16px;gap:10px}
+.hm-mv .t{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-mv .s{font-size:11px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-mv .grow{min-width:0}
+.hm-ic{width:18px;flex:none;color:var(--ink-3);display:flex;justify-content:center}
+.hm-ic.plus{color:var(--mint);font-family:var(--f-display);font-weight:700;font-size:18px}
+.hm-ic .ic{width:16px;height:16px}
+.hm-date{font-size:11px;color:var(--ink-3);white-space:nowrap}
+.hm-bid{font-family:var(--f-display);font-weight:700;font-size:14px;color:var(--mint)}
+.hm-bid.fa{color:var(--ink-3);font-size:12px}
+.hm-cond{display:flex;align-items:center;gap:7px;padding:9px 16px;border-top:1px solid var(--line-soft);
+  font-size:12px;color:var(--violet)}
+.hm-cond .ic{width:14px;height:14px}
+
+/* empire */
+.hm-pot{display:flex;align-items:baseline;gap:10px;padding:14px 16px 6px}
+.row.hm-er{padding:7px 16px;gap:12px}
+.hm-er .tname{width:96px;flex:none}
+.hm-pts{font-family:var(--f-display);font-size:15px;color:var(--violet);min-width:24px;text-align:right}
+
+/* bank */
+.hm-bank-bd{display:flex;align-items:center;gap:18px}
+.hm-dial{position:relative;flex:none;width:150px}
+.hm-dial .gauge{width:150px;margin:-6px 0 0}
+.hm-dial .gauge-val .big{font-size:26px}
+.hm-dial .gauge-val .lbl{font-size:8.5px}
+.hm-claims{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0}
+.hm-claims > div{display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:9px}
+.hm-claims i{width:9px;height:9px;border-radius:2px}
+.hm-claims span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);font-weight:700}
+.hm-claims b{font-family:var(--f-display);font-size:18px}
+.hm-owe{display:flex;flex-wrap:wrap;gap:6px 14px;padding:10px 16px;border-top:1px solid var(--line-soft);
+  font-size:12px;color:var(--ink-3)}
+.hm-owe b{color:var(--red)}
+
+/* rules changes: a slim strip, only while they are new to you */
+.hm-rules{display:flex;align-items:center;gap:10px;width:100%;margin:0 0 4px;padding:10px 14px;
+  border-radius:var(--r);border:1px solid rgba(245,196,81,.3);background:rgba(245,196,81,.08);
+  color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer;text-align:left}
+.hm-rules b{color:var(--gold);font-family:var(--f-display);font-size:15px}
+.hm-rules > span{flex:1}
+.hm-rules .ic{width:16px;height:16px;color:var(--gold)}
+.hm-title h2{margin-right:0}
+.hm-title .chip.stage{font-size:10.5px;letter-spacing:.06em;margin:0 auto 0 4px}

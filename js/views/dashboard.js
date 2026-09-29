@@ -1,165 +1,179 @@
-import { money, esc, icon, teamTag, empty, fmtDate, pts, gauge } from '../util.js';
+import { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip } from '../util.js';
+
+/* ============================================================
+   HOME
+   One glance at every tab that changes week to week: big figures, few
+   words, and a way through to the page each block comes from. Nothing
+   here is new data -- it is the headline of somewhere else.
+   ============================================================ */
+
+/* The block header: what it is, and the tab it came from. Not a
+   .section-title, so the app's collapse wiring leaves it alone -- a home
+   page that folds away is not a glance. */
+const hd = (label, to, tab, ic) => `<div class="hm-hd"><span>${label}</span>
+  <button class="hm-go" data-go="${to}">${icon(ic)}${tab}</button></div>`;
+
+// what a rules change has to differ by for the home page to mention it again
+const RULES_SEEN = 'sweatydyno:rulesSeen';
+export const rulesSignature = (diff) => !diff ? ''
+  : [...diff.added, ...diff.changed, ...diff.removed].map((x) => x.id).sort().join(',');
+const rulesSeen = (season) => {
+  try { return JSON.parse(localStorage.getItem(RULES_SEEN) || '{}')[season] ?? null; } catch { return null; }
+};
+export const markRulesSeen = (season, sig) => {
+  try {
+    const m = JSON.parse(localStorage.getItem(RULES_SEEN) || '{}');
+    m[season] = sig;
+    localStorage.setItem(RULES_SEEN, JSON.stringify(m));
+  } catch { /* private mode */ }
+};
 
 export function render(db) {
   // Home is pinned to the current season rather than the shared browsing one:
   // it has no picker, so following it would show a stale year with no way back.
   const S = db.league.currentSeason ?? db.season;
-  const all = db.bank();
-  const emp = db.empire();
-  const led = db.ledger();
-  const owing = led.filter((t) => t.owesNow > 0).sort((a, b) => b.owesNow - a.owesNow);
-  const { trades } = db.trades();
-  // anything still hanging over the league: open, or past its deadline and
-  // waiting on a decision
-  const openCond = db.conditions().filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key));
-  const mg = db.minigames(S);
-  const nextGame = mg.games.find((g) => g.status !== 'final');
-  const spend = db.minigameSpend(S);
+  const nm = (n) => esc(db.team(n, S)?.manager ?? `T${n}`);
   const st = db.stats(S);
-  const leader = emp.board[0];
 
-  const seasonBank = db.bank(S);
-  const paidThis = seasonBank.payins.filter((p) => p.paid).length;
+  /* ---- last week, in four figures ---- */
+  const wk = st.weeks.at(-1);
+  const games = wk ? st.weekly.filter((g) => g.week === wk) : [];
+  const h = games.length ? db.highlightsFrom(games, st.rows.map((r) => r.number), false) : null;
+  const low = games.length ? games.reduce((a, b) => (b.points < a.points ? b : a)) : null;
+  const recap = !h ? '' : `
+  ${hd(`Week ${wk}`, 'stats', 'Stats', 'chart')}
+  <div class="tiles hl-tiles">
+    <div class="tile accent"><div class="k">Top score</div>
+      <div class="v">${pts(h.top.points)}</div><div class="m">${nm(h.top.team)}</div></div>
+    <div class="tile red"><div class="k">Low score</div>
+      <div class="v">${pts(low.points)}</div><div class="m">${nm(low.team)}</div></div>
+    <div class="tile mint"><div class="k">Blowout</div>
+      <div class="v">${h.blowout ? '+' + pts(h.blowout.margin) : '&mdash;'}</div>
+      <div class="m">${h.blowout ? `${nm(h.blowout.team)} over ${nm(h.blowout.opponent)}` : ''}</div></div>
+    <div class="tile gold"><div class="k">Closest</div>
+      <div class="v">${h.closest ? pts(h.closest.margin) : '&mdash;'}</div>
+      <div class="m">${h.closest ? `${nm(h.closest.team)} over ${nm(h.closest.opponent)}` : ''}</div></div>
+  </div>`;
+
+  /* ---- playoff race: the six in, and the two nearest out ---- */
+  const po = db.playoffSeeds(S);
+  const inn = po.rows.filter((r) => r.in);
+  const out = po.rows.filter((r) => !r.in).slice(0, 2);
+  const race = !st.hasRecords ? '' : `
+  <div class="hm-race">
+    ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart')}
+    <div class="card"><div class="card-bd flush"><div class="rows">
+      ${inn.map((r, i) => `<div class="row hm-seed${i === inn.length - 1 ? ' cut' : ''}">
+        <span class="hm-n">${r.seed}</span>${teamTag(r)}
+        ${r.bye ? '<span class="seed-tag bye">BYE</span>' : ''}${r.how === 'points' ? '<span class="seed-tag">PTS</span>' : ''}
+        <div class="grow"></div><b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}
+      ${out.map((r) => `<div class="row hm-seed out">
+        <span class="hm-n"></span>${teamTag(r)}<div class="grow"></div>
+        <span class="hm-back">&minus;${pts(r.back)}</span><b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}
+    </div></div></div>
+  </div>`;
+
+  /* ---- this week's minigame, and who took the last one ---- */
+  const mg = db.minigames(S).games || [];
+  const next = mg.find((g) => g.status !== 'final');
+  const last = [...mg].filter((g) => g.status === 'final' && g.results?.['1']?.team)
+    .sort((a, b) => (b.week ?? 0) - (a.week ?? 0))[0];
+  const game = !next && !last ? '' : `
+  <div class="hm-game">
+    ${hd(next?.week ? `Week ${next.week} minigame` : 'Minigames', 'minigames', 'Games', 'dice')}
+    <div class="card"><div class="card-bd hm-game-bd">
+      ${next ? `<div><div class="hm-big mint">${money(next.payout?.['1'] || 0)}</div>
+        <div class="hm-name">${esc(next.name || 'To be set')}</div>
+        ${next.summary ? `<div class="hm-sub">${esc(next.summary)}</div>` : ''}</div>` : '<div class="hm-sub">Slate finished</div>'}
+      ${last ? `<div class="hm-last"><span class="k">Wk ${last.week} winner</span><b>${nm(last.results['1'].team)}</b>
+        <span>${esc(last.name || '')}</span></div>` : ''}
+    </div></div>
+  </div>`;
+
+  /* ---- latest moves: trades and pickups together, newest first ---- */
+  const { trades, waivers } = db.trades(S);
+  const moves = [
+    ...trades.map((t) => ({ kind: 'trade', date: t.date, t })),
+    ...waivers.map((w) => ({ kind: 'move', date: w.date, w })),
+  ].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
+  const openCond = db.conditions().filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key)).length;
+  const moveRow = (m) => {
+    if (m.kind === 'trade') {
+      const pieces = m.t.sides.flatMap((s) => s.receives).map((r) => r.label);
+      return `<div class="row hm-mv"><span class="hm-ic">${icon('swap')}</span>
+        <div class="grow"><div class="t">${m.t.sides.map((s) => nm(s.team)).join(' &harr; ')}</div>
+          <div class="s">${esc(pieces.slice(0, 2).join(', '))}${pieces.length > 2 ? ` +${pieces.length - 2}` : ''}</div></div>
+        <span class="hm-date">${fmtDate(m.date)}</span></div>`;
+    }
+    const w = m.w;
+    return `<div class="row hm-mv"><span class="hm-ic plus">+</span>
+      <div class="grow"><div class="t">${posChip(db.position(w.player))} ${esc(w.player)}</div>
+        <div class="s">${nm(w.team)}${w.dropped ? ` &middot; drops ${esc(w.dropped)}` : ''}</div></div>
+      <span class="hm-bid${w.type === 'free_agent' ? ' fa' : ''}">${w.type === 'free_agent' ? 'FA' : money(w.faab || 0)}</span></div>`;
+  };
+  const movesCard = `
+  <div class="hm-moves">
+    ${hd('Latest moves', 'trades', 'Transactions', 'swap')}
+    <div class="card"><div class="card-bd flush">
+      ${moves.length ? `<div class="rows">${moves.map(moveRow).join('')}</div>`
+        : '<div class="card-bd hm-sub">Nothing yet this season</div>'}
+      ${openCond ? `<div class="hm-cond">${icon('lock')} ${openCond} open conditional trade${openCond === 1 ? '' : 's'}</div>` : ''}
+    </div></div>
+  </div>`;
+
+  /* ---- empire race ---- */
+  const emp = db.empire();
+  const empire = `
+  <div class="hm-emp">
+    ${hd('Empire race', 'empire', 'Empire', 'crown')}
+    <div class="card"><div class="card-bd flush">
+      <div class="hm-pot"><span class="hm-big violet">${money(emp.pot)}</span>
+        <span class="hm-sub">${emp.claimed ? 'claimed' : `${emp.threshold} pts or ${emp.titlesToWin} titles`}</span></div>
+      <div class="rows">${emp.board.slice(0, 4).map((t) => `<div class="row hm-er">
+        ${teamTag(t)}<div class="grow"><div class="meter violet"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div></div>
+        <b class="hm-pts">${t.total}</b></div>`).join('')}</div>
+    </div></div>
+  </div>`;
+
+  /* ---- the bank: one dial, its three claims, and anyone who owes ---- */
+  const c = db.bankClaims();
+  const owing = db.ledger().filter((t) => t.owesNow > 0).sort((a, b) => b.owesNow - a.owesNow);
+  const bank = `
+  <div class="hm-bank">
+    ${hd('Bank', 'bank', 'Bank', 'wallet')}
+    <div class="card"><div class="card-bd hm-bank-bd">
+      <div class="hm-dial">
+        ${gauge([{ key: 'free', value: c.free }, { key: 'owed', value: c.prizes }, { key: 'empire', value: c.empire }],
+          `In the bank ${money(c.cash)}`)}
+        <div class="gauge-val"><div class="big">${money(c.cash)}</div><div class="lbl">In the bank</div></div>
+      </div>
+      <div class="hm-claims">
+        <div><i class="lg-free"></i><span>Free</span><b>${money(c.free)}</b></div>
+        <div><i class="lg-owed"></i><span>Prizes</span><b>${money(c.prizes)}</b></div>
+        <div><i class="lg-empire"></i><span>Empire</span><b>${money(c.empire)}</b></div>
+      </div>
+    </div>
+    ${owing.length ? `<div class="hm-owe">${owing.map((t) => `<span>${nm(t.number)} <b>${money(t.owesNow)}</b></span>`).join('')}</div>` : ''}
+    </div>
+  </div>`;
+
+  /* ---- a rulebook that has changed since you last looked ---- */
+  const diff = db.rulesDiff(S);
+  const sig = rulesSignature(diff);
+  const rules = diff?.count && rulesSeen(S) !== sig ? `
+  <button class="hm-rules" data-go="rules">${icon('book')}
+    <span><b>${diff.count}</b> rule change${diff.count === 1 ? '' : 's'} for ${S}</span>${icon('chev')}</button>` : '';
 
   return `
-  <div class="hero">
-  <div class="card gauge-card">
-    <div style="position:relative">
-      ${gauge([{ key: 'free', value: all.free }, { key: 'empire', value: all.earmarked }],
-        `Bank cash ${money(all.cash)}: ${money(all.free)} free, ${money(all.earmarked)} empire pot`)}
-      <div class="gauge-val">
-        <div class="big">${money(all.cash)}</div>
-        <div class="lbl">In the bank</div>
-      </div>
-    </div>
-    <div class="gauge-legend">
-      <div><i style="background:#3DDC97"></i> ${money(all.free)} free</div>
-      <div><i style="background:#9C8CFA"></i> ${money(all.earmarked)} empire pot</div>
-    </div>
-  </div>
-
-  <div class="tiles">
-    <div class="tile mint"><div class="k">Collected</div><div class="v">${money(all.collected)}</div>
-      <div class="m">all seasons</div></div>
-    <div class="tile ${all.owedNow ? 'red' : ''}"><div class="k">Owed now</div><div class="v">${money(all.owedNow)}</div>
-      <div class="m">${all.future ? money(all.future) + ' in future seasons' : 'nothing outstanding'}</div></div>
-    <div class="tile accent"><div class="k">Paid out</div><div class="v">${money(all.disbursed)}</div>
-      <div class="m">to managers</div></div>
-    <div class="tile violet"><div class="k">Empire pot</div><div class="v">${money(emp.pot)}</div>
-      <div class="m">${emp.claimed ? 'claimed' : 'unclaimed'}</div></div>
-  </div>
-  </div>
-
-  ${owing.length ? `
-  <div class="section-title">Dues outstanding</div>
-  <div class="card"><div class="card-bd flush"><div class="rows">
-    ${owing.slice(0, 5).map((t) => `
-      <div class="row">
-        ${teamTag(t)}
-        <div class="grow"></div>
-        <div class="val neg">${money(t.owesNow)}</div>
-      </div>`).join('')}
-  </div></div>
-    ${owing.length > 5 ? `<div class="card-bd" style="padding-top:0"><button class="btn sm ghost" data-go="bank">See all ${owing.length} &rsaquo;</button></div>` : ''}
-  </div>` : `
-  <div class="section-title">Dues</div>
-  <div class="card"><div class="card-bd">
-    <div class="banner" style="background:rgba(61,220,151,.07);border-color:rgba(61,220,151,.26)">
-      ${icon('check')}<div>Everyone is square through ${db.league.currentSeason}. <b style="color:var(--mint)">${money(all.collected)}</b> collected so far${all.future ? `, with ${money(all.future)} of buy-ins still scheduled.` : '.'}</div>
-    </div>
-  </div></div>`}
-
-  <div class="section-title">Empire race</div>
-  <div class="card">
-    <div class="card-hd">
-      <h3>Closest to the pot</h3>
-      <div class="spacer"></div>
-      <span class="chip violet">${money(emp.pot)} · ${emp.threshold} pts to win</span>
-    </div>
-    <div class="card-bd flush"><div class="rows">
-      ${emp.board.slice(0, 4).map((t, i) => `
-        <div class="row">
-          <div style="width:18px;font-family:var(--f-display);font-weight:700;color:${i === 0 ? 'var(--gold)' : 'var(--ink-3)'};font-size:15px">${i + 1}</div>
-          <div class="grow">
-            <div class="t">${teamTag(t)}</div>
-            <div class="meter violet" style="margin-top:7px"><i style="width:${(t.pct * 100).toFixed(1)}%"></i></div>
-          </div>
-          <div class="val" style="color:var(--violet)">${t.total}</div>
-        </div>`).join('')}
-    </div></div>
-  </div>
-
-  <div class="two" style="margin-top:14px">
-    <div class="card">
-      <div class="card-hd"><h3>${S} minigames</h3><div class="spacer"></div>
-        <span class="chip">${money(spend.paid)} / ${money(spend.committed)}</span></div>
-      <div class="card-bd">
-        ${nextGame ? `
-          <div class="row" style="padding:0 0 12px;border-bottom:1px solid var(--line-soft)">
-            <span class="chip heat">Week ${nextGame.week}</span>
-            <div class="grow"><div class="t">${nextGame.name ? esc(nextGame.name) : 'Minigame not set'}</div>
-              <div class="s">${money(nextGame.payout?.['1'] || 0)} to the winner</div></div>
-          </div>` : ''}
-        <div class="meter" style="margin-top:12px"><i style="width:${spend.committed ? Math.min(100, (spend.paid / spend.committed) * 100).toFixed(1) : 0}%"></i></div>
-        <div class="s dim" style="margin-top:8px;font-size:12px">
-          ${money(spend.remaining)} of the ${S} minigame budget still to be won.
-          ${mg.guillotine ? `Guillotine drops week ${mg.guillotine.startWeek}.` : ''}
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-hd"><h3>${S} dues</h3><div class="spacer"></div>
-        <span class="chip ${paidThis === seasonBank.payins.length ? 'mint' : ''}">${paidThis}/${seasonBank.payins.length} paid</span></div>
-      <div class="card-bd">
-        <div class="tile bare">
-          <div class="k">Season pot</div>
-          <div class="v">${money(seasonBank.collected)}</div>
-          <div class="m">${seasonBank.outstanding ? money(seasonBank.outstanding) + ' still to come in' : 'fully collected'}</div>
-        </div>
-        <div class="meter mint" style="margin-top:12px"><i style="width:${seasonBank.payins.length ? (paidThis / seasonBank.payins.length * 100).toFixed(1) : 0}%"></i></div>
-      </div>
-    </div>
-  </div>
-
-  ${openCond.length ? `
-  <div class="section-title">Open conditions</div>
-  ${openCond.map((c) => {
-    const s = db.conditionStatus(c);
-    return `<div class="trade">
-      <div class="trade-hd"><span class="chip ${s.chip}">${s.label}</span>
-        <span class="d">${fmtDate(c.trade?.date, { year: true })}</span></div>
-      <div class="cond"><div class="lbl">Condition</div>${esc(c.text)}
-        ${c.deadline ? `<div class="out">${icon('clock')} ${esc(fmtDate(c.deadline, { year: true }))}</div>` : ''}</div>
-    </div>`;
-  }).join('')}` : ''}
-
-  <div class="section-title">Latest moves</div>
-  <div class="card"><div class="card-bd flush">
-    ${trades.length ? `<div class="rows">${trades.slice(0, 4).map((t) => {
-      const names = t.sides.map((s) => s.team ? esc(db.team(s.team)?.manager ?? `T${s.team}`) : esc(s.alias || '?'));
-      const items = t.sides.flatMap((s) => s.receives).length;
-      return `<div class="row">
-        <span style="color:var(--ink-3)">${icon('swap')}</span>
-        <div class="grow"><div class="t">${names.join(' &harr; ')}</div>
-          <div class="s">${items} piece${items === 1 ? '' : 's'} &middot; ${fmtDate(t.date, { year: true })}</div></div>
-        ${t.conditionalId ? '<span class="chip violet">Conditional</span>' : ''}
-      </div>`;
-    }).join('')}</div>` : empty('No trades logged', 'Trades you add will show up here newest-first.', 'swap')}
-  </div>
-  ${trades.length > 4 ? `<div class="card-bd" style="padding-top:12px"><button class="btn sm ghost" data-go="trades">All ${trades.length} trades &rsaquo;</button></div>` : ''}
-  </div>
-
-  ${st.hasMaxPF ? `
-  <div class="section-title">Ceiling &middot; Max PF ${S}</div>
-  <div class="card"><div class="card-bd flush"><div class="rows">
-    ${st.rows.filter((r) => r.maxPF != null).sort((a, b) => b.maxPF - a.maxPF).slice(0, 3).map((r, i) => `
-      <div class="row"><span class="chip ${i === 0 ? 'gold' : 'ghost'}">${i + 1}</span>
-        <div class="grow"><div class="t">${teamTag(r)}</div>
-          <div class="s">${r.total ? pts(r.total) + ' actual \u00b7 ' + (r.efficiency * 100).toFixed(1) + '% of ceiling' : 'ceiling only'}</div></div>
-        <div class="val">${pts(r.maxPF)}</div></div>`).join('')}
-  </div></div></div>` : ''}
-  `;
+  <div class="view-hd hm-title"><h2>Home</h2><span class="chip stage">${esc(db.seasonStage(S))}</span></div>
+  ${rules}
+  ${recap}
+  ${/* Two columns on a desktop, filled so they end near the same height; on a
+       phone the columns dissolve and the blocks read in priority order */''}
+  <div class="hm-grid">
+    <div class="hm-col">${race}${empire}</div>
+    <div class="hm-col">${game}${movesCard}${bank}</div>
+  </div>`;
 }
 
 export const mount = (root, db, go) => {

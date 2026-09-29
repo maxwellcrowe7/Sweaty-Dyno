@@ -133,16 +133,13 @@ export function render(db, state = {}) {
      or not anyone has won them yet, which is the honest claim on the cash.
      "Owed out" only counted prizes already won, so it read zero for most of a
      season while several hundred dollars were plainly spoken for. */
-  const sheetRows = db.balanceSheet().filter((r) => r.active);
-  const heldForPrizes = sheetRows.reduce((a, r) =>
-    a + (r.mini - r.miniPaid) + (r.place - r.placePaid), 0);
-  const freeCash = all.cash - all.earmarked - heldForPrizes;
+  const claims = db.bankClaims();
+  const heldForPrizes = claims.prizes;
+  const freeCash = claims.free;
   /* What the held prize money consists of -- the split the dial deliberately
      does not draw, because four segments turn it into a pie chart. */
-  const prizeSplit = [
-    ['placement', sheetRows.reduce((a, r) => a + (r.place - r.placePaid), 0)],
-    ['minigames', sheetRows.reduce((a, r) => a + (r.mini - r.miniPaid), 0)],
-  ].filter(([, v]) => v > 0);
+  const prizeSplit = [['placement', claims.placement], ['minigames', claims.minigames]]
+    .filter(([, v]) => v > 0);
   const empNow = db.empireOutlook(db.season);
 
   /* A total with what was expected of it tucked behind, said as a fraction --
