@@ -245,6 +245,7 @@ function paint() {
   if (main._rateShut) { document.removeEventListener('click', main._rateShut); main._rateShut = null; }
   if (main._segShut) { document.removeEventListener('click', main._segShut); main._segShut = null; }
   if (main._luShut) { document.removeEventListener('click', main._luShut); main._luShut = null; }
+  if (main._mqShut) { main._mqShut(); main._mqShut = null; }
   if (main._resShut) { document.removeEventListener('click', main._resShut); main._resShut = null; }
   if (main._resPop) { main._resPop.remove(); main._resPop = null; }
   closeInfo();

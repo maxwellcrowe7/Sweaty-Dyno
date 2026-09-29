@@ -9,12 +9,16 @@ import { esc, icon, teamTag, pts, empty, teamColor, money, seasonPicker } from '
 
 const PAD = { t: 14, r: 16, b: 26, l: 40 };
 
+/* The size the chart should be drawn at, once it has been checked after the
+   page settled -- null until then, when the check at draw time is used. */
+let WIDE = null;
+
 function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   if (!weeks.length) return '';
   /* Taller where there is room for it. The viewBox fixes the aspect ratio, so a
      desktop that wants more height needs a taller drawing, not a CSS height --
      and a phone keeps the shorter one, since there every pixel is scroll. */
-  const wide = typeof window !== 'undefined' && window.matchMedia?.('(min-width:621px)').matches;
+  const wide = WIDE ?? (typeof window !== 'undefined' && window.matchMedia?.('(min-width:621px)').matches);
   const W = 640, H = wide ? 290 : 240;
   /* Axis labels are drawn in viewBox units, and a phone shrinks the whole
      drawing to a little over half size -- 10 units came out near 5.5px. So the
@@ -52,7 +56,7 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   <div style="position:relative">
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;touch-action:pan-y"
          role="img" aria-label="Weekly points by week; ${esc(f?.manager ?? '')} highlighted"
-         data-chart data-w="${W}" data-lo="${lo}" data-hi="${hi}">
+         data-chart data-w="${W}" data-lo="${lo}" data-hi="${hi}" data-wide="${wide ? 1 : 0}">
       ${ticks.map((t) => `
         <line x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"
               stroke="#28323F" stroke-width="1"/>
@@ -542,6 +546,24 @@ export function mount(root, db, go, setState) {
   root._luShut = () => shutLu();
   document.addEventListener('click', root._luShut);
   root.querySelector('[data-go]')?.addEventListener('click', (e) => go(e.currentTarget.dataset.go));
+
+  /* The chart is drawn at one of two sizes, chosen while it is drawn. Right
+     after a refresh the browser can give that check the wrong answer -- the
+     chart then came out at its phone size, with oversized axis figures, until
+     something else repainted it. So check again once the page has settled,
+     and whenever the window crosses the line, and redraw if the answer
+     changed. */
+  const mq = window.matchMedia?.('(min-width:621px)');
+  if (mq) {
+    const recheck = () => {
+      const drawn = root.querySelector('[data-chart]');
+      WIDE = mq.matches;
+      if (drawn && (drawn.dataset.wide === '1') !== WIDE) setState({});
+    };
+    requestAnimationFrame(() => requestAnimationFrame(recheck));
+    mq.addEventListener?.('change', recheck);
+    root._mqShut = () => mq.removeEventListener?.('change', recheck);
+  }
 
   /* crosshair + tooltip */
   const svg = root.querySelector('[data-chart]');
