@@ -55,12 +55,16 @@ export function render(db) {
       <div class="m">${h.closest ? `${nm(h.closest.team)} over ${nm(h.closest.opponent)}` : ''}</div></div>
   </div>`;
 
-  /* ---- playoff race: all ten, in two columns with the cut between them ----
-     The six in on the left, the rest on the right with how far back they are,
-     and the orange rule down the middle is the cut line itself. */
+  /* ---- playoff race: the six in, the cut, and the first team out ----
+     The orange rule across is the cut line. Only the bubble team shows below
+     it; the rest fold away behind a count, there if you want them. */
   const po = db.playoffSeeds(S);
   const inn = po.rows.filter((r) => r.in);
   const out = po.rows.filter((r) => !r.in);
+  const outRow = (r) => `<div class="hm-seed">
+        <span class="hm-nm">${nm(r.number)}</span>
+        <span class="hm-back">&minus;${pts(r.back)}</span>
+        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`;
   const race = !st.hasRecords ? '' : `
   <div class="hm-race">
     ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart')}
@@ -69,10 +73,9 @@ export function render(db) {
         <span class="hm-n">${r.seed}</span><span class="hm-nm">${nm(r.number)}</span>
         ${r.bye ? '<span class="seed-tag bye">BYE</span>' : ''}${r.how === 'points' ? '<span class="seed-tag">PTS</span>' : ''}
         <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>
-      <div class="hm-rc out">${out.map((r) => `<div class="hm-seed">
-        <span class="hm-nm">${nm(r.number)}</span>
-        <span class="hm-back">&minus;${pts(r.back)}</span>
-        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>
+      ${out.length ? `<div class="hm-rc out">${outRow(out[0])}
+        ${out.length > 1 ? `<details class="hm-more"><summary>${icon('chev')}${out.length - 1} more</summary>
+          ${out.slice(1).map(outRow).join('')}</details>` : ''}</div>` : ''}
     </div></div>
   </div>`;
 

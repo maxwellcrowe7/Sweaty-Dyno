@@ -2268,12 +2268,19 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-sub{font-size:11.5px;color:var(--ink-3)}
 
 /* playoff race */
-/* all ten in the height of six: the six in on the left, the rest on the
-   right, and the orange rule between them is the cut */
-.hm-race-bd{display:grid;grid-template-columns:1fr 1fr}
-.hm-rc{padding:6px 0}
-.hm-rc.out{border-left:2px solid var(--heat);background:var(--bg-2)}
-.hm-seed{display:flex;align-items:center;gap:7px;padding:6px 14px;min-width:0}
+/* one list: the six in, the orange rule across is the cut, then the bubble
+   team; the rest fold under a count */
+.hm-rc{padding:2px 0}
+.hm-rc.out{border-top:2px solid var(--heat);background:var(--bg-2)}
+.hm-rc.out .hm-seed{padding-left:33px}
+.hm-more > summary{list-style:none;display:flex;align-items:center;gap:5px;cursor:pointer;
+  padding:5px 14px 5px 31px;border-top:1px solid var(--line-soft);font-size:11px;font-weight:600;color:var(--ink-3)}
+.hm-more > summary::-webkit-details-marker{display:none}
+.hm-more > summary:hover{color:var(--ink)}
+.hm-more > summary .ic{width:12px;height:12px;transition:transform .18s}
+.hm-more[open] > summary .ic{transform:rotate(90deg)}
+.hm-more > summary + .hm-seed{border-top:1px solid var(--line-soft)}
+.hm-seed{display:flex;align-items:center;gap:7px;padding:4px 14px;min-width:0}
 .hm-seed + .hm-seed{border-top:1px solid var(--line-soft)}
 .hm-n{width:12px;flex:none;font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--ink-3)}
 .hm-nm{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
