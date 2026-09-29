@@ -2050,7 +2050,10 @@ table.dt.h2h td.lost{color:var(--ink-3)}
 .rb-pts{font-family:var(--f-display);font-size:15px;font-weight:700;width:62px;text-align:right;flex:none}
 .rb-pts.mint{color:var(--mint)}
 .rb-pts.dim{color:var(--ink-3)}
-@media (max-width:760px){ .rb-grid{flex-direction:column} }
+.rb-pts.red{color:var(--red)}
+/* stacked, the cards must size to their rows: flex:1 1 0 in a column is a
+   zero height, which is why the record book came out empty on a phone */
+@media (max-width:760px){ .rb-grid{flex-direction:column;align-items:stretch} .rb-grid > .card{flex:none} }
 
 /* ---------- stats: the playoff cut ---------- */
 /* Two sticky columns: the seed is narrow enough to ride with the name without
@@ -2188,3 +2191,8 @@ button.tile.on,button.tile:not(:disabled):hover{border-color:var(--ink-3)}
   .hl-tiles .tile .v{font-size:19px;margin-top:3px}
   .hl-tiles .tile .m{font-size:10.5px;margin-top:2px}
 }
+
+/* head-to-head cells are tappable like results cells; a meeting he won is green */
+table.dt.h2h td.wk{padding:4px 4px}
+.res-ln i{font-style:normal;color:var(--ink-3)}
+.res-ln.w b{color:var(--mint)}

@@ -192,11 +192,11 @@ function allTime(db) {
     'Pull a season from Sleeper in Admin and the record book fills itself in.', 'chart');
 
   const byPct = [...at.rows].sort((a, b) => (b.winPct ?? 0) - (a.winPct ?? 0) || b.pf - a.pf);
-  const byPF = [...at.rows].sort((a, b) => b.pf - a.pf);
-  const best = at.rows.map((r) => r.best).filter(Boolean)
-    .sort((a, b) => b.points - a.points);
-  const bestOf = (w) => at.rows.find((r) => r.best === w);
-  const champs = [...at.rows].filter((r) => r.titles).sort((a, b) => b.titles - a.titles);
+  const hl = db.allTimeHighlights();
+  const nm = (n) => esc(db.team(n)?.manager ?? `T${n}`);
+  const game = (g) => g ? `data-res data-yr="${g.season}" data-wk="${g.week}" data-me="${nm(g.team)}"
+    data-mp="${pts(g.points)}" data-r="W" data-opp="${nm(g.opponent)}" data-op="${pts(g.opp.points)}"` : '';
+  const who = (teams) => teams.length > 2 ? `${teams.length} teams` : teams.map(nm).join(', ');
 
   /* Every week anyone has ever played, ranked. The record book is the one thing
      a dynasty league re-reads, so it is worth showing whole rather than as a
@@ -207,35 +207,43 @@ function allTime(db) {
   const top = [...allWeeks].sort((a, b) => b.points - a.points).slice(0, 5);
   const bot = [...allWeeks].sort((a, b) => a.points - b.points).slice(0, 5);
 
+  /* Every meeting between every pair, so a head-to-head cell can say what its
+     record is made of -- a 1-1 hides whether both were blowouts or coin flips. */
+  const games = at.seasons.flatMap((y) => db.stats(y).weekly);
+  const score = new Map(games.map((g) => [`${g.season}:${g.week}:${g.team}`, g.points]));
+  const met = {};
+  for (const g of games) {
+    if (g.opponent == null || !g.result) continue;
+    ((met[g.team] ||= {})[g.opponent] ||= []).push({ ...g, them: score.get(`${g.season}:${g.week}:${g.opponent}`) });
+  }
   const h2h = db.headToHead();
   const grid = [...at.rows].sort((a, b) => a.number - b.number);
+  const lead = byPct[0];
 
   return `
-  <div class="tiles">
+  <div class="tiles hl-tiles">
     <div class="tile accent"><div class="k">Best record</div>
-      <div class="v" style="font-size:23px">${esc(byPct[0]?.manager ?? '--')}</div>
-      <div class="m">${byPct[0] ? `${rec(byPct[0].wins, byPct[0].losses, byPct[0].ties)} &middot; ${
-        (byPct[0].winPct * 100).toFixed(0)}%` : ''}</div></div>
-    <div class="tile gold"><div class="k">Most points</div>
-      <div class="v" style="font-size:23px">${esc(byPF[0]?.manager ?? '--')}</div>
-      <div class="m">${byPF[0] ? pts(byPF[0].pf) + ' over ' + byPF[0].seasons
-        + ' season' + (byPF[0].seasons === 1 ? '' : 's') : ''}</div></div>
-    <div class="tile mint"><div class="k">Best week ever</div>
-      <div class="v">${best[0] ? pts(best[0].points) : '--'}</div>
-      <div class="m">${best[0] ? `${esc(bestOf(best[0]).manager)} &middot; ${best[0].season} wk ${best[0].week}` : ''}</div></div>
-    <div class="tile"><div class="k">Titles</div>
-      <div class="v" style="font-size:23px">${champs.length ? esc(champs[0].manager) : '&mdash;'}</div>
-      <div class="m">${champs.length ? `${champs[0].titles} &middot; ${champs.length} manager${
-        champs.length === 1 ? '' : 's'} with one` : 'none awarded yet'}</div></div>
+      <div class="v">${lead ? rec(lead.wins, lead.losses, lead.ties) : '&mdash;'}</div>
+      <div class="m">${lead ? `${nm(lead.number)} &middot; ${(lead.winPct * 100).toFixed(0)}%` : ''}</div></div>
+    <button class="tile mint hl-game" ${game(hl.blowout)} ${hl.blowout ? '' : 'disabled'}>
+      <div class="k">Biggest blowout</div>
+      <div class="v">${hl.blowout ? '+' + pts(hl.blowout.margin) : '&mdash;'}</div>
+      <div class="m">${hl.blowout ? `${nm(hl.blowout.team)} over ${nm(hl.blowout.opponent)} &middot; ${hl.blowout.season} Wk ${hl.blowout.week}` : 'needs matchups'}</div></button>
+    <button class="tile gold hl-game" ${game(hl.closest)} ${hl.closest ? '' : 'disabled'}>
+      <div class="k">Closest game</div>
+      <div class="v">${hl.closest ? pts(hl.closest.margin) : '&mdash;'}</div>
+      <div class="m">${hl.closest ? `${nm(hl.closest.team)} over ${nm(hl.closest.opponent)} &middot; ${hl.closest.season} Wk ${hl.closest.week}` : 'needs matchups'}</div></button>
+    <div class="tile violet"><div class="k">Longest streak</div>
+      <div class="v">${hl.streak ? `W${hl.streak.n}` : '&mdash;'}</div>
+      <div class="m">${hl.streak ? who(hl.streak.teams) : 'nobody on a run'}</div></div>
   </div>
 
-  <div class="section-title">Franchises<span class="sub-n dim">${at.seasons.length} season${
-    at.seasons.length === 1 ? '' : 's'}</span></div>
+  <div class="section-title">Franchises</div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt">
     <thead><tr><th class="sticky">Team</th>
       <th class="n">Yrs</th><th class="n">Rec</th><th class="n">Win%</th>
       <th class="n">PF</th><th class="n">PA</th><th class="n">Avg</th>
-      <th class="n">All&#8209;play</th><th class="n">Titles</th></tr></thead>
+      <th class="n">All&#8209;play</th><th class="n">Playoffs</th><th class="n">Titles</th></tr></thead>
     <tbody>${byPct.map((r) => `
       <tr><td class="sticky">${teamTag(r)}</td>
         <td class="n dim">${r.seasons}</td>
@@ -245,12 +253,13 @@ function allTime(db) {
         <td class="n dim">${pts(r.pa)}</td>
         <td class="n dim">${pts(r.avg)}</td>
         <td class="n dim">${r.allPlayW}&ndash;${r.allPlayL}</td>
-        <td class="n">${r.titles ? `${icon('crown')}`.repeat(1) + (r.titles > 1 ? ` <b>${r.titles}</b>` : '')
+        <td class="n">${r.playoffs || '<span class="dimmer">&mdash;</span>'}</td>
+        <td class="n">${r.titles ? icon('crown') + (r.titles > 1 ? ` <b>${r.titles}</b>` : '')
           : '<span class="dimmer">&mdash;</span>'}</td>
       </tr>`).join('')}
     </tbody></table></div></div></div>
 
-  <div class="section-title">Head to head</div>
+  <div class="section-title">Head to head<span class="sub-n dim">Regular season</span></div>
   <div class="card"><div class="card-bd flush"><div class="tw"><table class="dt h2h">
     <thead><tr><th class="sticky">&nbsp;</th>
       ${grid.map((c) => `<th class="n" title="${esc(c.manager)}">T${c.number}</th>`).join('')}</tr></thead>
@@ -261,18 +270,18 @@ function allTime(db) {
           const x = h2h[r.number]?.[c.number];
           if (!x) return '<td class="n"><span class="dimmer">&mdash;</span></td>';
           const cls = x.w > x.l ? 'won' : x.w < x.l ? 'lost' : '';
-          return `<td class="n ${cls}" title="${esc(r.manager)} vs ${esc(c.manager)}">${x.w}&ndash;${x.l}</td>`;
+          const list = (met[r.number]?.[c.number] || []).sort((a, b) => a.season - b.season || a.week - b.week);
+          const pop = `<b class="res-hd">${nm(r.number)} vs ${nm(c.number)} &middot; ${x.w}&ndash;${x.l}</b>`
+            + list.map((g) => `<span class="res-ln${g.result === 'W' ? ' w' : ''}"><i>${g.season} Wk ${g.week}</i>
+                <b>${g.result} ${pts(g.points)}&ndash;${g.them != null ? pts(g.them) : '?'}</b></span>`).join('');
+          return `<td class="n wk"><button class="res-cell ${cls}" data-res data-pophtml="${esc(pop)}">${x.w}&ndash;${x.l}</button></td>`;
         }).join('')}
       </tr>`).join('')}
-    </tbody></table></div></div>
-    <div class="card-bd" style="border-top:1px solid var(--line-soft)">
-      <div class="s dim" style="font-size:12px">Regular season only. Read across: the row is your record
-      against that column.</div></div>
-  </div>
+    </tbody></table></div></div></div>
 
   <div class="section-title">Record book</div>
   <div class="rb-grid">
-    ${[['Biggest weeks', top, 'mint'], ['Smallest weeks', bot, 'dim']].map(([title, list, tone]) => `
+    ${[['Biggest weeks', top, 'mint'], ['Smallest weeks', bot, 'red']].map(([title, list, tone]) => `
       <div class="card"><div class="card-hd"><h3>${title}</h3></div>
         <div class="card-bd flush"><div class="rows">
           ${list.map((w, i) => `<div class="row rb">
@@ -328,13 +337,19 @@ function resultsGrid(db, st, season) {
     </tbody></table></div>`;
 }
 
+/** "2 seasons · 16 weeks": how much history the all-time figures stand on. */
+const allSpan = (db) => {
+  const { seasons, weeks } = db.allTimeHighlights();
+  return `${seasons} season${seasons === 1 ? '' : 's'} \u00b7 ${weeks} weeks`;
+};
+
 export function render(db, state = {}) {
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
   const bar = `
   <div class="view-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}${
       /* where the season stands -- nothing else on the page says it */''}${
-      tab === 'season' ? `<span class="chip stage">${esc(db.seasonStage(db.season))}</span>` : ''}</h2>
+      `<span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}</span>`}</h2>
     ${tab === 'season' ? seasonPicker(db) : ''}</div>
   <div class="pill-bar">
     <div class="pills">
@@ -484,7 +499,7 @@ export function mount(root, db, go, setState) {
     shut();
     const d = b.dataset;
     const said = { W: 'Won', L: 'Lost', T: 'Tied' }[d.r] || 'No matchup';
-    pop.innerHTML = `<b class="res-hd">Week ${d.wk} &middot; ${said}</b>
+    pop.innerHTML = d.pophtml || `<b class="res-hd">${d.yr ? d.yr + ' ' : ''}Week ${d.wk} &middot; ${said}</b>
       <span class="res-ln me">${d.me} <b>${d.mp}</b></span>
       ${d.opp ? `<span class="res-ln">${d.opp} <b>${d.op}</b></span>` : ''}`;
     pop.hidden = false;

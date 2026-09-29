@@ -788,6 +788,8 @@ class Store {
         luck: mine.some((x) => x.r.luck != null)
           ? Math.round(sum((r) => r.luck) * 100) / 100 : null,
         titles: mineFin.filter((f) => f.place === 1).length,
+        // a final place inside the playoff field means the franchise was in it
+        playoffs: mineFin.filter((f) => f.place <= (Number(this.league.playoffSpots) || 6)).length,
         podiums: mineFin.filter((f) => f.place <= 3).length,
         best: bestWk ? { points: bestWk.points, season: bestWk.season, week: bestWk.week } : null,
         worst: worstWk ? { points: worstWk.points, season: worstWk.season, week: worstWk.week } : null,
@@ -873,25 +875,45 @@ class Store {
    */
   seasonHighlights(season = this.season) {
     const st = this.stats(season);
-    const games = st.weekly;
-    const at = new Map(games.map((g) => [`${g.week}:${g.team}`, g]));
+    const over = this.seasonOver(season) || st.weeks.length >= st.regularSeasonWeeks;
+    return this.highlightsFrom(st.weekly, st.rows.map((r) => r.number), !over);
+  }
+
+  /** The same highlights across every season -- the streak is the longest
+      ever, and may run from one season into the next. */
+  allTimeHighlights() {
+    const seasons = [...new Set(this.get('stats').weekly.map((w) => w.season))].sort((a, b) => a - b);
+    const games = seasons.flatMap((s) => this.stats(s).weekly);
+    const h = this.highlightsFrom(games, this.teams().map((t) => t.number), false);
+    // the game with the most points in it, both sides together
+    const at = new Map(games.map((g) => [`${g.season}:${g.week}:${g.team}`, g]));
+    const pairs = games.filter((g) => g.result === 'W' && g.opponent != null)
+      .map((g) => ({ ...g, opp: at.get(`${g.season}:${g.week}:${g.opponent}`) })).filter((g) => g.opp);
+    h.shootout = pairs.length ? pairs.reduce((a, b) =>
+      (b.points + b.opp.points > a.points + a.opp.points ? b : a)) : null;
+    const weeks = new Set(games.map((g) => `${g.season}:${g.week}`)).size;
+    return { ...h, seasons: seasons.length, weeks };
+  }
+
+  highlightsFrom(games, teams, current) {
+    const key = (g, team = g.team) => `${g.season}:${g.week}:${team}`;
+    const at = new Map(games.map((g) => [key(g), g]));
     const top = games.length ? games.reduce((a, b) => (b.points > a.points ? b : a)) : null;
 
     // one entry per matchup, from the winner's side
     const wins = games.filter((g) => g.result === 'W' && g.opponent != null)
-      .map((g) => ({ ...g, opp: at.get(`${g.week}:${g.opponent}`) }))
+      .map((g) => ({ ...g, opp: at.get(key(g, g.opponent)) }))
       .filter((g) => g.opp)
       .map((g) => ({ ...g, margin: Math.round((g.points - g.opp.points) * 100) / 100 }));
     const blowout = wins.length ? wins.reduce((a, b) => (b.margin > a.margin ? b : a)) : null;
     const closest = wins.length ? wins.reduce((a, b) => (b.margin < a.margin ? b : a)) : null;
 
-    /* Streaks. While the season is live the one worth saying is the one still
-       running; once it is over, the longest anybody put together. */
-    const over = this.seasonOver(season) || st.weeks.length >= st.regularSeasonWeeks;
+    /* Streaks. While a season is live the one worth saying is the one still
+       running; otherwise, the longest anybody put together. */
     const streakOf = (team) => {
       const seq = games.filter((g) => g.team === team && g.result)
-        .sort((a, b) => a.week - b.week).map((g) => g.result);
-      if (!over) {
+        .sort((a, b) => a.season - b.season || a.week - b.week).map((g) => g.result);
+      if (current) {
         let n = 0;
         for (let i = seq.length - 1; i >= 0 && seq[i] === 'W'; i--) n++;
         return n;
@@ -900,10 +922,10 @@ class Store {
       for (const r of seq) { run = r === 'W' ? run + 1 : 0; best = Math.max(best, run); }
       return best;
     };
-    const runs = st.rows.map((r) => ({ team: r.number, n: streakOf(r.number) }));
+    const runs = teams.map((team) => ({ team, n: streakOf(team) }));
     const longest = Math.max(0, ...runs.map((x) => x.n));
     const streak = longest ? { n: longest, teams: runs.filter((x) => x.n === longest).map((x) => x.team),
-                               current: !over } : null;
+                               current } : null;
 
     return { top, blowout, closest, streak };
   }
