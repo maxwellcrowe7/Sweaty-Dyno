@@ -2392,9 +2392,22 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-chop b span{font-weight:500;font-size:12px;color:var(--ink-3);margin-left:3px}
 .hm-close{font-size:11px;color:var(--ink-3)}
 /* the pool: everyone still in, then the fallen, faded, with the week they went */
-.hm-pool{display:flex;flex-wrap:wrap;gap:5px;padding:10px 14px 12px;border-top:1px solid var(--line-soft)}
-.hm-pool span{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;
+.hm-pool{display:grid;grid-template-columns:repeat(var(--cols,5),minmax(0,1fr));gap:5px;
+  padding:10px 14px 12px;border-top:1px solid var(--line-soft)}
+.hm-pool span{display:flex;justify-content:center;min-width:0;white-space:nowrap;
+  font-size:11px;font-weight:600;padding:2px 6px;border-radius:99px;
   background:var(--surface-3);color:var(--ink)}
+/* a long name gives way before its week does */
+.hm-pool b{font-weight:inherit;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.hm-pool i{flex:none}
+/* a phone-width card: tighter chips, and each column as wide as its own names
+   -- Matt and Sam lend room to Damon and Tanner -- so five fit a row whole */
+.hm-guil{container-type:inline-size}
+@container (max-width:440px){
+  .hm-pool{gap:4px;padding:10px 10px 12px;grid-template-columns:repeat(var(--cols,5),auto)}
+  .hm-pool span{padding:2px 3px;font-size:10.5px;letter-spacing:-.01em}
+  .hm-pool i{margin-left:3px}
+}
 .hm-pool span.gone{background:none;border:1px dashed var(--line);color:var(--ink-3);font-weight:500}
 .hm-pool i{font-style:normal;margin-left:5px;color:var(--red);opacity:.8}
 
@@ -5269,9 +5282,10 @@ function render(db) {
         ${nearMiss && !run.winner ? `<span class="hm-close">Close call: ${nm(nearMiss.team)} +${pts(nearMiss.by)}</span>` : ''}
       </div>` : `<div class="hm-sub">First chop week ${run.startWeek}</div>`}
     </div>
-    <div class="hm-pool">${[...run.survivors, ...settled.map((w) => w.chopped)].map((n) => choppedWeek.has(n)
-      ? `<span class="gone">${nm(n)}<i>W${choppedWeek.get(n)}</i></span>`
-      : `<span>${nm(n)}</span>`).join('')}</div>
+    ${/* an even grid, never a ragged wrap: ten names are two full rows of five */''}
+    <div class="hm-pool" style="--cols:${Math.ceil(run.entrants.length / 2)}">${[...run.survivors, ...settled.map((w) => w.chopped)].map((n) => choppedWeek.has(n)
+      ? `<span class="gone"><b>${nm(n)}</b><i>W${choppedWeek.get(n)}</i></span>`
+      : `<span><b>${nm(n)}</b></span>`).join('')}</div>
     </div>
   </div>`;
 

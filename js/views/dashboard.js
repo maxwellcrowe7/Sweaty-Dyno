@@ -126,9 +126,10 @@ export function render(db) {
         ${nearMiss && !run.winner ? `<span class="hm-close">Close call: ${nm(nearMiss.team)} +${pts(nearMiss.by)}</span>` : ''}
       </div>` : `<div class="hm-sub">First chop week ${run.startWeek}</div>`}
     </div>
-    <div class="hm-pool">${[...run.survivors, ...settled.map((w) => w.chopped)].map((n) => choppedWeek.has(n)
-      ? `<span class="gone">${nm(n)}<i>W${choppedWeek.get(n)}</i></span>`
-      : `<span>${nm(n)}</span>`).join('')}</div>
+    ${/* an even grid, never a ragged wrap: ten names are two full rows of five */''}
+    <div class="hm-pool" style="--cols:${Math.ceil(run.entrants.length / 2)}">${[...run.survivors, ...settled.map((w) => w.chopped)].map((n) => choppedWeek.has(n)
+      ? `<span class="gone"><b>${nm(n)}</b><i>W${choppedWeek.get(n)}</i></span>`
+      : `<span><b>${nm(n)}</b></span>`).join('')}</div>
     </div>
   </div>`;
 
