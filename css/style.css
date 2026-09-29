@@ -2252,14 +2252,26 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-go:hover{color:var(--ink);border-color:var(--ink-3)}
 .view-hd + .hm-hd,.hm-rules + .hm-hd{margin-top:4px}
 
-/* desktop: race tall on the left; the game and the moves stacked beside it;
-   empire and the bank side by side under them. A phone reads them in order. */
+/* desktop: three rows of two, each pair starting and ending on the same line.
+   Pairs are matched by natural height -- race with moves, guillotine with the
+   game, empire with the bank -- and the shorter card of each stretches, its
+   rows spreading to fill. A phone reads them in order. */
 .hm-grid{display:flex;flex-direction:column}
 .hm-col{display:contents}
 .hm-race{order:1} .hm-game{order:2} .hm-moves{order:4} .hm-emp{order:5} .hm-bank{order:6}
 @media (min-width:900px){
-  .hm-grid{flex-direction:row;gap:14px;align-items:flex-start}
-  .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+  .hm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;
+    grid-template-areas:"race moves" "guil game" "emp bank"}
+  .hm-race{grid-area:race} .hm-moves{grid-area:moves} .hm-guil{grid-area:guil}
+  .hm-game{grid-area:game} .hm-emp{grid-area:emp} .hm-bank{grid-area:bank}
+  .hm-col > div{display:flex;flex-direction:column;min-width:0}
+  .hm-col > div > .card{flex:1;display:flex;flex-direction:column}
+  .hm-col > div > .card > .card-bd{flex:1}
+  .hm-race-bd,.hm-moves .card-bd,.hm-emp .card-bd{display:flex;flex-direction:column}
+  .hm-rc{display:flex;flex-direction:column}
+  .hm-seed{flex:1}
+  .hm-moves .rows,.hm-emp .rows{flex:1;display:flex;flex-direction:column}
+  .hm-moves .row,.hm-emp .row{flex:1}
 }
 .hm-grid .card{margin-top:0}
 
@@ -2268,18 +2280,10 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-sub{font-size:11.5px;color:var(--ink-3)}
 
 /* playoff race */
-/* one list: the six in, the orange rule across is the cut, then the bubble
-   team; the rest fold under a count */
-.hm-rc{padding:2px 0}
+/* one list: the six in, the orange rule across is the cut, the rest below */
+.hm-race-bd{padding:2px 0}
 .hm-rc.out{border-top:2px solid var(--heat);background:var(--bg-2)}
 .hm-rc.out .hm-seed{padding-left:33px}
-.hm-more > summary{list-style:none;display:flex;align-items:center;gap:5px;cursor:pointer;
-  padding:5px 14px 5px 31px;border-top:1px solid var(--line-soft);font-size:11px;font-weight:600;color:var(--ink-3)}
-.hm-more > summary::-webkit-details-marker{display:none}
-.hm-more > summary:hover{color:var(--ink)}
-.hm-more > summary .ic{width:12px;height:12px;transition:transform .18s}
-.hm-more[open] > summary .ic{transform:rotate(90deg)}
-.hm-more > summary + .hm-seed{border-top:1px solid var(--line-soft)}
 .hm-seed{display:flex;align-items:center;gap:7px;padding:4px 14px;min-width:0}
 .hm-seed + .hm-seed{border-top:1px solid var(--line-soft)}
 .hm-n{width:12px;flex:none;font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--ink-3)}

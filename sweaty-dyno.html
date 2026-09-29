@@ -2270,14 +2270,26 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-go:hover{color:var(--ink);border-color:var(--ink-3)}
 .view-hd + .hm-hd,.hm-rules + .hm-hd{margin-top:4px}
 
-/* desktop: race tall on the left; the game and the moves stacked beside it;
-   empire and the bank side by side under them. A phone reads them in order. */
+/* desktop: three rows of two, each pair starting and ending on the same line.
+   Pairs are matched by natural height -- race with moves, guillotine with the
+   game, empire with the bank -- and the shorter card of each stretches, its
+   rows spreading to fill. A phone reads them in order. */
 .hm-grid{display:flex;flex-direction:column}
 .hm-col{display:contents}
 .hm-race{order:1} .hm-game{order:2} .hm-moves{order:4} .hm-emp{order:5} .hm-bank{order:6}
 @media (min-width:900px){
-  .hm-grid{flex-direction:row;gap:14px;align-items:flex-start}
-  .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+  .hm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;
+    grid-template-areas:"race moves" "guil game" "emp bank"}
+  .hm-race{grid-area:race} .hm-moves{grid-area:moves} .hm-guil{grid-area:guil}
+  .hm-game{grid-area:game} .hm-emp{grid-area:emp} .hm-bank{grid-area:bank}
+  .hm-col > div{display:flex;flex-direction:column;min-width:0}
+  .hm-col > div > .card{flex:1;display:flex;flex-direction:column}
+  .hm-col > div > .card > .card-bd{flex:1}
+  .hm-race-bd,.hm-moves .card-bd,.hm-emp .card-bd{display:flex;flex-direction:column}
+  .hm-rc{display:flex;flex-direction:column}
+  .hm-seed{flex:1}
+  .hm-moves .rows,.hm-emp .rows{flex:1;display:flex;flex-direction:column}
+  .hm-moves .row,.hm-emp .row{flex:1}
 }
 .hm-grid .card{margin-top:0}
 
@@ -2286,18 +2298,10 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-sub{font-size:11.5px;color:var(--ink-3)}
 
 /* playoff race */
-/* one list: the six in, the orange rule across is the cut, then the bubble
-   team; the rest fold under a count */
-.hm-rc{padding:2px 0}
+/* one list: the six in, the orange rule across is the cut, the rest below */
+.hm-race-bd{padding:2px 0}
 .hm-rc.out{border-top:2px solid var(--heat);background:var(--bg-2)}
 .hm-rc.out .hm-seed{padding-left:33px}
-.hm-more > summary{list-style:none;display:flex;align-items:center;gap:5px;cursor:pointer;
-  padding:5px 14px 5px 31px;border-top:1px solid var(--line-soft);font-size:11px;font-weight:600;color:var(--ink-3)}
-.hm-more > summary::-webkit-details-marker{display:none}
-.hm-more > summary:hover{color:var(--ink)}
-.hm-more > summary .ic{width:12px;height:12px;transition:transform .18s}
-.hm-more[open] > summary .ic{transform:rotate(90deg)}
-.hm-more > summary + .hm-seed{border-top:1px solid var(--line-soft)}
 .hm-seed{display:flex;align-items:center;gap:7px;padding:4px 14px;min-width:0}
 .hm-seed + .hm-seed{border-top:1px solid var(--line-soft)}
 .hm-n{width:12px;flex:none;font-family:var(--f-display);font-weight:700;font-size:12px;color:var(--ink-3)}
@@ -5197,27 +5201,24 @@ function render(db) {
       <div class="m">${h.closest ? `${nm(h.closest.team)} over ${nm(h.closest.opponent)}` : ''}</div></div>
   </div>`;
 
-  /* ---- playoff race: the six in, the cut, and the first team out ----
-     The orange rule across is the cut line. Only the bubble team shows below
-     it; the rest fold away behind a count, there if you want them. */
+  /* ---- playoff race: all ten in one list, the orange rule across is the cut ----
+     On a desktop it sits beside the moves, which run about as tall, so no
+     one has to be folded away to keep the row even. */
   const po = db.playoffSeeds(S);
   const inn = po.rows.filter((r) => r.in);
   const out = po.rows.filter((r) => !r.in);
-  const outRow = (r) => `<div class="hm-seed">
-        <span class="hm-nm">${nm(r.number)}</span>
-        <span class="hm-back">&minus;${pts(r.back)}</span>
-        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`;
   const race = !st.hasRecords ? '' : `
   <div class="hm-race">
     ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart')}
     <div class="card"><div class="hm-race-bd">
-      <div class="hm-rc">${inn.map((r) => `<div class="hm-seed">
+      <div class="hm-rc" style="flex-grow:${inn.length}">${inn.map((r) => `<div class="hm-seed">
         <span class="hm-n">${r.seed}</span><span class="hm-nm">${nm(r.number)}</span>
         ${r.bye ? '<span class="seed-tag bye">BYE</span>' : ''}${r.how === 'points' ? '<span class="seed-tag">PTS</span>' : ''}
         <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>
-      ${out.length ? `<div class="hm-rc out">${outRow(out[0])}
-        ${out.length > 1 ? `<details class="hm-more"><summary>${icon('chev')}${out.length - 1} more</summary>
-          ${out.slice(1).map(outRow).join('')}</details>` : ''}</div>` : ''}
+      ${out.length ? `<div class="hm-rc out" style="flex-grow:${out.length}">${out.map((r) => `<div class="hm-seed">
+        <span class="hm-nm">${nm(r.number)}</span>
+        <span class="hm-back">&minus;${pts(r.back)}</span>
+        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>` : ''}
     </div></div>
   </div>`;
 
@@ -5363,8 +5364,8 @@ function render(db) {
   <div class="view-hd hm-title"><h2>Home</h2><span class="chip stage">${esc(db.seasonStage(S))}</span></div>
   ${rules}
   ${recap}
-  ${/* Two columns on a desktop, filled so they end near the same height; on a
-       phone the columns dissolve and the blocks read in priority order */''}
+  ${/* Three rows of two on a desktop, each pair sharing a top and a bottom; on
+       a phone the grid dissolves and the blocks read in priority order */''}
   <div class="hm-grid">
     <div class="hm-col">${race}${guil}${empire}</div>
     <div class="hm-col">${game}${movesCard}${bank}</div>

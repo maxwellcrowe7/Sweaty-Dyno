@@ -55,27 +55,24 @@ export function render(db) {
       <div class="m">${h.closest ? `${nm(h.closest.team)} over ${nm(h.closest.opponent)}` : ''}</div></div>
   </div>`;
 
-  /* ---- playoff race: the six in, the cut, and the first team out ----
-     The orange rule across is the cut line. Only the bubble team shows below
-     it; the rest fold away behind a count, there if you want them. */
+  /* ---- playoff race: all ten in one list, the orange rule across is the cut ----
+     On a desktop it sits beside the moves, which run about as tall, so no
+     one has to be folded away to keep the row even. */
   const po = db.playoffSeeds(S);
   const inn = po.rows.filter((r) => r.in);
   const out = po.rows.filter((r) => !r.in);
-  const outRow = (r) => `<div class="hm-seed">
-        <span class="hm-nm">${nm(r.number)}</span>
-        <span class="hm-back">&minus;${pts(r.back)}</span>
-        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`;
   const race = !st.hasRecords ? '' : `
   <div class="hm-race">
     ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart')}
     <div class="card"><div class="hm-race-bd">
-      <div class="hm-rc">${inn.map((r) => `<div class="hm-seed">
+      <div class="hm-rc" style="flex-grow:${inn.length}">${inn.map((r) => `<div class="hm-seed">
         <span class="hm-n">${r.seed}</span><span class="hm-nm">${nm(r.number)}</span>
         ${r.bye ? '<span class="seed-tag bye">BYE</span>' : ''}${r.how === 'points' ? '<span class="seed-tag">PTS</span>' : ''}
         <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>
-      ${out.length ? `<div class="hm-rc out">${outRow(out[0])}
-        ${out.length > 1 ? `<details class="hm-more"><summary>${icon('chev')}${out.length - 1} more</summary>
-          ${out.slice(1).map(outRow).join('')}</details>` : ''}</div>` : ''}
+      ${out.length ? `<div class="hm-rc out" style="flex-grow:${out.length}">${out.map((r) => `<div class="hm-seed">
+        <span class="hm-nm">${nm(r.number)}</span>
+        <span class="hm-back">&minus;${pts(r.back)}</span>
+        <b class="hm-rec">${r.wins}&ndash;${r.losses}</b></div>`).join('')}</div>` : ''}
     </div></div>
   </div>`;
 
@@ -221,8 +218,8 @@ export function render(db) {
   <div class="view-hd hm-title"><h2>Home</h2><span class="chip stage">${esc(db.seasonStage(S))}</span></div>
   ${rules}
   ${recap}
-  ${/* Two columns on a desktop, filled so they end near the same height; on a
-       phone the columns dissolve and the blocks read in priority order */''}
+  ${/* Three rows of two on a desktop, each pair sharing a top and a bottom; on
+       a phone the grid dissolves and the blocks read in priority order */''}
   <div class="hm-grid">
     <div class="hm-col">${race}${guil}${empire}</div>
     <div class="hm-col">${game}${movesCard}${bank}</div>
