@@ -2219,4 +2219,7 @@ table.dt.h2h td.wk{padding:4px 4px}
   .st-row + .st-row{padding-left:9px}
   .st-row span{font-size:10.5px}
 }
-}
+.pick-ghost{visibility:hidden}
+/* On a phone the picker always takes a line of its own, on both sides, so a
+   longer tag beside one title cannot wrap it there and not on the other. */
+@media (max-width:620px){ .stats-hd .season-pick{flex-basis:100%} }

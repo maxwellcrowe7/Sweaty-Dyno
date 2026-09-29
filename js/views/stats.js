@@ -377,10 +377,13 @@ export function render(db, state = {}) {
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
   const bar = `
-  <div class="view-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}${
+  <div class="view-hd stats-hd"><h2>${tab === 'all' ? 'All-time' : `${db.season} stats`}${
       /* where the season stands -- nothing else on the page says it */''}${
       `<span class="chip stage">${esc(tab === 'season' ? db.seasonStage(db.season) : allSpan(db))}</span>`}</h2>
-    ${tab === 'season' ? seasonPicker(db) : ''}</div>
+    ${/* All-time has no season to pick, but keeps the picker's space -- held
+         invisibly -- so the pills and everything under them sit at the same
+         height on both sides, including on a phone where it wraps a line */''}
+    ${tab === 'season' ? seasonPicker(db) : `<div class="pick-ghost" aria-hidden="true" inert>${seasonPicker(db)}</div>`}</div>
   <div class="pill-bar">
     <div class="pills">
       <button data-stab="season" aria-pressed="${tab === 'season'}">Season</button>
