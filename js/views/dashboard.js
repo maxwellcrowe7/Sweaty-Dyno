@@ -239,11 +239,15 @@ export function render(db) {
   <div class="view-hd hm-title"><h2>Home</h2><span class="chip stage">${esc(db.seasonStage(S))}</span></div>
   ${rules}
   ${recap}
-  ${/* Three rows of two on a desktop, each pair sharing a top and a bottom; on
-       a phone the grid dissolves and the blocks read in priority order */''}
+  ${/* Two rows on a desktop: race and guillotine beside the game and the moves,
+       then empire beside the bank. Each row's two sides end on one line, so no
+       edge lands a few pixels off its neighbour. On a phone the rows dissolve
+       and the blocks read in priority order. */''}
   <div class="hm-grid">
-    <div class="hm-col">${race}${guil}${empire}</div>
-    <div class="hm-col">${game}${movesCard}${bank}</div>
+    <div class="hm-col">${race}${guil}</div>
+    <div class="hm-col">${game}${movesCard}</div>
+    <div class="hm-col">${empire}</div>
+    <div class="hm-col">${bank}</div>
   </div>`;
 }
 

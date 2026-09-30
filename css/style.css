@@ -2269,15 +2269,16 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-go:hover{color:var(--ink);border-color:var(--ink-3)}
 .view-hd + .hm-hd,.hm-rules + .hm-hd{margin-top:4px}
 
-/* desktop: two columns, every card at its natural height, and the shorter
-   column's cards share out the difference so both columns end on one line.
-   A phone reads them in order. */
+/* desktop: two rows of two stacks. Each card starts at its natural height and
+   the shorter stack of a row shares out the difference, so both sides of a row
+   end on one line -- the guillotine meets the trades, the empire the bank --
+   rather than landing a near-miss apart. A phone reads them in order. */
 .hm-grid{display:flex;flex-direction:column}
 .hm-col{display:contents}
 .hm-race{order:1} .hm-game{order:2} .hm-moves{order:4} .hm-emp{order:5} .hm-bank{order:6}
 @media (min-width:900px){
-  .hm-grid{flex-direction:row;gap:14px;align-items:stretch}
-  .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+  .hm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;align-items:stretch}
+  .hm-col{display:flex;flex-direction:column;min-width:0}
   .hm-col > div{flex:1 1 auto;display:flex;flex-direction:column;min-width:0}
   /* grow from natural height (1 1 auto), never from zero: a zero basis let the
      last row of a card be squeezed below its content */
