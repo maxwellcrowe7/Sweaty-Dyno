@@ -377,8 +377,8 @@ export function mount(root, db) {
   });
 
   root.querySelector('#guestToggle')?.addEventListener('change', (e) => {
+    // no toast: the guest bar appears at once and says the same thing
     db.setAsGuest(e.target.checked);
-    toast(e.target.checked ? 'Viewing as a guest' : 'Back to commissioner view');
   });
 
   root.querySelector('#adminToggle')?.addEventListener('change', (e) => {
