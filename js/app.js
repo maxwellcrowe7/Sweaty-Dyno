@@ -14,14 +14,16 @@ import * as Managers  from './views/managers.js';
 import * as Admin     from './views/admin.js';
 
 const VIEWS = {
+  // weekly first, then money, then seasonal, then read-once; Admin last.
+  // `primary` is the phone's bottom bar, the three that change every week
   home:      { label: 'Home',      icon: 'home',   mod: Dashboard, primary: true },
-  bank:      { label: 'Bank',      icon: 'wallet', mod: Bank,      primary: true },
+  stats:     { label: 'Stats',     icon: 'chart',  mod: Stats,     primary: true },
+  trades:    { label: 'Transactions', short: 'Moves', icon: 'swap', mod: Trades, primary: true },
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
-  drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts,    primary: true },
-  trades:    { label: 'Transactions', icon: 'swap', mod: Trades },
-  rules:     { label: 'Rules',     icon: 'book',  mod: Rules },
-  stats:     { label: 'Stats',     icon: 'chart',  mod: Stats },
+  bank:      { label: 'Bank',      icon: 'wallet', mod: Bank },
+  drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts },
   empire:    { label: 'Empire',    icon: 'crown',  mod: Empire },
+  rules:     { label: 'Rules',     icon: 'book',   mod: Rules },
   managers:  { label: 'Managers',  icon: 'users',  mod: Managers },
   admin:     { label: 'Admin',     icon: 'cog',    mod: Admin },
 };
@@ -57,9 +59,10 @@ const brand = () => `
     <div class="txt"><h1>${esc(db.league.name)}</h1><small>${esc(db.league.tagline)}</small></div>
   </div>`;
 
-function navButtons(keys, cls = '') {
-  return keys.map((k) => `<button class="${cls}" data-view="${k}"
-    ${state.view === k ? 'aria-current="page"' : ''}>${icon(VIEWS[k].icon)}<span>${VIEWS[k].label}</span></button>`).join('');
+function navButtons(keys, { short = false } = {}) {
+  return keys.map((k) => `<button data-view="${k}"
+    ${state.view === k ? 'aria-current="page"' : ''}>${icon(VIEWS[k].icon)}<span>${
+    short ? VIEWS[k].short || VIEWS[k].label : VIEWS[k].label}</span></button>`).join('');
 }
 
 function shell() {
@@ -78,13 +81,15 @@ function shell() {
     </div>
   </div>
   <nav class="tabbar" aria-label="Sections">
-    ${navButtons(PRIMARY)}
+    ${navButtons(PRIMARY, { short: true })}
     <button data-sheet>${icon('more')}<span>More</span></button>
   </nav>
   <div class="sheet-backdrop" id="sheetBd"></div>
   <div class="sheet" id="sheet" role="dialog" aria-label="More sections">
     <div class="grab"></div>
-    ${Object.keys(VIEWS).filter((k) => !VIEWS[k].primary)
+    ${/* every tab, the bar's four first: the rest -- the ones you open More
+         for -- land at the bottom, nearest the thumb */''}
+    ${[...PRIMARY, ...Object.keys(VIEWS).filter((k) => !VIEWS[k].primary)]
       .map((k) => `<button class="sheet-item" data-view="${k}"
         ${state.view === k ? 'aria-current="page"' : ''}>${icon(VIEWS[k].icon)}${VIEWS[k].label}</button>`).join('')}
   </div>`;
