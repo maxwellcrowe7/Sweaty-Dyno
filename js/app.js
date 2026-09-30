@@ -172,8 +172,8 @@ function wireSections(main, view) {
 }
 
 /* ---------- info popovers ----------
-   One handler for every `info()` button. Hover on pointer devices, tap
-   elsewhere; Escape and an outside tap close it. */
+   One handler for every `info()` button and [data-info] pill. A click opens
+   it; a second click, Escape or a click anywhere else closes it. */
 let infoPop = null;
 const closeInfo = () => { infoPop?.remove(); infoPop = null; };
 
@@ -203,18 +203,13 @@ function showInfo(btn) {
 }
 
 function wireInfo(root) {
-  const canHover = window.matchMedia?.('(hover: hover)').matches;
+  // click, not hover, as with the Results grid on Stats: the same on a phone as
+  // on a desktop, and nothing pops up just because the pointer passed by
   root.querySelectorAll('[data-info]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       infoPop && infoPop._for === btn ? closeInfo() : (showInfo(btn), infoPop._for = btn);
     });
-    if (canHover) {
-      btn.addEventListener('mouseenter', () => { showInfo(btn); infoPop._for = btn; });
-      btn.addEventListener('mouseleave', closeInfo);
-      btn.addEventListener('focus', () => { showInfo(btn); infoPop._for = btn; });
-      btn.addEventListener('blur', closeInfo);
-    }
   });
 }
 document.addEventListener('click', closeInfo);

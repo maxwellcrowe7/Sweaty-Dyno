@@ -2279,13 +2279,15 @@ table.dt.h2h td.wk{padding:4px 4px}
   .hm-grid{flex-direction:row;gap:14px;align-items:stretch}
   .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
   .hm-col > div{flex:1 1 auto;display:flex;flex-direction:column;min-width:0}
-  .hm-col > div > .card{flex:1;display:flex;flex-direction:column}
-  .hm-col > div > .card > .card-bd,.hm-race-bd{flex:1}
+  /* grow from natural height (1 1 auto), never from zero: a zero basis let the
+     last row of a card be squeezed below its content */
+  .hm-col > div > .card{flex:1 1 auto;display:flex;flex-direction:column}
+  .hm-col > div > .card > .card-bd,.hm-race-bd{flex:1 1 auto}
   .hm-race-bd,.hm-moves .card-bd,.hm-emp .card-bd{display:flex;flex-direction:column}
   .hm-rc{display:flex;flex-direction:column}
-  .hm-seed{flex:1}
-  .hm-moves .rows,.hm-emp .rows{flex:1;display:flex;flex-direction:column}
-  .hm-moves .row,.hm-emp .row{flex:1}
+  .hm-seed{flex:1 1 auto}
+  .hm-moves .rows,.hm-emp .rows{flex:1 1 auto;display:flex;flex-direction:column}
+  .hm-moves .row,.hm-emp .row{flex:1 1 auto}
 }
 .hm-grid .card{margin-top:0}
 
@@ -2338,9 +2340,9 @@ table.dt.h2h td.wk{padding:4px 4px}
    descendant rule would repaint it in the row's grey */
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
 /* the rest of a side, counted: a quiet pill, never a second line. Hover or
-   tap it and the rest shows in place */
+   click it and the rest shows in place */
 .hm-more{flex:none;color:var(--ink-2);font-size:10.5px;font-weight:700;line-height:1.5;
-  padding:0 6px;border-radius:99px;background:var(--surface-3);cursor:help}
+  padding:0 6px;border-radius:99px;background:var(--surface-3);cursor:pointer}
 .hm-more:hover,.hm-more:focus-visible{background:var(--line);color:var(--ink)}
 /* the trade's icon sits in the middle of its sides, not on the first */
 .hm-tr .hm-ic{align-self:center}
