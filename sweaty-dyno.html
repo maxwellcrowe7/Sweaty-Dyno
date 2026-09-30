@@ -9044,17 +9044,17 @@ function render(db) {
   const cloudErr = db.cloudError;
   const user = db.auth?.user ?? null;
 
-  return `
+  const signIn = `
   ${cloud ? `
   <div class="card">
     <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>Commissioner</h3><div class="spacer"></div>
       <span class="chip ${admin ? 'mint' : ''}">${admin ? 'Signed in' : 'Viewing'}</span></div>
     <div class="card-bd">
-      ${!cloudErr && db.missingInCloud?.length ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+      ${admin && !cloudErr && db.missingInCloud?.length ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
         <div><b>${db.missingInCloud.length} file${db.missingInCloud.length === 1 ? '' : 's'} not in the database yet.</b><br>
         <span class="dim">${esc(db.missingInCloud.join(', '))}</span><br><br>
         Showing the built-in copy. Sign in and hit <b>Publish</b> to upload.</div></div>` : ''}
-      ${cloudErr ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+      ${admin && cloudErr ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
         <div><b>Not reading from Supabase yet.</b><br>
         <span style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(cloudErr)}</span><br><br>
         Showing the built-in data meanwhile. Sign in below and hit <b>Publish</b> to upload it.</div></div>` : ''}
@@ -9097,8 +9097,11 @@ function render(db) {
         ${isConfigured() ? '' : '<br><br>Add your Supabase keys in <code>js/config.js</code> to save live instead.'}
       </div>
     </div>
-  </div>`}
+  </div>`}`;
 
+  // The guest preview's own switch: the way back out, so it is offered to anyone
+  // with the rights, previewing or not (asking isAdmin would strand you).
+  const guestCard = `
   ${db.hasAdminRights ? `
   <div class="section-title">View as</div>
   <div class="card">
@@ -9112,7 +9115,15 @@ function render(db) {
         and a reload puts you back.
       </div>
     </div>
-  </div>` : ''}
+  </div>` : ''}`;
+
+  // Until you are signed in, Admin is the sign-in and nothing else: no issues
+  // list, no data, no Sleeper controls. Previewing as a guest shows the same,
+  // plus the switch back.
+  if (!admin) return signIn + guestCard;
+
+  return `${signIn}
+  ${guestCard}
 
   ${issues.length ? `
   <div class="section-title">Needs a look</div>

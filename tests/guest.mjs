@@ -19,6 +19,14 @@ print('— signed out —');
 eq('no rights', [db.hasAdminRights, db.isAdmin], [false,false]);
 eq('no edit pencils', editable(), 0);
 eq('no guest toggle offered', ad.render(db).includes('guestToggle'), false);
+// a manager opening Admin sees the way in and nothing past it
+const sections = (h) => (h.match(/class="section-title"/g) || []).length;
+eq('Admin is the edit switch alone (local)', sections(ad.render(db)), 0);
+db.cloud = { signedIn: false, user: null };   // Supabase configured, nobody signed in
+{
+  const h = ad.render(db);
+  eq('Admin is the sign-in alone (Supabase)', [h.includes('data-signin'), sections(h), /Sleeper|Needs a look/.test(h)], [true, 0, false]);
+}
 
 print('\n— signed in —');
 db.cloud={signedIn:true};
@@ -36,6 +44,7 @@ db.setAsGuest(true);
 eq('rights kept, admin view off', [db.hasAdminRights, db.isAdmin, db.asGuest], [true,false,true]);
 eq('edit pencils gone', editable(), 0);
 eq('the way back is still rendered', ad.render(db).includes('guestToggle'), true);
+eq('and nothing else of Admin is', /Sleeper|Needs a look/.test(ad.render(db)), false);
 eq('and it shows as checked', /id="guestToggle" checked/.test(ad.render(db)), true);
 
 print('\n— back out —');
