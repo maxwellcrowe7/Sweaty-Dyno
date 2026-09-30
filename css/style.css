@@ -2354,10 +2354,11 @@ table.dt.h2h td.wk{padding:4px 4px}
 
 /* bank */
 .hm-bank-bd{display:flex;align-items:center;gap:18px}
-.hm-dial{position:relative;flex:none;width:150px}
-.hm-dial .gauge{width:150px;margin:-6px 0 0}
-.hm-dial .gauge-val .big{font-size:26px}
-.hm-dial .gauge-val .lbl{font-size:8.5px}
+/* sized so its figure matches the other headline figures on Home */
+.hm-dial{position:relative;flex:none;width:176px}
+.hm-dial .gauge{width:176px;margin:-6px 0 0}
+.hm-dial .gauge-val .big{font-size:30px}
+.hm-dial .gauge-val .lbl{font-size:9px}
 .hm-claims{display:flex;flex-direction:column;gap:9px;flex:1;min-width:0}
 .hm-claims > div{display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:9px}
 .hm-claims i{width:9px;height:9px;border-radius:2px}
