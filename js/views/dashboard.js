@@ -129,12 +129,13 @@ export function render(db) {
     </div>
   </div>`;
 
-  /* ---- latest moves: trades and pickups together, newest first ---- */
+  /* ---- latest moves: pickups, then trades, the newest three of each ----
+     Two groups rather than one mixed list: they are different shapes of thing,
+     and a trade can then be laid out as a trade. */
   const { trades, waivers } = db.trades(S);
-  const moves = [
-    ...trades.map((t) => ({ kind: 'trade', date: t.date, t })),
-    ...waivers.map((w) => ({ kind: 'move', date: w.date, w })),
-  ].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 5);
+  const newest = (xs) => [...xs].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 3);
+  const pickups = newest(waivers.map((w) => ({ kind: 'move', date: w.date, w })));
+  const deals = newest(trades.map((t) => ({ kind: 'trade', date: t.date, t })));
   const openCond = db.conditions().filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key)).length;
   /* One shape for every move: an icon on the first line, the move itself, and
      the date on the right. A trade lists each side with what it received, so
@@ -161,8 +162,10 @@ export function render(db) {
   <div class="hm-moves">
     ${hd('Latest moves', 'trades', 'Transactions', 'swap')}
     <div class="card"><div class="card-bd flush">
-      ${moves.length ? `<div class="rows">${moves.map(moveRow).join('')}</div>`
-        : '<div class="card-bd hm-sub">Nothing yet this season</div>'}
+      ${[['Pickups', pickups], ['Trades', deals]].filter(([, xs]) => xs.length).map(([k, xs]) => `
+        <div class="hm-grp">${k}</div>
+        <div class="rows">${xs.map(moveRow).join('')}</div>`).join('')
+        || '<div class="card-bd hm-sub">Nothing yet this season</div>'}
       ${openCond ? `<div class="hm-cond">${icon('lock')} ${openCond} open conditional trade${openCond === 1 ? '' : 's'}</div>` : ''}
     </div></div>
   </div>`;

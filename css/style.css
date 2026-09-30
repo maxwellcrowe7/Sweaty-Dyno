@@ -2279,7 +2279,7 @@ table.dt.h2h td.wk{padding:4px 4px}
   .hm-col{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
   .hm-col > div{flex:1 1 auto;display:flex;flex-direction:column;min-width:0}
   .hm-col > div > .card{flex:1;display:flex;flex-direction:column}
-  .hm-col > div > .card > .card-bd{flex:1}
+  .hm-col > div > .card > .card-bd,.hm-race-bd{flex:1}
   .hm-race-bd,.hm-moves .card-bd,.hm-emp .card-bd{display:flex;flex-direction:column}
   .hm-rc{display:flex;flex-direction:column}
   .hm-seed{flex:1}
@@ -2338,6 +2338,11 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
 .hm-side em{font-style:normal;color:var(--ink-3);font-size:11px}
 .hm-mv .t{min-height:20px}
+/* the label over each group of moves; the second one also draws the line
+   between the groups */
+.hm-grp{padding:9px 16px 5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
+  color:var(--ink-3);border-bottom:1px solid var(--line-soft)}
+.rows + .hm-grp{border-top:1px solid var(--line)}
 /* a pickup's cost sits on the right, centred on its two lines */
 .row.hm-pk{align-items:center}
 .hm-pk .hm-ic{align-self:flex-start}
