@@ -33,7 +33,7 @@ for (const g of W) {
 store.stats.weekly = W.filter((g) => g.week <= 9);
 const { db } = await import('../js/db.js');
 await db.init();
-db.league.currentSeason = 2025; db.season = 2025;
+db.today = () => '2025-10-15'; db.season = 2025;
 const home = (await import('../js/views/dashboard.js')).render(db, {});
 // arriving at a spot on Stats must show the Season side, whichever was left open
 const pages = {

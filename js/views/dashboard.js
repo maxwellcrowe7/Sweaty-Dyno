@@ -32,7 +32,7 @@ export const markRulesSeen = (season, sig) => {
 export function render(db) {
   // Home is pinned to the current season rather than the shared browsing one:
   // it has no picker, so following it would show a stale year with no way back.
-  const S = db.league.currentSeason ?? db.season;
+  const S = db.currentSeason;
   const nm = (n) => esc(db.team(n, S)?.manager ?? `T${n}`);
   const st = db.stats(S);
 
@@ -254,7 +254,7 @@ export function render(db) {
 export const mount = (root, db, go) => {
   // Home shows the current season, so land there too, not on whichever year
   // the other tabs were last browsing
-  const S = db.league.currentSeason ?? db.season;
+  const S = db.currentSeason;
   root.querySelectorAll('[data-go]').forEach((b) =>
     b.addEventListener('click', () => {
       if (db.season !== S) db.season = S;

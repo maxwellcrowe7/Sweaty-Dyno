@@ -436,3 +436,34 @@ export const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test
 
 /** An asset is either a plain string (hand-entered) or a pulled object. */
 export const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
+
+/* ---------- money inputs ---------- */
+/* Type a plain number, see a dollar value. Editing shows the raw figure so
+   you are never fighting a currency mask mid-keystroke. */
+export const parseMoney = (v) => Math.max(0, Number(String(v).replace(/[^0-9.]/g, '')) || 0);
+
+export const currencyField = (inp, read, write) => {
+  let busy = false;
+  // Commit on Enter directly rather than via blur(): a soft keyboard's Done
+  // key does not reliably blur the field, and losing a typed figure is worse
+  // than committing twice (the busy flag covers that).
+  const commit = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      const val = parseMoney(inp.value);
+      if (val !== read()) await write(val);
+      inp.value = val ? money(val) : '';
+    } finally { busy = false; }
+  };
+  inp.addEventListener('focus', () => {
+    const raw = read();
+    inp.value = raw ? String(raw) : '';
+    inp.select();
+  });
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit().then(() => inp.blur()); }
+    if (e.key === 'Escape') { inp.value = ''; inp.blur(); }
+  });
+};

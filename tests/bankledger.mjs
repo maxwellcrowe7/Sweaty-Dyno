@@ -21,7 +21,7 @@ const { money } = await import('../js/util.js');
 const { db } = await import('../js/db.js');
 await db.init();
 const V = await import('../js/views/bank.js');
-const cur = db.league.currentSeason;
+const cur = db.currentSeason;
 
 /* ---- a season not yet played does not count against anyone ---- */
 const team = db.teams()[0].number;

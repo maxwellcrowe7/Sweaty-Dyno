@@ -1,4 +1,4 @@
-import { money, esc, icon, teamTag, empty, toast, gauge } from '../util.js';
+import { money, esc, icon, teamTag, empty, toast, gauge, currencyField } from '../util.js';
 
 const CATS = {
   empire:    { label: 'Empire Pot', chip: 'violet' },
@@ -116,13 +116,13 @@ export function render(db, state = {}) {
   // current season would leave the only populated block collapsed.
   // every season that has started gets a card, so the current one is there to
   // act on rather than appearing only once somebody has won something
-  const started = seasons.filter((s) => s <= db.league.currentSeason);
+  const started = seasons.filter((s) => s <= db.currentSeason);
   // a decided result, not a prize on offer -- the placement scale gives every
   // season rows, so this would otherwise hand a card to 2030
   const withRows = seasons.filter((s) => db.payoutLines(s).some((l) => l.decided));
   const paidSeasons = [...new Set([...started, ...withRows])].sort((a, b) => a - b);
   if (UI.seasons === null)
-    UI.seasons = new Set([paidSeasons.at(-1) ?? db.league.currentSeason]);
+    UI.seasons = new Set([paidSeasons.at(-1) ?? db.currentSeason]);
   const openSeasons = UI.seasons;
 
   const paidFor = (t, s) => bank.payins.find((p) => p.team === t && p.season === s)?.paid || 0;
@@ -214,11 +214,9 @@ export function render(db, state = {}) {
       <thead><tr><th class="sticky">Team</th>
         ${seasons.map((s) => `<th class="n pop-host${UI.pop === `rate:${s}` ? ' open' : ''}">
           <button class="yr-btn" data-pop="rate:${s}" aria-expanded="${UI.pop === `rate:${s}`}"
-            title="${admin ? 'Set' : 'See'} the ${s} buy-in">${s}</button>
-          <div class="pop-box">${admin
-            ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
-                 value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-            : money(db.buyIn(s))}</div>
+            title="See the ${s} buy-in">${s}</button>
+          ${/* shown here, set in Admin */''}
+          <div class="pop-box">${money(db.buyIn(s))}</div>
         </th>`).join('')}
         <th class="n">Paid</th></tr></thead>
       <tbody>
@@ -332,36 +330,6 @@ export function render(db, state = {}) {
 }
 
 export function mount(root, db, go, setState, params = {}) {
-  /* Type a plain number, see a dollar value. Editing shows the raw figure so
-     you are never fighting a currency mask mid-keystroke. */
-  const parseMoney = (v) => Math.max(0, Number(String(v).replace(/[^0-9.]/g, '')) || 0);
-
-  const currencyField = (inp, read, write) => {
-    let busy = false;
-    // Commit on Enter directly rather than via blur(): a soft keyboard's Done
-    // key does not reliably blur the field, and losing a typed figure is worse
-    // than committing twice (the busy flag covers that).
-    const commit = async () => {
-      if (busy) return;
-      busy = true;
-      try {
-        const val = parseMoney(inp.value);
-        if (val !== read()) await write(val);
-        inp.value = val ? money(val) : '';
-      } finally { busy = false; }
-    };
-    inp.addEventListener('focus', () => {
-      const raw = read();
-      inp.value = raw ? String(raw) : '';
-      inp.select();
-    });
-    inp.addEventListener('blur', commit);
-    inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); commit().then(() => inp.blur()); }
-      if (e.key === 'Escape') { inp.value = ''; inp.blur(); }
-    });
-  };
-
   root.querySelectorAll('[data-pay]').forEach((inp) => {
     const [team, season] = inp.dataset.pay.split(':').map(Number);
     currencyField(inp,
@@ -389,7 +357,6 @@ export function mount(root, db, go, setState, params = {}) {
     e.stopPropagation();
     UI.pop = UI.pop === b.dataset.pop ? null : b.dataset.pop;
     showPops();
-    if (UI.pop) root.querySelector('.pop-host.open .rate-in')?.focus();
   }));
   // a popover closes the way a reader expects: click anywhere else
   root._rateShut = (e) => {
@@ -423,13 +390,6 @@ export function mount(root, db, go, setState, params = {}) {
     li.classList.toggle('open', UI.won.has(k));
   }));
 
-  root.querySelectorAll('[data-rate]').forEach((inp) => {
-    const s = inp.dataset.rate;
-    currencyField(inp, () => db.buyIn(s), async (val) => {
-      await db.update('league', (L) => { L.buyIn[s] = val; });
-      toast(`${s} buy-in set to ${money(val)}`);
-    });
-  });
 
   /* Accordions toggle the DOM directly — routing through the URL would re-render
      and cost the reader their place. UI state above keeps them open across the

@@ -105,7 +105,7 @@ function handOver(db, number) {
   const t = db.team(number);
   const seen = db.rosterStatus(number);
   const mgrs = db.get('managers').managers.slice().sort((a, b) => a.name.localeCompare(b.name));
-  const next = (seen?.season ?? db.league.currentSeason) + 1;
+  const next = (seen?.season ?? db.currentSeason) + 1;
   const suggested = seen?.user?.ownerName || '';
 
   openModal({

@@ -89,7 +89,7 @@ export function shouldConsider(db) {
   const cfg = db.league.sleeper || {};
   if (cfg.autoSync === false) return false;
   if (!db.isAdmin) return false;                 // only the commissioner can write
-  const season = db.league.currentSeason;
+  const season = db.currentSeason;
   if (!cfg.leagueIds?.[String(season)]) return false;
   const gapHours = Number(cfg.autoSyncHours ?? 6);
   const last = readLast()[String(season)];
@@ -103,7 +103,7 @@ export function shouldConsider(db) {
  * app from loading.
  */
 export async function run(db, onStep = () => {}) {
-  const season = db.league.currentSeason;
+  const season = db.currentSeason;
   const id = db.league.sleeper.leagueIds[String(season)];
   try {
     const have = new Set(db.get('stats').weekly.filter((w) => w.season === season).map((w) => w.week));

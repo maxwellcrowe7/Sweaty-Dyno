@@ -24,4 +24,23 @@ eq('every team is short $25', [...new Set(db.ledger().map(t=>t.owesNow))], [25])
 print('\n— restore —');
 await db.update('league',(L)=>{L.buyIn['2026']=50;L.buyIn['2027']=50;});
 eq('back to baseline', [db.bank().owedNow, db.bank().expected], [0,3000]);
+print('\n— the current season follows the windows, not a setting —');
+db.today = () => '2027-03-01';
+eq('a 2027 date makes 2027 current', db.currentSeason, 2027);
+await db.update('league', (L) => { L.seasonWindows = { ...(L.seasonWindows || {}),
+  2026: { start: '2026-01-01', preseasonEnd: '2026-09-01', end: '2027-03-31' },
+  2027: { start: '2027-04-01', preseasonEnd: '2027-09-01', end: '2027-12-31' } }; });
+eq('open 2027 in April and March is still 2026', db.currentSeason, 2026);
+db.today = () => '2019-01-01';
+eq('before the first season, the first', db.currentSeason, db.seasons[0]);
+delete db.today;
+await db.update('league', (L) => { delete L.seasonWindows[2026]; delete L.seasonWindows[2027]; });
+
+print('\n— the Bank shows a buy-in, Admin sets it —');
+db.cloud = { signedIn: true };
+const bank = (await import('../js/views/bank.js')).render(db, {});
+eq('no rate editor on the Bank, even signed in', /data-rate=/.test(bank), false);
+const admin = (await import('../js/views/admin.js')).render(db, {});
+eq('Admin has one buy-in field a season', (admin.match(/data-buyin="/g) || []).length, db.seasons.length);
+
 print(fail?`\n${fail} FAILURE(S)`:'\nRate-row behaviour is correct.');

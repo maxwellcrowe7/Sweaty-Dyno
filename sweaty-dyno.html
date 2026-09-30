@@ -1028,7 +1028,7 @@ table.dt th.sticky{width:1%}
 /* one line-height for all three, and a date input stripped of the extra chrome
    Safari gives it -- otherwise Deadline stands taller than the Status select
    beside it */
-.field input,.field select,.field textarea{
+.field input,.field select,.field textarea,.bi-in{
   background-color:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
   padding:10px 12px;font-size:15px;line-height:1.4;width:100%;
 }
@@ -2500,6 +2500,23 @@ table.dt.h2h td.wk{padding:4px 4px}
 .adm-pull{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
 .adm-pull .s{font-size:11.5px}
 
+/* ---------- admin: buy-ins ---------- */
+/* one row a season: what it costs a team, and what of it goes to the empire */
+.bi-grid{display:grid;grid-template-columns:minmax(0,1fr) 120px 120px;align-items:center;gap:8px 12px;padding:12px 16px 14px}
+.bi-k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink-3)}
+.bi-y{font-family:var(--f-display);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.bi-in{text-align:right;font-variant-numeric:tabular-nums;padding:7px 12px;font-size:14px}
+@media (max-width:620px){ .bi-grid{grid-template-columns:minmax(0,1fr) 88px 88px} }
+/* the season going on now */
+.now-tag{font-size:8.5px;padding:1px 6px;letter-spacing:.12em}
+
+/* ---------- admin: season windows, folded until needed ---------- */
+.win-card-hd{width:100%;text-align:left;cursor:pointer}
+.win-card-hd .acc-caret{margin-left:auto;flex:none;color:var(--ink-3);transition:transform .18s}
+.win-card.open .win-card-hd .acc-caret{transform:rotate(90deg)}
+.win-card:not(.open) > .card-bd{display:none}
+.win-card:not(.open) > .win-card-hd{border-bottom:none;border-radius:var(--r-lg)}
+
 </style>
 </head>
 <body>
@@ -3240,7 +3257,37 @@ const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || 
 /** An asset is either a plain string (hand-entered) or a pulled object. */
 const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
 
-return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, gauge, seasonPicker, fmt, unfmt, wireRichBar, wireFormatBar, formatBar, teamOptions, isPickText, normalize };
+/* ---------- money inputs ---------- */
+/* Type a plain number, see a dollar value. Editing shows the raw figure so
+   you are never fighting a currency mask mid-keystroke. */
+const parseMoney = (v) => Math.max(0, Number(String(v).replace(/[^0-9.]/g, '')) || 0);
+const currencyField = (inp, read, write) => {
+  let busy = false;
+  // Commit on Enter directly rather than via blur(): a soft keyboard's Done
+  // key does not reliably blur the field, and losing a typed figure is worse
+  // than committing twice (the busy flag covers that).
+  const commit = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      const val = parseMoney(inp.value);
+      if (val !== read()) await write(val);
+      inp.value = val ? money(val) : '';
+    } finally { busy = false; }
+  };
+  inp.addEventListener('focus', () => {
+    const raw = read();
+    inp.value = raw ? String(raw) : '';
+    inp.select();
+  });
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commit().then(() => inp.blur()); }
+    if (e.key === 'Escape') { inp.value = ''; inp.blur(); }
+  });
+};
+
+return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, gauge, seasonPicker, fmt, unfmt, wireRichBar, wireFormatBar, formatBar, teamOptions, isPickText, normalize, parseMoney, currencyField };
 })();
 
 /* ===== js/db.js ===== */
@@ -3427,6 +3474,19 @@ class Store {
   /* ================= derived selectors ================= */
 
   get league() { return this.get('league'); }
+
+  /** Today's date. A method so a test can stand the league on another day. */
+  today() { return today(); }
+
+  /** The season going on now: whichever season's window today falls in, as set
+      in Admin, so it moves over by itself rather than being picked by hand.
+      Before the first known season or after the last, the nearest one. */
+  get currentSeason() {
+    const seasons = this.seasons;
+    const hit = this.seasonOf(this.today());
+    if (seasons.includes(hit)) return hit;
+    return hit < seasons[0] ? seasons[0] : seasons.at(-1);
+  }
   get seasons() { return this.league.seasons; }
 
   managerById(id) { return this.get('managers').managers.find((m) => m.id === id) || null; }
@@ -3486,7 +3546,7 @@ class Store {
   get season() {
     if (this._season == null) {
       const saved = Number(readSeason());
-      this._season = this.seasons.includes(saved) ? saved : this.league.currentSeason;
+      this._season = this.seasons.includes(saved) ? saved : this.currentSeason;
     }
     return this._season;
   }
@@ -3503,7 +3563,7 @@ class Store {
   buyIn(season) { return Number(this.league.buyIn?.[String(season)]) || 0; }
 
   /** Seasons that have actually started — the empire pot only accrues for these. */
-  activeSeasons() { return this.seasons.filter((s) => s <= this.league.currentSeason); }
+  activeSeasons() { return this.seasons.filter((s) => s <= this.currentSeason); }
 
   /* ---------- payouts ----------
      Amounts are never stored. Each category derives from whatever produced it,
@@ -3626,7 +3686,7 @@ class Store {
     const expected = (season == null ? this.seasons : [season])
       .reduce((a, s) => a + this.buyIn(s) * teamCount, 0);
 
-    const cur = this.league.currentSeason;
+    const cur = this.currentSeason;
     const owedNow = (season == null ? this.seasons : [season])
       .filter((s) => s <= cur)
       .reduce((a, s) => a + Math.max(0, this.buyIn(s) * teamCount
@@ -3669,7 +3729,7 @@ class Store {
     let carry = 0;
     return this.seasons.map((season) => {
       const b = this.bank(season);
-      const empire = season <= this.league.currentSeason
+      const empire = season <= this.currentSeason
         ? (Number(this.league.empireContribution?.[String(season)]) || 0) : 0;
       // Commitments, not disbursements. A prize that has been set aside is spoken
       // for whether or not it has been handed over, so surplus means genuinely
@@ -3679,7 +3739,7 @@ class Store {
          that money the day the season opens, the same way the empire set-aside
          and the minigame slate do. A season that has not started commits
          nothing -- otherwise every year to 2030 shows up as active. */
-      const place = season <= this.league.currentSeason
+      const place = season <= this.currentSeason
         ? Object.values(this.placementScale(season)).reduce((a, v) => a + (Number(v) || 0), 0)
         : 0;
       const active = b.collected > 0 || mini > 0 || place > 0 || empire > 0;
@@ -3716,7 +3776,7 @@ class Store {
   /** Per-team ledger. `owes` only ever counts seasons that have started. */
   ledger(season = null) {
     const b = this.get('bank');
-    const cur = this.league.currentSeason;
+    const cur = this.currentSeason;
     const rows = this.payouts(season);
     return this.teams().map((t) => {
       const ins = b.payins.filter((p) => p.team === t.number && (season == null || p.season === season));
@@ -3790,7 +3850,7 @@ class Store {
       skipped too -- it never settles, so it would stay "now" all season. Only
       the current season has one. */
   currentMinigame(season = this.season) {
-    if (season !== this.league.currentSeason) return null;
+    if (season !== this.currentSeason) return null;
     return this.minigamePhases(season).flatMap((p) => p.games)
       .find((g) => !['final', 'canceled', 'none', 'guillotine'].includes(g.status)) || null;
   }
@@ -4142,7 +4202,7 @@ class Store {
     const seasons = [...new Set(this.get('stats').weekly.map((w) => w.season))].sort((a, b) => a - b);
     const games = seasons.flatMap((s) => this.stats(s).weekly);
     // a streak that is still going carries on into the live season, if any
-    const live = this.seasonOver(this.league.currentSeason) ? null : this.league.currentSeason;
+    const live = this.seasonOver(this.currentSeason) ? null : this.currentSeason;
     const h = this.highlightsFrom(games, this.teams().map((t) => t.number), false, live);
     // the game with the most points in it, both sides together
     const at = new Map(games.map((g) => [`${g.season}:${g.week}:${g.team}`, g]));
@@ -5000,7 +5060,7 @@ function shouldConsider(db) {
   const cfg = db.league.sleeper || {};
   if (cfg.autoSync === false) return false;
   if (!db.isAdmin) return false;                 // only the commissioner can write
-  const season = db.league.currentSeason;
+  const season = db.currentSeason;
   if (!cfg.leagueIds?.[String(season)]) return false;
   const gapHours = Number(cfg.autoSyncHours ?? 6);
   const last = readLast()[String(season)];
@@ -5014,7 +5074,7 @@ function shouldConsider(db) {
  * app from loading.
  */
 async function run(db, onStep = () => {}) {
-  const season = db.league.currentSeason;
+  const season = db.currentSeason;
   const id = db.league.sleeper.leagueIds[String(season)];
   try {
     const have = new Set(db.get('stats').weekly.filter((w) => w.season === season).map((w) => w.week));
@@ -5293,7 +5353,7 @@ const markRulesSeen = (season, sig) => {
 function render(db) {
   // Home is pinned to the current season rather than the shared browsing one:
   // it has no picker, so following it would show a stale year with no way back.
-  const S = db.league.currentSeason ?? db.season;
+  const S = db.currentSeason;
   const nm = (n) => esc(db.team(n, S)?.manager ?? `T${n}`);
   const st = db.stats(S);
 
@@ -5514,7 +5574,7 @@ function render(db) {
 const mount = (root, db, go) => {
   // Home shows the current season, so land there too, not on whichever year
   // the other tabs were last browsing
-  const S = db.league.currentSeason ?? db.season;
+  const S = db.currentSeason;
   root.querySelectorAll('[data-go]').forEach((b) =>
     b.addEventListener('click', () => {
       if (db.season !== S) db.season = S;
@@ -5531,7 +5591,7 @@ return { rulesSignature, markRulesSeen, render, mount };
 
 /* ===== js/views/bank.js ===== */
 __M["js/views/bank.js"] = (function () {
-const { money, esc, icon, teamTag, empty, toast, gauge } = __M["js/util.js"];
+const { money, esc, icon, teamTag, empty, toast, gauge, currencyField } = __M["js/util.js"];
 
 const CATS = {
   empire:    { label: 'Empire Pot', chip: 'violet' },
@@ -5648,13 +5708,13 @@ function render(db, state = {}) {
   // current season would leave the only populated block collapsed.
   // every season that has started gets a card, so the current one is there to
   // act on rather than appearing only once somebody has won something
-  const started = seasons.filter((s) => s <= db.league.currentSeason);
+  const started = seasons.filter((s) => s <= db.currentSeason);
   // a decided result, not a prize on offer -- the placement scale gives every
   // season rows, so this would otherwise hand a card to 2030
   const withRows = seasons.filter((s) => db.payoutLines(s).some((l) => l.decided));
   const paidSeasons = [...new Set([...started, ...withRows])].sort((a, b) => a - b);
   if (UI.seasons === null)
-    UI.seasons = new Set([paidSeasons.at(-1) ?? db.league.currentSeason]);
+    UI.seasons = new Set([paidSeasons.at(-1) ?? db.currentSeason]);
   const openSeasons = UI.seasons;
 
   const paidFor = (t, s) => bank.payins.find((p) => p.team === t && p.season === s)?.paid || 0;
@@ -5746,11 +5806,9 @@ function render(db, state = {}) {
       <thead><tr><th class="sticky">Team</th>
         ${seasons.map((s) => `<th class="n pop-host${UI.pop === `rate:${s}` ? ' open' : ''}">
           <button class="yr-btn" data-pop="rate:${s}" aria-expanded="${UI.pop === `rate:${s}`}"
-            title="${admin ? 'Set' : 'See'} the ${s} buy-in">${s}</button>
-          <div class="pop-box">${admin
-            ? `<input class="rate-in" type="text" inputmode="decimal" data-rate="${s}"
-                 value="${money(db.buyIn(s))}" aria-label="${s} buy-in">`
-            : money(db.buyIn(s))}</div>
+            title="See the ${s} buy-in">${s}</button>
+          ${/* shown here, set in Admin */''}
+          <div class="pop-box">${money(db.buyIn(s))}</div>
         </th>`).join('')}
         <th class="n">Paid</th></tr></thead>
       <tbody>
@@ -5863,36 +5921,6 @@ function render(db, state = {}) {
   `;
 }
 function mount(root, db, go, setState, params = {}) {
-  /* Type a plain number, see a dollar value. Editing shows the raw figure so
-     you are never fighting a currency mask mid-keystroke. */
-  const parseMoney = (v) => Math.max(0, Number(String(v).replace(/[^0-9.]/g, '')) || 0);
-
-  const currencyField = (inp, read, write) => {
-    let busy = false;
-    // Commit on Enter directly rather than via blur(): a soft keyboard's Done
-    // key does not reliably blur the field, and losing a typed figure is worse
-    // than committing twice (the busy flag covers that).
-    const commit = async () => {
-      if (busy) return;
-      busy = true;
-      try {
-        const val = parseMoney(inp.value);
-        if (val !== read()) await write(val);
-        inp.value = val ? money(val) : '';
-      } finally { busy = false; }
-    };
-    inp.addEventListener('focus', () => {
-      const raw = read();
-      inp.value = raw ? String(raw) : '';
-      inp.select();
-    });
-    inp.addEventListener('blur', commit);
-    inp.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); commit().then(() => inp.blur()); }
-      if (e.key === 'Escape') { inp.value = ''; inp.blur(); }
-    });
-  };
-
   root.querySelectorAll('[data-pay]').forEach((inp) => {
     const [team, season] = inp.dataset.pay.split(':').map(Number);
     currencyField(inp,
@@ -5920,7 +5948,6 @@ function mount(root, db, go, setState, params = {}) {
     e.stopPropagation();
     UI.pop = UI.pop === b.dataset.pop ? null : b.dataset.pop;
     showPops();
-    if (UI.pop) root.querySelector('.pop-host.open .rate-in')?.focus();
   }));
   // a popover closes the way a reader expects: click anywhere else
   root._rateShut = (e) => {
@@ -5954,13 +5981,6 @@ function mount(root, db, go, setState, params = {}) {
     li.classList.toggle('open', UI.won.has(k));
   }));
 
-  root.querySelectorAll('[data-rate]').forEach((inp) => {
-    const s = inp.dataset.rate;
-    currencyField(inp, () => db.buyIn(s), async (val) => {
-      await db.update('league', (L) => { L.buyIn[s] = val; });
-      toast(`${s} buy-in set to ${money(val)}`);
-    });
-  });
 
   /* Accordions toggle the DOM directly — routing through the URL would re-render
      and cost the reader their place. UI state above keeps them open across the
@@ -8958,7 +8978,7 @@ function handOver(db, number) {
   const t = db.team(number);
   const seen = db.rosterStatus(number);
   const mgrs = db.get('managers').managers.slice().sort((a, b) => a.name.localeCompare(b.name));
-  const next = (seen?.season ?? db.league.currentSeason) + 1;
+  const next = (seen?.season ?? db.currentSeason) + 1;
   const suggested = seen?.user?.ownerName || '';
 
   openModal({
@@ -9052,7 +9072,7 @@ return { render, mount };
 
 /* ===== js/views/admin.js ===== */
 __M["js/views/admin.js"] = (function () {
-const { esc, icon, toast, openModal, money, teamTag, fmtDate } = __M["js/util.js"];
+const { esc, icon, toast, openModal, money, teamTag, fmtDate, currencyField } = __M["js/util.js"];
 const SL = __M["js/sleeper.js"];
 const { pullSeason } = __M["js/autosync.js"];
 const { isConfigured } = __M["js/config.js"];
@@ -9062,6 +9082,8 @@ const LEVEL = { warn: 'red', info: '', edit: 'heat' };
 /* Which season windows are open. Survives a repaint, so saving one year does
    not slam every other year shut. */
 const WIN_OPEN = new Set();
+/* Whether the Season windows card itself is unfolded. */
+const WIN_CARD = { open: false };
 
 /* League IDs already checked quietly this session, so a repaint (or an offline
    Sleeper) does not set the same check off again and again. */
@@ -9073,6 +9095,7 @@ function render(db) {
   const L = db.league;
   const ids = L.sleeper.leagueIds;
   const S = db.season;
+  const cur = db.currentSeason;
   const st = db.get('stats');
 
   const live = db.live;
@@ -9255,18 +9278,26 @@ function render(db) {
     </div>
   </div>
 
+  ${/* what each season costs a team, and what of it goes to the empire. Set
+       here and only here -- the Bank shows it but does not edit it */''}
+  <div class="section-title">Buy-ins</div>
+  <div class="card"><div class="card-bd flush">
+    <div class="bi-grid">
+      <span class="bi-k">Season</span><span class="bi-k">Buy-in</span><span class="bi-k">To the empire</span>
+      ${db.seasons.map((y) => `
+        <span class="bi-y">${y}${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}</span>
+        <input class="bi-in" type="text" inputmode="decimal" data-buyin="${y}"
+          value="${money(db.buyIn(y))}" aria-label="${y} buy-in per team">
+        <input class="bi-in" type="text" inputmode="decimal" data-setaside="${y}"
+          value="${money(Number(L.empireContribution[String(y)]) || 0)}" aria-label="${y} empire set-aside">`).join('')}
+    </div>
+  </div></div>
+
   <div class="section-title">League settings</div>
   <div class="card"><div class="card-bd">
     <div class="fgrid">
-      <div class="field"><label>Buy-in ${S}</label>
-        <input data-cfg="buyIn" type="number" value="${L.buyIn[String(S)] ?? 50}"></div>
-      <div class="field"><label>Empire set-aside ${S}</label>
-        <input data-cfg="empireContribution" type="number" value="${L.empireContribution[String(S)] ?? 150}"></div>
       <div class="field"><label>Empire threshold (pts)</label>
         <input data-cfg="empireThreshold" type="number" value="${L.empireThreshold}"></div>
-      <div class="field"><label>Current season</label>
-        <select data-cfg="currentSeason">${db.seasons.map((s) =>
-          `<option value="${s}" ${s === L.currentSeason ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
       ${/* a role, marked on the Managers tab -- not a permission, which the
            database decides */''}
       <div class="field"><label>Commissioner</label>
@@ -9278,18 +9309,19 @@ function render(db) {
               m.id === L.commissioner ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
         </select></div>
     </div>
-    <button class="btn" data-save-cfg>${icon('check')} Save settings</button>
   </div></div>
 
-  ${/* the dates each season's transactions are filed by: league config too */''}
-  <div class="card">
-    <div class="card-hd">${icon('clock')}<h3>Season windows</h3></div>
+  ${/* the dates each season's transactions are filed by -- and so which season
+       is current. Folded away until you come to move one. */''}
+  <div class="card win-card${WIN_CARD.open ? ' open' : ''}">
+    <button class="card-hd win-card-hd" data-wincard aria-expanded="${WIN_CARD.open}">${icon('clock')}
+      <div class="adm-id"><h3>Season windows</h3><span class="adm-who">${cur} is current</span></div>
+      ${icon('chev', 'acc-caret')}</button>
     <div class="card-bd">
       <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
         A transaction is filed under whichever window its date falls in, so an offseason
         trade lands in the season it was made for rather than the one it interrupted.
-        FAAB is a separate $100 either side of the preseason close, so the season
-        opens the morning after it &mdash; that date is shown, not set.
+        The season whose window holds today is the current one.
       </div>
       ${/* one year at a time: six seasons of four dates is a wall of boxes, and
            you only ever come here to move one boundary. */''}
@@ -9298,6 +9330,7 @@ function render(db) {
           <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
             ${icon('chev', 'acc-caret')}
             <span class="win-y">${y}</span>
+            ${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}
             <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
           </button>
           <div class="win-bd">
@@ -9315,7 +9348,6 @@ function render(db) {
               <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
           </div></div>
         </div>`; }).join('')}
-      <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
     </div>
   </div>
   `;
@@ -9486,16 +9518,35 @@ function mount(root, db) {
     out.value = d.toISOString().slice(0, 10);
   }));
 
-  root.querySelector('[data-save-windows]')?.addEventListener('click', async () => {
+  /* windows, buy-ins and settings save the moment a value is committed --
+     no Save buttons, as with the league IDs */
+  root.querySelector('[data-wincard]')?.addEventListener('click', (e) => {
+    WIN_CARD.open = !WIN_CARD.open;
+    e.currentTarget.closest('.win-card').classList.toggle('open', WIN_CARD.open);
+    e.currentTarget.setAttribute('aria-expanded', String(WIN_CARD.open));
+  });
+  root.querySelectorAll('[data-win]').forEach((i) => i.addEventListener('change', async () => {
+    if (!i.value) return;
+    const y = i.dataset.win;
     await db.update('league', (L) => {
       L.seasonWindows = L.seasonWindows || {};
-      root.querySelectorAll('[data-win]').forEach((i) => {
-        const y = i.dataset.win;
-        L.seasonWindows[y] = L.seasonWindows[y] || {};
-        L.seasonWindows[y][i.dataset.part] = i.value;
-      });
+      L.seasonWindows[y] = { ...db.seasonWindow(y), ...(L.seasonWindows[y] || {}), [i.dataset.part]: i.value };
     });
-    toast('Season windows saved');
+    toast(`${y} window saved`);
+  }));
+  root.querySelectorAll('[data-buyin]').forEach((inp) => {
+    const y = inp.dataset.buyin;
+    currencyField(inp, () => db.buyIn(y), async (val) => {
+      await db.update('league', (L) => { L.buyIn[y] = val; });
+      toast(`${y} buy-in set to ${money(val)}`);
+    });
+  });
+  root.querySelectorAll('[data-setaside]').forEach((inp) => {
+    const y = inp.dataset.setaside;
+    currencyField(inp, () => Number(db.league.empireContribution[y]) || 0, async (val) => {
+      await db.update('league', (L) => { L.empireContribution[y] = val; });
+      toast(`${y} empire set-aside ${money(val)}`);
+    });
   });
 
   /* One errand, one roster map, one download of the player file. */
@@ -9539,18 +9590,13 @@ function mount(root, db) {
   });
 
   /* ---- settings ---- */
-  root.querySelector('[data-save-cfg]')?.addEventListener('click', async () => {
-    const g = (k) => root.querySelector(`[data-cfg="${k}"]`).value;
-    const S = String(db.season);
+  root.querySelectorAll('[data-cfg]').forEach((i) => i.addEventListener('change', async () => {
+    const k = i.dataset.cfg;
     await db.update('league', (L) => {
-      L.buyIn[S] = +g('buyIn') || 0;
-      L.empireContribution[S] = +g('empireContribution') || 0;
-      L.empireThreshold = +g('empireThreshold') || 0;
-      L.currentSeason = +g('currentSeason');
-      L.commissioner = g('commissioner') || null;
+      L[k] = k === 'commissioner' ? (i.value || null) : (+i.value || 0);
     });
-    toast('Settings saved');
-  });
+    toast('Saved');
+  }));
 }
 
 return { render, mount };

@@ -1,4 +1,4 @@
-import { esc, icon, toast, openModal, money, teamTag, fmtDate } from '../util.js';
+import { esc, icon, toast, openModal, money, teamTag, fmtDate, currencyField } from '../util.js';
 import * as SL from '../sleeper.js';
 import { pullSeason } from '../autosync.js';
 import { isConfigured } from '../config.js';
@@ -8,6 +8,8 @@ const LEVEL = { warn: 'red', info: '', edit: 'heat' };
 /* Which season windows are open. Survives a repaint, so saving one year does
    not slam every other year shut. */
 const WIN_OPEN = new Set();
+/* Whether the Season windows card itself is unfolded. */
+const WIN_CARD = { open: false };
 
 /* League IDs already checked quietly this session, so a repaint (or an offline
    Sleeper) does not set the same check off again and again. */
@@ -20,6 +22,7 @@ export function render(db) {
   const L = db.league;
   const ids = L.sleeper.leagueIds;
   const S = db.season;
+  const cur = db.currentSeason;
   const st = db.get('stats');
 
   const live = db.live;
@@ -202,18 +205,26 @@ export function render(db) {
     </div>
   </div>
 
+  ${/* what each season costs a team, and what of it goes to the empire. Set
+       here and only here -- the Bank shows it but does not edit it */''}
+  <div class="section-title">Buy-ins</div>
+  <div class="card"><div class="card-bd flush">
+    <div class="bi-grid">
+      <span class="bi-k">Season</span><span class="bi-k">Buy-in</span><span class="bi-k">To the empire</span>
+      ${db.seasons.map((y) => `
+        <span class="bi-y">${y}${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}</span>
+        <input class="bi-in" type="text" inputmode="decimal" data-buyin="${y}"
+          value="${money(db.buyIn(y))}" aria-label="${y} buy-in per team">
+        <input class="bi-in" type="text" inputmode="decimal" data-setaside="${y}"
+          value="${money(Number(L.empireContribution[String(y)]) || 0)}" aria-label="${y} empire set-aside">`).join('')}
+    </div>
+  </div></div>
+
   <div class="section-title">League settings</div>
   <div class="card"><div class="card-bd">
     <div class="fgrid">
-      <div class="field"><label>Buy-in ${S}</label>
-        <input data-cfg="buyIn" type="number" value="${L.buyIn[String(S)] ?? 50}"></div>
-      <div class="field"><label>Empire set-aside ${S}</label>
-        <input data-cfg="empireContribution" type="number" value="${L.empireContribution[String(S)] ?? 150}"></div>
       <div class="field"><label>Empire threshold (pts)</label>
         <input data-cfg="empireThreshold" type="number" value="${L.empireThreshold}"></div>
-      <div class="field"><label>Current season</label>
-        <select data-cfg="currentSeason">${db.seasons.map((s) =>
-          `<option value="${s}" ${s === L.currentSeason ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
       ${/* a role, marked on the Managers tab -- not a permission, which the
            database decides */''}
       <div class="field"><label>Commissioner</label>
@@ -225,18 +236,19 @@ export function render(db) {
               m.id === L.commissioner ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
         </select></div>
     </div>
-    <button class="btn" data-save-cfg>${icon('check')} Save settings</button>
   </div></div>
 
-  ${/* the dates each season's transactions are filed by: league config too */''}
-  <div class="card">
-    <div class="card-hd">${icon('clock')}<h3>Season windows</h3></div>
+  ${/* the dates each season's transactions are filed by -- and so which season
+       is current. Folded away until you come to move one. */''}
+  <div class="card win-card${WIN_CARD.open ? ' open' : ''}">
+    <button class="card-hd win-card-hd" data-wincard aria-expanded="${WIN_CARD.open}">${icon('clock')}
+      <div class="adm-id"><h3>Season windows</h3><span class="adm-who">${cur} is current</span></div>
+      ${icon('chev', 'acc-caret')}</button>
     <div class="card-bd">
       <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
         A transaction is filed under whichever window its date falls in, so an offseason
         trade lands in the season it was made for rather than the one it interrupted.
-        FAAB is a separate $100 either side of the preseason close, so the season
-        opens the morning after it &mdash; that date is shown, not set.
+        The season whose window holds today is the current one.
       </div>
       ${/* one year at a time: six seasons of four dates is a wall of boxes, and
            you only ever come here to move one boundary. */''}
@@ -245,6 +257,7 @@ export function render(db) {
           <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
             ${icon('chev', 'acc-caret')}
             <span class="win-y">${y}</span>
+            ${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}
             <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
           </button>
           <div class="win-bd">
@@ -262,7 +275,6 @@ export function render(db) {
               <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
           </div></div>
         </div>`; }).join('')}
-      <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
     </div>
   </div>
   `;
@@ -434,16 +446,35 @@ export function mount(root, db) {
     out.value = d.toISOString().slice(0, 10);
   }));
 
-  root.querySelector('[data-save-windows]')?.addEventListener('click', async () => {
+  /* windows, buy-ins and settings save the moment a value is committed --
+     no Save buttons, as with the league IDs */
+  root.querySelector('[data-wincard]')?.addEventListener('click', (e) => {
+    WIN_CARD.open = !WIN_CARD.open;
+    e.currentTarget.closest('.win-card').classList.toggle('open', WIN_CARD.open);
+    e.currentTarget.setAttribute('aria-expanded', String(WIN_CARD.open));
+  });
+  root.querySelectorAll('[data-win]').forEach((i) => i.addEventListener('change', async () => {
+    if (!i.value) return;
+    const y = i.dataset.win;
     await db.update('league', (L) => {
       L.seasonWindows = L.seasonWindows || {};
-      root.querySelectorAll('[data-win]').forEach((i) => {
-        const y = i.dataset.win;
-        L.seasonWindows[y] = L.seasonWindows[y] || {};
-        L.seasonWindows[y][i.dataset.part] = i.value;
-      });
+      L.seasonWindows[y] = { ...db.seasonWindow(y), ...(L.seasonWindows[y] || {}), [i.dataset.part]: i.value };
     });
-    toast('Season windows saved');
+    toast(`${y} window saved`);
+  }));
+  root.querySelectorAll('[data-buyin]').forEach((inp) => {
+    const y = inp.dataset.buyin;
+    currencyField(inp, () => db.buyIn(y), async (val) => {
+      await db.update('league', (L) => { L.buyIn[y] = val; });
+      toast(`${y} buy-in set to ${money(val)}`);
+    });
+  });
+  root.querySelectorAll('[data-setaside]').forEach((inp) => {
+    const y = inp.dataset.setaside;
+    currencyField(inp, () => Number(db.league.empireContribution[y]) || 0, async (val) => {
+      await db.update('league', (L) => { L.empireContribution[y] = val; });
+      toast(`${y} empire set-aside ${money(val)}`);
+    });
   });
 
   /* One errand, one roster map, one download of the player file. */
@@ -487,16 +518,11 @@ export function mount(root, db) {
   });
 
   /* ---- settings ---- */
-  root.querySelector('[data-save-cfg]')?.addEventListener('click', async () => {
-    const g = (k) => root.querySelector(`[data-cfg="${k}"]`).value;
-    const S = String(db.season);
+  root.querySelectorAll('[data-cfg]').forEach((i) => i.addEventListener('change', async () => {
+    const k = i.dataset.cfg;
     await db.update('league', (L) => {
-      L.buyIn[S] = +g('buyIn') || 0;
-      L.empireContribution[S] = +g('empireContribution') || 0;
-      L.empireThreshold = +g('empireThreshold') || 0;
-      L.currentSeason = +g('currentSeason');
-      L.commissioner = g('commissioner') || null;
+      L[k] = k === 'commissioner' ? (i.value || null) : (+i.value || 0);
     });
-    toast('Settings saved');
-  });
+    toast('Saved');
+  }));
 }

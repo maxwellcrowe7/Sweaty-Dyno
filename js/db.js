@@ -180,6 +180,19 @@ class Store {
   /* ================= derived selectors ================= */
 
   get league() { return this.get('league'); }
+
+  /** Today's date. A method so a test can stand the league on another day. */
+  today() { return today(); }
+
+  /** The season going on now: whichever season's window today falls in, as set
+      in Admin, so it moves over by itself rather than being picked by hand.
+      Before the first known season or after the last, the nearest one. */
+  get currentSeason() {
+    const seasons = this.seasons;
+    const hit = this.seasonOf(this.today());
+    if (seasons.includes(hit)) return hit;
+    return hit < seasons[0] ? seasons[0] : seasons.at(-1);
+  }
   get seasons() { return this.league.seasons; }
 
   managerById(id) { return this.get('managers').managers.find((m) => m.id === id) || null; }
@@ -239,7 +252,7 @@ class Store {
   get season() {
     if (this._season == null) {
       const saved = Number(readSeason());
-      this._season = this.seasons.includes(saved) ? saved : this.league.currentSeason;
+      this._season = this.seasons.includes(saved) ? saved : this.currentSeason;
     }
     return this._season;
   }
@@ -256,7 +269,7 @@ class Store {
   buyIn(season) { return Number(this.league.buyIn?.[String(season)]) || 0; }
 
   /** Seasons that have actually started — the empire pot only accrues for these. */
-  activeSeasons() { return this.seasons.filter((s) => s <= this.league.currentSeason); }
+  activeSeasons() { return this.seasons.filter((s) => s <= this.currentSeason); }
 
   /* ---------- payouts ----------
      Amounts are never stored. Each category derives from whatever produced it,
@@ -379,7 +392,7 @@ class Store {
     const expected = (season == null ? this.seasons : [season])
       .reduce((a, s) => a + this.buyIn(s) * teamCount, 0);
 
-    const cur = this.league.currentSeason;
+    const cur = this.currentSeason;
     const owedNow = (season == null ? this.seasons : [season])
       .filter((s) => s <= cur)
       .reduce((a, s) => a + Math.max(0, this.buyIn(s) * teamCount
@@ -422,7 +435,7 @@ class Store {
     let carry = 0;
     return this.seasons.map((season) => {
       const b = this.bank(season);
-      const empire = season <= this.league.currentSeason
+      const empire = season <= this.currentSeason
         ? (Number(this.league.empireContribution?.[String(season)]) || 0) : 0;
       // Commitments, not disbursements. A prize that has been set aside is spoken
       // for whether or not it has been handed over, so surplus means genuinely
@@ -432,7 +445,7 @@ class Store {
          that money the day the season opens, the same way the empire set-aside
          and the minigame slate do. A season that has not started commits
          nothing -- otherwise every year to 2030 shows up as active. */
-      const place = season <= this.league.currentSeason
+      const place = season <= this.currentSeason
         ? Object.values(this.placementScale(season)).reduce((a, v) => a + (Number(v) || 0), 0)
         : 0;
       const active = b.collected > 0 || mini > 0 || place > 0 || empire > 0;
@@ -469,7 +482,7 @@ class Store {
   /** Per-team ledger. `owes` only ever counts seasons that have started. */
   ledger(season = null) {
     const b = this.get('bank');
-    const cur = this.league.currentSeason;
+    const cur = this.currentSeason;
     const rows = this.payouts(season);
     return this.teams().map((t) => {
       const ins = b.payins.filter((p) => p.team === t.number && (season == null || p.season === season));
@@ -543,7 +556,7 @@ class Store {
       skipped too -- it never settles, so it would stay "now" all season. Only
       the current season has one. */
   currentMinigame(season = this.season) {
-    if (season !== this.league.currentSeason) return null;
+    if (season !== this.currentSeason) return null;
     return this.minigamePhases(season).flatMap((p) => p.games)
       .find((g) => !['final', 'canceled', 'none', 'guillotine'].includes(g.status)) || null;
   }
@@ -895,7 +908,7 @@ class Store {
     const seasons = [...new Set(this.get('stats').weekly.map((w) => w.season))].sort((a, b) => a - b);
     const games = seasons.flatMap((s) => this.stats(s).weekly);
     // a streak that is still going carries on into the live season, if any
-    const live = this.seasonOver(this.league.currentSeason) ? null : this.league.currentSeason;
+    const live = this.seasonOver(this.currentSeason) ? null : this.currentSeason;
     const h = this.highlightsFrom(games, this.teams().map((t) => t.number), false, live);
     // the game with the most points in it, both sides together
     const at = new Map(games.map((g) => [`${g.season}:${g.week}:${g.team}`, g]));

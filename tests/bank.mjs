@@ -25,11 +25,11 @@ print('— partial buy-ins —');
 await db.update('bank',(x)=>{x.payins.find(p=>p.team===3&&p.season===2027).paid=25;});
 eq('partial payment recorded', db.bank(2027).collected, 125);
 eq('team owes the remainder next season', db.ledger().find(t=>t.manager==='Alex').owesNow, 0);
-db.get('league').currentSeason=2027;
+db.today=()=>'2027-06-01';   // stand the league in 2027
 eq('once 2027 is current, shortfall counts', db.bank().owedNow, 375);
 eq('Alex owes $25 of 2027', db.ledger().find(t=>t.manager==='Alex').owesNow, 25);
 eq('empire accrues for 3 active seasons', db.empirePotBalance(), 450);
-db.get('league').currentSeason=2026;
+delete db.today;
 await db.update('bank',(x)=>{x.payins.find(p=>p.team===3&&p.season===2027).paid=0;});
 
 print('— changing a season buy-in ripples through —');
