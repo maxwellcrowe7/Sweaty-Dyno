@@ -9327,13 +9327,11 @@ function render(db) {
        is current. Folded away until you come to move one. */''}
   <div class="card win-card${WIN_CARD.open ? ' open' : ''}">
     <button class="card-hd win-card-hd" data-wincard aria-expanded="${WIN_CARD.open}">${icon('clock')}
-      <div class="adm-id"><h3>Season windows</h3><span class="adm-who">${cur} is current</span></div>
+      <h3>Season windows</h3>
       ${icon('chev', 'acc-caret')}</button>
     <div class="card-bd">
-      <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
-        A transaction is filed under whichever window its date falls in, so an offseason
-        trade lands in the season it was made for rather than the one it interrupted.
-        The season whose window holds today is the current one.
+      <div class="s dim" style="font-size:12px;margin-bottom:10px;line-height:1.6">
+        Transactions count toward the season whose window they fall in. Today's window sets the current season.
       </div>
       ${/* one year at a time: six seasons of four dates is a wall of boxes, and
            you only ever come here to move one boundary. */''}
