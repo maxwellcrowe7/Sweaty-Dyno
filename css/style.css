@@ -2460,6 +2460,8 @@ table.dt.h2h td.wk{padding:4px 4px}
 .card-hd .btn.sm{flex:none}
 /* .btn's display out-ranks the browser's [hidden]; the diff reveals these */
 .card-hd .btn[hidden]{display:none}
+/* the Data rows' buttons, one width, so they stack as a column */
+.adm-act{min-width:124px;justify-content:center}
 .adm-notes{display:flex;flex-direction:column;gap:10px}
 /* a phone: the address drops under the title, so it has the room */
 @media (max-width:620px){

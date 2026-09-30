@@ -117,6 +117,7 @@ const I = {
   diff:'M12 3v6M9 6h6M12 15v6M9 18h6M5 12h14',
   eye:'M1.8 12S5.4 5.5 12 5.5 22.2 12 22.2 12 18.6 18.5 12 18.5 1.8 12 1.8 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
   chev:'m9 18 6-6-6-6',
+  wrench:'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z',
   // two bars, not the usual six dots: at 14px the dots are sub-pixel and
   // disappear entirely
   grip:'M5 9.5h14M5 14.5h14',

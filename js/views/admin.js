@@ -141,7 +141,7 @@ export function render(db) {
   <div class="card">
     <div class="card-hd">${icon('down')}
       <div class="adm-id"><h3>Backup</h3><span class="adm-who">Download the live data</span></div>
-      <button class="btn sm" data-export-every>${icon('down')} Download all</button></div>
+      <button class="btn sm adm-act" data-export-every>${icon('down')} Download all</button></div>
   </div>` : `
   <div class="card">
     <div class="card-hd">${icon('down')}<h3>${live ? 'Export a snapshot' : 'Export'}</h3><div class="spacer"></div>
@@ -174,8 +174,8 @@ export function render(db) {
   <div class="card">
     <div class="card-hd">${icon('sync')}
       <div class="adm-id"><h3>Seed &amp; repair</h3><span class="adm-who" data-diffline>Checking&hellip;</span></div>
-      <button class="btn sm primary" data-seed hidden>${icon('down')} Add missing</button>
-      <button class="btn sm ghost" data-repair hidden>Repair</button></div>
+      <button class="btn sm primary adm-act" data-seed hidden>${icon('down')} Add missing</button>
+      <button class="btn sm adm-act" data-repair hidden>${icon('wrench')} Repair</button></div>
   </div>
   <div data-pushout class="s dim" style="font-size:12px;margin:-6px 2px 0"></div>` : ''}
 
