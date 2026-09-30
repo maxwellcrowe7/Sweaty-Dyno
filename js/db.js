@@ -538,6 +538,16 @@ class Store {
     const s = this.get('minigames').seasons[String(season)];
     return s || { games: [], guillotine: null, legacy: null };
   }
+  /** The game going on now: the first, in the order they are played, not yet
+      decided, called off or left empty. The guillotine's placeholder week is
+      skipped too -- it never settles, so it would stay "now" all season. Only
+      the current season has one. */
+  currentMinigame(season = this.season) {
+    if (season !== this.league.currentSeason) return null;
+    return this.minigamePhases(season).flatMap((p) => p.games)
+      .find((g) => !['final', 'canceled', 'none', 'guillotine'].includes(g.status)) || null;
+  }
+
   /** Minigames grouped by phase, each already in the order they are played. */
   minigamePhases(season = this.season) {
     const games = this.minigames(season).games || [];

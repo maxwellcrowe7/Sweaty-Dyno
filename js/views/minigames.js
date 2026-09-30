@@ -50,7 +50,7 @@ export function setStatus(g, was) {
 }
 
 /** Name and its short summary on one line, then who won and what it paid. */
-function gameRow(db, g, S, admin) {
+function gameRow(db, g, S, admin, now = false) {
   const empty = g.status === 'none';
   const pointer = g.status === 'guillotine';
   const canceled = g.status === 'canceled';
@@ -67,7 +67,7 @@ function gameRow(db, g, S, admin) {
     : empty ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
     : 'Not set yet';
 
-  return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}" data-anchor="mg-${esc(g.id)}">
+  return `<div class="mg${open ? ' open' : ''}${now ? ' now' : ''}${empty || pointer || canceled ? ' quiet' : ''}" data-anchor="mg-${esc(g.id)}">
     <div class="mg-hd"${detail
       ? ` role="button" tabindex="0" aria-expanded="${open}" data-mg="${esc(g.id)}" data-at-toggle` : ''}>
       <span class="mg-wk">${phaseLabel(g)}</span>
@@ -213,6 +213,8 @@ export function render(db) {
   const mb = db.minigameBreakdown(S);
   // the bar measures the season against its own slate, not against an allowance
   const pct = (v) => `${(v / (mb.allocated || 1) * 100).toFixed(2)}%`;
+  // the game going on now gets a light of its own in the slate
+  const nowId = db.currentMinigame(S)?.id;
 
   return `
   <div class="card money">
@@ -268,7 +270,7 @@ export function render(db) {
     // an admin with nothing scheduled gets the button alone — an empty card says less
     const card = ph.games.length
       ? `<div class="card"><div class="card-bd flush"><div class="mg-list">
-          ${ph.games.map((g) => gameRow(db, g, S, admin)).join('')}
+          ${ph.games.map((g) => gameRow(db, g, S, admin, g.id === nowId)).join('')}
         </div></div></div>`
       : admin ? '' : `<div class="card"><div class="card-bd">
           <div class="s dim" style="font-size:12.5px">No ${ph.title.toLowerCase()} minigames this season.</div>

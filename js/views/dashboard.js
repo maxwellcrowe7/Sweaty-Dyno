@@ -79,7 +79,7 @@ export function render(db) {
 
   /* ---- this week's minigame, and who took the last one ---- */
   const mg = db.minigames(S).games || [];
-  const next = mg.find((g) => g.status !== 'final');
+  const next = db.currentMinigame(S);
   const last = [...mg].filter((g) => g.status === 'final' && g.results?.['1']?.team)
     .sort((a, b) => (b.week ?? 0) - (a.week ?? 0))[0];
   const game = !next && !last ? '' : `

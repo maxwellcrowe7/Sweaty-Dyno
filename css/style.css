@@ -1834,6 +1834,10 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 .mg-list{display:flex;flex-direction:column}
 .mg{border-bottom:2px solid var(--line)}
 .mg:last-child{border-bottom:none}
+/* the game going on now: a warm wash and an edge in the needle's orange, so the
+   eye lands on this week before the rest of the slate */
+.mg.now{background:rgba(255,107,44,.07);box-shadow:inset 3px 0 0 var(--heat)}
+.mg.now .mg-wk{color:var(--heat);border-color:rgba(255,107,44,.45);background:rgba(255,107,44,.12)}
 /* fade the row's content, never the pencil — a blank week is exactly the one
    you most need to be able to click into */
 .mg.quiet .mg-hd,.mg.quiet .mg-bd{opacity:.42}

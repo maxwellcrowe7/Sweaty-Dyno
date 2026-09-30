@@ -1852,6 +1852,10 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 .mg-list{display:flex;flex-direction:column}
 .mg{border-bottom:2px solid var(--line)}
 .mg:last-child{border-bottom:none}
+/* the game going on now: a warm wash and an edge in the needle's orange, so the
+   eye lands on this week before the rest of the slate */
+.mg.now{background:rgba(255,107,44,.07);box-shadow:inset 3px 0 0 var(--heat)}
+.mg.now .mg-wk{color:var(--heat);border-color:rgba(255,107,44,.45);background:rgba(255,107,44,.12)}
 /* fade the row's content, never the pencil — a blank week is exactly the one
    you most need to be able to click into */
 .mg.quiet .mg-hd,.mg.quiet .mg-bd{opacity:.42}
@@ -3745,6 +3749,16 @@ class Store {
     const s = this.get('minigames').seasons[String(season)];
     return s || { games: [], guillotine: null, legacy: null };
   }
+  /** The game going on now: the first, in the order they are played, not yet
+      decided, called off or left empty. The guillotine's placeholder week is
+      skipped too -- it never settles, so it would stay "now" all season. Only
+      the current season has one. */
+  currentMinigame(season = this.season) {
+    if (season !== this.league.currentSeason) return null;
+    return this.minigamePhases(season).flatMap((p) => p.games)
+      .find((g) => !['final', 'canceled', 'none', 'guillotine'].includes(g.status)) || null;
+  }
+
   /** Minigames grouped by phase, each already in the order they are played. */
   minigamePhases(season = this.season) {
     const games = this.minigames(season).games || [];
@@ -5290,7 +5304,7 @@ function render(db) {
 
   /* ---- this week's minigame, and who took the last one ---- */
   const mg = db.minigames(S).games || [];
-  const next = mg.find((g) => g.status !== 'final');
+  const next = db.currentMinigame(S);
   const last = [...mg].filter((g) => g.status === 'final' && g.results?.['1']?.team)
     .sort((a, b) => (b.week ?? 0) - (a.week ?? 0))[0];
   const game = !next && !last ? '' : `
@@ -6000,7 +6014,7 @@ function setStatus(g, was) {
 }
 
 /** Name and its short summary on one line, then who won and what it paid. */
-function gameRow(db, g, S, admin) {
+function gameRow(db, g, S, admin, now = false) {
   const empty = g.status === 'none';
   const pointer = g.status === 'guillotine';
   const canceled = g.status === 'canceled';
@@ -6017,7 +6031,7 @@ function gameRow(db, g, S, admin) {
     : empty ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
     : 'Not set yet';
 
-  return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}" data-anchor="mg-${esc(g.id)}">
+  return `<div class="mg${open ? ' open' : ''}${now ? ' now' : ''}${empty || pointer || canceled ? ' quiet' : ''}" data-anchor="mg-${esc(g.id)}">
     <div class="mg-hd"${detail
       ? ` role="button" tabindex="0" aria-expanded="${open}" data-mg="${esc(g.id)}" data-at-toggle` : ''}>
       <span class="mg-wk">${phaseLabel(g)}</span>
@@ -6162,6 +6176,8 @@ function render(db) {
   const mb = db.minigameBreakdown(S);
   // the bar measures the season against its own slate, not against an allowance
   const pct = (v) => `${(v / (mb.allocated || 1) * 100).toFixed(2)}%`;
+  // the game going on now gets a light of its own in the slate
+  const nowId = db.currentMinigame(S)?.id;
 
   return `
   <div class="card money">
@@ -6217,7 +6233,7 @@ function render(db) {
     // an admin with nothing scheduled gets the button alone — an empty card says less
     const card = ph.games.length
       ? `<div class="card"><div class="card-bd flush"><div class="mg-list">
-          ${ph.games.map((g) => gameRow(db, g, S, admin)).join('')}
+          ${ph.games.map((g) => gameRow(db, g, S, admin, g.id === nowId)).join('')}
         </div></div></div>`
       : admin ? '' : `<div class="card"><div class="card-bd">
           <div class="s dim" style="font-size:12.5px">No ${ph.title.toLowerCase()} minigames this season.</div>
