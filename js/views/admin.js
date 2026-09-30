@@ -174,45 +174,6 @@ export function render(db) {
     </div>
   </div>
 
-  ${/* its own top-level section, so app.js gives it the same +/- as every other
-       one on the tab rather than folding it into Sleeper's */''}
-  <div class="section-title">Season windows</div>
-  <div class="card">
-    <div class="card-bd">
-      <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
-        A transaction is filed under whichever window its date falls in, so an offseason
-        trade lands in the season it was made for rather than the one it interrupted.
-        FAAB is a separate $100 either side of the preseason close, so the season
-        opens the morning after it &mdash; that date is shown, not set.
-      </div>
-      ${/* one year at a time: six seasons of four dates is a wall of boxes, and
-           you only ever come here to move one boundary. */''}
-      ${db.seasons.map((y) => { const w = db.seasonWindow(y); const open = WIN_OPEN.has(y); return `
-        <div class="win-row${open ? ' open' : ''}">
-          <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
-            ${icon('chev', 'acc-caret')}
-            <span class="win-y">${y}</span>
-            <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
-          </button>
-          <div class="win-bd">
-          <div class="fgrid four">
-            <div class="field"><label>Preseason opens</label>
-              <input type="date" data-win="${y}" data-part="start" value="${esc(w.start)}"></div>
-            <div class="field"><label>Preseason closes</label>
-              <input type="date" data-win="${y}" data-part="preseasonEnd" value="${esc(w.preseasonEnd)}"></div>
-            ${/* shown, not asked for: it is always the morning after the close,
-                 and seeing it beats being told the rule */''}
-            <div class="field"><label>Season opens</label>
-              <input type="date" data-derived="${y}" value="${esc(db.inSeasonStart(y))}" disabled
-                title="The day after the preseason closes"></div>
-            <div class="field"><label>Season closes</label>
-              <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
-          </div></div>
-        </div>`; }).join('')}
-      <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
-    </div>
-  </div>
-
   <div class="section-title">${live ? 'Backup' : 'Save your work'}</div>
   <div class="card">
     <div class="card-hd">${icon('down')}<h3>${live ? 'Export a snapshot' : 'Export'}</h3><div class="spacer"></div>
@@ -266,6 +227,44 @@ export function render(db) {
     </div>
     <button class="btn" data-save-cfg>${icon('check')} Save settings</button>
   </div></div>
+
+  ${/* the dates each season's transactions are filed by: league config too */''}
+  <div class="card">
+    <div class="card-hd">${icon('clock')}<h3>Season windows</h3></div>
+    <div class="card-bd">
+      <div class="s dim" style="font-size:12px;margin-bottom:12px;line-height:1.6">
+        A transaction is filed under whichever window its date falls in, so an offseason
+        trade lands in the season it was made for rather than the one it interrupted.
+        FAAB is a separate $100 either side of the preseason close, so the season
+        opens the morning after it &mdash; that date is shown, not set.
+      </div>
+      ${/* one year at a time: six seasons of four dates is a wall of boxes, and
+           you only ever come here to move one boundary. */''}
+      ${db.seasons.map((y) => { const w = db.seasonWindow(y); const open = WIN_OPEN.has(y); return `
+        <div class="win-row${open ? ' open' : ''}">
+          <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
+            ${icon('chev', 'acc-caret')}
+            <span class="win-y">${y}</span>
+            <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
+          </button>
+          <div class="win-bd">
+          <div class="fgrid four">
+            <div class="field"><label>Preseason opens</label>
+              <input type="date" data-win="${y}" data-part="start" value="${esc(w.start)}"></div>
+            <div class="field"><label>Preseason closes</label>
+              <input type="date" data-win="${y}" data-part="preseasonEnd" value="${esc(w.preseasonEnd)}"></div>
+            ${/* shown, not asked for: it is always the morning after the close,
+                 and seeing it beats being told the rule */''}
+            <div class="field"><label>Season opens</label>
+              <input type="date" data-derived="${y}" value="${esc(db.inSeasonStart(y))}" disabled
+                title="The day after the preseason closes"></div>
+            <div class="field"><label>Season closes</label>
+              <input type="date" data-win="${y}" data-part="end" value="${esc(w.end)}"></div>
+          </div></div>
+        </div>`; }).join('')}
+      <button class="btn primary" data-save-windows>${icon('check')} Save windows</button>
+    </div>
+  </div>
   `;
 }
 
