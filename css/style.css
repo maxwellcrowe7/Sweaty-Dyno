@@ -2354,7 +2354,7 @@ table.dt.h2h td.wk{padding:4px 4px}
 
 /* bank */
 /* the dial and its claims sit together in the middle, not pushed to the edges */
-.hm-bank-bd{display:flex;align-items:center;justify-content:center;gap:48px}
+.hm-bank-bd{display:flex;align-items:center;justify-content:center;gap:38px}
 /* sized so its figure matches the other headline figures on Home */
 .hm-dial{position:relative;flex:none;width:176px}
 .hm-dial .gauge{width:176px;margin:-6px 0 0}
@@ -2364,7 +2364,7 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-claims > div{display:contents}
 .hm-claims i{width:9px;height:9px;border-radius:2px}
 .hm-claims span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);font-weight:700}
-.hm-claims b{font-family:var(--f-display);font-size:18px;text-align:right;padding-left:32px}
+.hm-claims b{font-family:var(--f-display);font-size:18px;text-align:right;padding-left:50px}
 /* a phone-width card: close the gaps so the amounts stay inside it */
 .hm-bank{container-type:inline-size}
 @container (max-width:400px){
