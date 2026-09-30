@@ -5192,11 +5192,12 @@ const { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip } = __M["js/util
    here is new data -- it is the headline of somewhere else.
    ============================================================ */
 
-/* The block header: what it is, and the tab it came from. Not a
-   .section-title, so the app's collapse wiring leaves it alone -- a home
-   page that folds away is not a glance. */
-const hd = (label, to, tab, ic) => `<div class="hm-hd"><span>${label}</span>
-  <button class="hm-go" data-go="${to}">${icon(ic)}${tab}</button></div>`;
+/* The block header: what it is, and the tab it came from -- and, with `at`,
+   the spot on that tab it is the headline of. Not a .section-title, so the
+   app's collapse wiring leaves it alone -- a home page that folds away is not
+   a glance. */
+const hd = (label, to, tab, ic, at = '') => `<div class="hm-hd"><span>${label}</span>
+  <button class="hm-go" data-go="${to}"${at ? ` data-at="${esc(at)}"` : ''}>${icon(ic)}${tab}</button></div>`;
 
 // what a rules change has to differ by for the home page to mention it again
 const RULES_SEEN = 'sweatydyno:rulesSeen';
@@ -5225,7 +5226,7 @@ function render(db) {
   const h = games.length ? db.highlightsFrom(games, st.rows.map((r) => r.number), false) : null;
   const low = games.length ? games.reduce((a, b) => (b.points < a.points ? b : a)) : null;
   const recap = !h ? '' : `
-  ${hd(`Week ${wk}`, 'stats', 'Stats', 'chart')}
+  ${hd(`Week ${wk}`, 'stats', 'Stats', 'chart', 'results')}
   <div class="tiles hl-tiles">
     <div class="tile accent"><div class="k">Top score</div>
       <div class="v">${pts(h.top.points)}</div><div class="m">${nm(h.top.team)}</div></div>
@@ -5247,7 +5248,7 @@ function render(db) {
   const out = po.rows.filter((r) => !r.in);
   const race = !st.hasRecords ? '' : `
   <div class="hm-race">
-    ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart')}
+    ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart', 'seeds')}
     <div class="card"><div class="hm-race-bd">
       <div class="hm-rc" style="flex-grow:${inn.length}">${inn.map((r) => `<div class="hm-seed">
         <span class="hm-n">${r.seed}</span><span class="hm-nm">${nm(r.number)}</span>
@@ -5267,7 +5268,7 @@ function render(db) {
     .sort((a, b) => (b.week ?? 0) - (a.week ?? 0))[0];
   const game = !next && !last ? '' : `
   <div class="hm-game">
-    ${hd(next?.week ? `Week ${next.week} minigame` : 'Minigames', 'minigames', 'Games', 'dice')}
+    ${hd(next?.week ? `Week ${next.week} minigame` : 'Minigames', 'minigames', 'Games', 'dice', next ? `mg-${next.id}` : 'slate')}
     <div class="card"><div class="card-bd hm-game-bd">
       ${next ? `<div class="hm-big mint">${money(next.payout?.['1'] || 0)}</div>
         <div><div class="hm-name">${esc(next.name || 'To be set')}</div>
@@ -5294,7 +5295,7 @@ function render(db) {
   const choppedWeek = new Map(settled.map((w) => [w.chopped, w.week]));
   const guil = !run || !run.entrants.length ? '' : `
   <div class="hm-guil">
-    ${hd('Guillotine', 'minigames', 'Games', 'blade')}
+    ${hd('Guillotine', 'minigames', 'Games', 'blade', 'guillotine')}
     <div class="card"><div class="card-bd hm-guil-bd">
       ${run.winner ? `<div><div class="hm-big mint">${nm(run.winner)}</div>
           <div class="hm-sub">last one standing</div></div>`
@@ -5391,7 +5392,7 @@ function render(db) {
   const diff = db.rulesDiff(S);
   const sig = rulesSignature(diff);
   const rules = diff?.count && rulesSeen(S) !== sig ? `
-  <button class="hm-rules" data-go="rules">${icon('book')}
+  <button class="hm-rules" data-go="rules" data-tab="changes">${icon('book')}
     <span><b>${diff.count}</b> rule change${diff.count === 1 ? '' : 's'} for ${S}</span>${icon('chev')}</button>` : '';
 
   return `
@@ -5406,8 +5407,14 @@ function render(db) {
   </div>`;
 }
 const mount = (root, db, go) => {
+  // Home shows the current season, so land there too, not on whichever year
+  // the other tabs were last browsing
+  const S = db.league.currentSeason ?? db.season;
   root.querySelectorAll('[data-go]').forEach((b) =>
-    b.addEventListener('click', () => go(b.dataset.go)));
+    b.addEventListener('click', () => {
+      if (db.season !== S) db.season = S;
+      go(b.dataset.go, { at: b.dataset.at, tab: b.dataset.tab });
+    }));
 };
 
 return { rulesSignature, markRulesSeen, render, mount };
@@ -5951,9 +5958,9 @@ function gameRow(db, g, S, admin) {
     : empty ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
     : 'Not set yet';
 
-  return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}">
+  return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}" data-anchor="mg-${esc(g.id)}">
     <div class="mg-hd"${detail
-      ? ` role="button" tabindex="0" aria-expanded="${open}" data-mg="${esc(g.id)}"` : ''}>
+      ? ` role="button" tabindex="0" aria-expanded="${open}" data-mg="${esc(g.id)}" data-at-toggle` : ''}>
       <span class="mg-wk">${phaseLabel(g)}</span>
       <span class="mg-main">
         <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
@@ -6011,10 +6018,10 @@ function guillotineCard(db, G, S, admin) {
   });
 
   return `
-  <div class="card guil${cardOpen ? ' open' : ''}">
+  <div class="card guil${cardOpen ? ' open' : ''}" data-anchor="guillotine">
     <div class="card-hd">
       <div class="guil-toggle" role="button" tabindex="0"
-        aria-expanded="${cardOpen}" data-guiltoggle>
+        aria-expanded="${cardOpen}" data-guiltoggle data-at-toggle>
         ${icon('blade')}
         <div class="guil-main"><h3>Guillotine</h3>
           ${G.summary ? `<span class="mg-sum">${esc(G.summary)}</span>` : ''}</div>
@@ -6156,7 +6163,7 @@ function render(db) {
       : admin ? '' : `<div class="card"><div class="card-bd">
           <div class="s dim" style="font-size:12.5px">No ${ph.title.toLowerCase()} minigames this season.</div>
         </div></div>`;
-    return `<div class="section-title">${ph.title}</div>${card}${add}`;
+    return `<div class="section-title"${ph.phase === 'week' ? ' data-anchor="slate"' : ''}>${ph.title}</div>${card}${add}`;
   }).join('')}
 
   <div class="section-title">Guillotine</div>
@@ -7584,6 +7591,8 @@ const allSpan = (db) => {
   return `${seasons} season${seasons === 1 ? '' : 's'} \u00b7 ${weeks} weeks`;
 };
 function render(db, state = {}) {
+  // a link to a spot on this page is a spot on the Season side
+  if (state.arrive && state.params?.at) state.statTab = 'season';
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
   const bar = `
@@ -7656,7 +7665,7 @@ function render(db, state = {}) {
   </div>
 
   ${st.hasRecords ? `
-  <div class="section-title">${po.decided ? 'Final seeds' : 'Playoff race'}</div>
+  <div class="section-title" data-anchor="seeds">${po.decided ? 'Final seeds' : 'Playoff race'}</div>
   <div class="card"><div class="card-bd flush">${standings(db, st, S)}</div>
   </div>` : `
   <div class="card" style="margin-bottom:14px"><div class="card-bd">
@@ -7716,7 +7725,7 @@ function render(db, state = {}) {
   </div>` : ''}
 
   ${st.hasData ? `
-  <div class="section-title">Results</div>
+  <div class="section-title" data-anchor="results">Results</div>
   <div class="card"><div class="card-bd flush">${resultsGrid(db, st, S)}</div></div>` : ''}
 
   <div class="s dimmer" style="font-size:11.5px;margin-top:16px;text-align:center">
@@ -9495,9 +9504,8 @@ const routeFromHash = () => parseHash().view;
 
 const go = (view, params = null) => {
   if (!VIEWS[view]) return;
-  const q = params && Object.keys(params).length
-    ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString()
-    : '';
+  const kept = Object.entries(params || {}).filter(([, v]) => v != null && v !== '');
+  const q = kept.length ? '?' + new URLSearchParams(kept).toString() : '';
   location.hash = `#/${view}${q}`;
   closeSheet();
 };
@@ -9685,8 +9693,29 @@ function paintGuestBar() {
   document.body.appendChild(bar);
 }
 
+/* Arriving by a link that names a spot (?at=guillotine): unfold the section it
+   sits in, open the thing itself if it opens, and bring it into view. Pages mark
+   spots with data-anchor, and the control that opens one with data-at-toggle. */
+function landAt(main, at) {
+  const el = main.querySelector(`[data-anchor="${CSS.escape(at)}"]`);
+  if (!el) return;
+  const title = el.classList.contains('section-title') ? el
+    : el.closest('.sec-body')?.previousElementSibling;
+  if (title?.getAttribute('aria-expanded') === 'false') title.click();
+  const t = el.matches('[data-at-toggle]') ? el : el.querySelector('[data-at-toggle]');
+  if (t?.getAttribute('aria-expanded') === 'false') t.click();
+  requestAnimationFrame(() => {
+    const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const top = Math.min(Math.max(0, el.getBoundingClientRect().top + window.scrollY - 76), max);
+    window.scrollTo({ top, behavior: 'smooth' });
+  });
+}
+
 function paint() {
   paintGuestBar();
+  // a spot is landed on once, when you arrive -- not on every repaint after
+  const arrive = state.arrive;
+  state.arrive = false;
   const v = VIEWS[state.view];
   const main = $('#main');
   if (!main) return;
@@ -9722,6 +9751,7 @@ function paint() {
     main.scrollTop = 0;
     window.scrollTo({ top: 0 });
   }
+  if (arrive && state.params?.at) landAt(main, state.params.at);
 }
 
 /* ---------- boot ---------- */
@@ -9740,10 +9770,10 @@ function paint() {
     return;
   }
   globalThis.__SDDB = db;   // lets tooling and the console inspect the live store
-  Object.assign(state, parseHash());
+  Object.assign(state, parseHash(), { arrive: true });
   shell();
   paint();
-  window.addEventListener('hashchange', () => setState(parseHash()));
+  window.addEventListener('hashchange', () => setState({ ...parseHash(), arrive: true }));
 
   // Pull anything new from Sleeper on open. Only runs for a signed-in
   // commissioner, and only when the cheap checks say it is worth a look.

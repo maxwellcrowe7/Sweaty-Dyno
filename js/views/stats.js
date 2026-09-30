@@ -374,6 +374,8 @@ const allSpan = (db) => {
 };
 
 export function render(db, state = {}) {
+  // a link to a spot on this page is a spot on the Season side
+  if (state.arrive && state.params?.at) state.statTab = 'season';
   const tab = state.statTab === 'all' ? 'all' : 'season';
 
   const bar = `
@@ -446,7 +448,7 @@ export function render(db, state = {}) {
   </div>
 
   ${st.hasRecords ? `
-  <div class="section-title">${po.decided ? 'Final seeds' : 'Playoff race'}</div>
+  <div class="section-title" data-anchor="seeds">${po.decided ? 'Final seeds' : 'Playoff race'}</div>
   <div class="card"><div class="card-bd flush">${standings(db, st, S)}</div>
   </div>` : `
   <div class="card" style="margin-bottom:14px"><div class="card-bd">
@@ -506,7 +508,7 @@ export function render(db, state = {}) {
   </div>` : ''}
 
   ${st.hasData ? `
-  <div class="section-title">Results</div>
+  <div class="section-title" data-anchor="results">Results</div>
   <div class="card"><div class="card-bd flush">${resultsGrid(db, st, S)}</div></div>` : ''}
 
   <div class="s dimmer" style="font-size:11.5px;margin-top:16px;text-align:center">

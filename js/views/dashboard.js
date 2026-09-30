@@ -7,11 +7,12 @@ import { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip } from '../util
    here is new data -- it is the headline of somewhere else.
    ============================================================ */
 
-/* The block header: what it is, and the tab it came from. Not a
-   .section-title, so the app's collapse wiring leaves it alone -- a home
-   page that folds away is not a glance. */
-const hd = (label, to, tab, ic) => `<div class="hm-hd"><span>${label}</span>
-  <button class="hm-go" data-go="${to}">${icon(ic)}${tab}</button></div>`;
+/* The block header: what it is, and the tab it came from -- and, with `at`,
+   the spot on that tab it is the headline of. Not a .section-title, so the
+   app's collapse wiring leaves it alone -- a home page that folds away is not
+   a glance. */
+const hd = (label, to, tab, ic, at = '') => `<div class="hm-hd"><span>${label}</span>
+  <button class="hm-go" data-go="${to}"${at ? ` data-at="${esc(at)}"` : ''}>${icon(ic)}${tab}</button></div>`;
 
 // what a rules change has to differ by for the home page to mention it again
 const RULES_SEEN = 'sweatydyno:rulesSeen';
@@ -41,7 +42,7 @@ export function render(db) {
   const h = games.length ? db.highlightsFrom(games, st.rows.map((r) => r.number), false) : null;
   const low = games.length ? games.reduce((a, b) => (b.points < a.points ? b : a)) : null;
   const recap = !h ? '' : `
-  ${hd(`Week ${wk}`, 'stats', 'Stats', 'chart')}
+  ${hd(`Week ${wk}`, 'stats', 'Stats', 'chart', 'results')}
   <div class="tiles hl-tiles">
     <div class="tile accent"><div class="k">Top score</div>
       <div class="v">${pts(h.top.points)}</div><div class="m">${nm(h.top.team)}</div></div>
@@ -63,7 +64,7 @@ export function render(db) {
   const out = po.rows.filter((r) => !r.in);
   const race = !st.hasRecords ? '' : `
   <div class="hm-race">
-    ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart')}
+    ${hd(po.decided ? 'Final seeds' : 'Playoff race', 'stats', 'Stats', 'chart', 'seeds')}
     <div class="card"><div class="hm-race-bd">
       <div class="hm-rc" style="flex-grow:${inn.length}">${inn.map((r) => `<div class="hm-seed">
         <span class="hm-n">${r.seed}</span><span class="hm-nm">${nm(r.number)}</span>
@@ -83,7 +84,7 @@ export function render(db) {
     .sort((a, b) => (b.week ?? 0) - (a.week ?? 0))[0];
   const game = !next && !last ? '' : `
   <div class="hm-game">
-    ${hd(next?.week ? `Week ${next.week} minigame` : 'Minigames', 'minigames', 'Games', 'dice')}
+    ${hd(next?.week ? `Week ${next.week} minigame` : 'Minigames', 'minigames', 'Games', 'dice', next ? `mg-${next.id}` : 'slate')}
     <div class="card"><div class="card-bd hm-game-bd">
       ${next ? `<div class="hm-big mint">${money(next.payout?.['1'] || 0)}</div>
         <div><div class="hm-name">${esc(next.name || 'To be set')}</div>
@@ -110,7 +111,7 @@ export function render(db) {
   const choppedWeek = new Map(settled.map((w) => [w.chopped, w.week]));
   const guil = !run || !run.entrants.length ? '' : `
   <div class="hm-guil">
-    ${hd('Guillotine', 'minigames', 'Games', 'blade')}
+    ${hd('Guillotine', 'minigames', 'Games', 'blade', 'guillotine')}
     <div class="card"><div class="card-bd hm-guil-bd">
       ${run.winner ? `<div><div class="hm-big mint">${nm(run.winner)}</div>
           <div class="hm-sub">last one standing</div></div>`
@@ -207,7 +208,7 @@ export function render(db) {
   const diff = db.rulesDiff(S);
   const sig = rulesSignature(diff);
   const rules = diff?.count && rulesSeen(S) !== sig ? `
-  <button class="hm-rules" data-go="rules">${icon('book')}
+  <button class="hm-rules" data-go="rules" data-tab="changes">${icon('book')}
     <span><b>${diff.count}</b> rule change${diff.count === 1 ? '' : 's'} for ${S}</span>${icon('chev')}</button>` : '';
 
   return `
@@ -223,6 +224,12 @@ export function render(db) {
 }
 
 export const mount = (root, db, go) => {
+  // Home shows the current season, so land there too, not on whichever year
+  // the other tabs were last browsing
+  const S = db.league.currentSeason ?? db.season;
   root.querySelectorAll('[data-go]').forEach((b) =>
-    b.addEventListener('click', () => go(b.dataset.go)));
+    b.addEventListener('click', () => {
+      if (db.season !== S) db.season = S;
+      go(b.dataset.go, { at: b.dataset.at, tab: b.dataset.tab });
+    }));
 };

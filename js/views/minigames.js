@@ -67,9 +67,9 @@ function gameRow(db, g, S, admin) {
     : empty ? (g.phase === 'week' ? 'No minigame this week' : 'Not running')
     : 'Not set yet';
 
-  return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}">
+  return `<div class="mg${open ? ' open' : ''}${empty || pointer || canceled ? ' quiet' : ''}" data-anchor="mg-${esc(g.id)}">
     <div class="mg-hd"${detail
-      ? ` role="button" tabindex="0" aria-expanded="${open}" data-mg="${esc(g.id)}"` : ''}>
+      ? ` role="button" tabindex="0" aria-expanded="${open}" data-mg="${esc(g.id)}" data-at-toggle` : ''}>
       <span class="mg-wk">${phaseLabel(g)}</span>
       <span class="mg-main">
         <span class="mg-title${g.name && !empty ? '' : ' unset'}">${title}</span>
@@ -127,10 +127,10 @@ function guillotineCard(db, G, S, admin) {
   });
 
   return `
-  <div class="card guil${cardOpen ? ' open' : ''}">
+  <div class="card guil${cardOpen ? ' open' : ''}" data-anchor="guillotine">
     <div class="card-hd">
       <div class="guil-toggle" role="button" tabindex="0"
-        aria-expanded="${cardOpen}" data-guiltoggle>
+        aria-expanded="${cardOpen}" data-guiltoggle data-at-toggle>
         ${icon('blade')}
         <div class="guil-main"><h3>Guillotine</h3>
           ${G.summary ? `<span class="mg-sum">${esc(G.summary)}</span>` : ''}</div>
@@ -273,7 +273,7 @@ export function render(db) {
       : admin ? '' : `<div class="card"><div class="card-bd">
           <div class="s dim" style="font-size:12.5px">No ${ph.title.toLowerCase()} minigames this season.</div>
         </div></div>`;
-    return `<div class="section-title">${ph.title}</div>${card}${add}`;
+    return `<div class="section-title"${ph.phase === 'week' ? ' data-anchor="slate"' : ''}>${ph.title}</div>${card}${add}`;
   }).join('')}
 
   <div class="section-title">Guillotine</div>

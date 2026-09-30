@@ -44,9 +44,8 @@ const routeFromHash = () => parseHash().view;
 
 const go = (view, params = null) => {
   if (!VIEWS[view]) return;
-  const q = params && Object.keys(params).length
-    ? '?' + new URLSearchParams(Object.entries(params).filter(([, v]) => v != null && v !== '')).toString()
-    : '';
+  const kept = Object.entries(params || {}).filter(([, v]) => v != null && v !== '');
+  const q = kept.length ? '?' + new URLSearchParams(kept).toString() : '';
   location.hash = `#/${view}${q}`;
   closeSheet();
 };
@@ -234,8 +233,29 @@ function paintGuestBar() {
   document.body.appendChild(bar);
 }
 
+/* Arriving by a link that names a spot (?at=guillotine): unfold the section it
+   sits in, open the thing itself if it opens, and bring it into view. Pages mark
+   spots with data-anchor, and the control that opens one with data-at-toggle. */
+function landAt(main, at) {
+  const el = main.querySelector(`[data-anchor="${CSS.escape(at)}"]`);
+  if (!el) return;
+  const title = el.classList.contains('section-title') ? el
+    : el.closest('.sec-body')?.previousElementSibling;
+  if (title?.getAttribute('aria-expanded') === 'false') title.click();
+  const t = el.matches('[data-at-toggle]') ? el : el.querySelector('[data-at-toggle]');
+  if (t?.getAttribute('aria-expanded') === 'false') t.click();
+  requestAnimationFrame(() => {
+    const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const top = Math.min(Math.max(0, el.getBoundingClientRect().top + window.scrollY - 76), max);
+    window.scrollTo({ top, behavior: 'smooth' });
+  });
+}
+
 function paint() {
   paintGuestBar();
+  // a spot is landed on once, when you arrive -- not on every repaint after
+  const arrive = state.arrive;
+  state.arrive = false;
   const v = VIEWS[state.view];
   const main = $('#main');
   if (!main) return;
@@ -271,6 +291,7 @@ function paint() {
     main.scrollTop = 0;
     window.scrollTo({ top: 0 });
   }
+  if (arrive && state.params?.at) landAt(main, state.params.at);
 }
 
 /* ---------- boot ---------- */
@@ -289,10 +310,10 @@ function paint() {
     return;
   }
   globalThis.__SDDB = db;   // lets tooling and the console inspect the live store
-  Object.assign(state, parseHash());
+  Object.assign(state, parseHash(), { arrive: true });
   shell();
   paint();
-  window.addEventListener('hashchange', () => setState(parseHash()));
+  window.addEventListener('hashchange', () => setState({ ...parseHash(), arrive: true }));
 
   // Pull anything new from Sleeper on open. Only runs for a signed-in
   // commissioner, and only when the cheap checks say it is worth a look.
