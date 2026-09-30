@@ -83,10 +83,10 @@ export function render(db) {
   ${db.hasAdminRights ? `
   <div class="section-title">View as</div>
   <div class="card">
-    <div class="card-hd">${icon('users')}<h3>Guest preview</h3><div class="spacer"></div>
+    <div class="card-hd">${icon('users')}
+      <div class="adm-id"><h3>Guest preview</h3><span class="adm-who">See the app as the league sees it</span></div>
       <label class="toggle"><input type="checkbox" id="guestToggle" aria-label="See the app as the league sees it">
         <span class="tr"></span></label></div>
-    <div class="card-bd s dim adm-line">See the app as the league sees it</div>
   </div>` : ''}`;
 
   // Until you are signed in, Admin is the sign-in and nothing else: no issues
@@ -103,12 +103,11 @@ export function render(db) {
       <span class="chip ${LEVEL[i.level] ?? ''}">${i.level === 'warn' ? 'Fix' : i.level === 'edit' ? 'Unsaved' : 'Info'}</span>
       <div class="grow"><div class="s" style="white-space:normal;font-size:12.5px;color:var(--ink-2)">${esc(i.text)}</div></div>
     </div>`).join('')}
-  </div></div></div>` : `
-  <div class="card"><div class="card-bd">
-    <div class="banner" style="background:rgba(61,220,151,.07);border-color:rgba(61,220,151,.26)">
-      ${icon('check')}<div>Everything checks out. No config gaps and nothing unexported.</div></div>
-  </div></div>`}
+  </div></div></div>` : ''}
 
+  ${/* all-clear notices say nothing you need to act on, so Admin only speaks
+       up when something is wrong: problems above, a lost connection here */''}
+  ${live ? '' : `
   <div class="card" style="margin-bottom:14px">
     <div class="card-bd" style="padding:13px 16px">
       <div class="conn">
@@ -125,7 +124,7 @@ export function render(db) {
         </div>
       </div>
     </div>
-  </div>
+  </div>`}
 
   ${cloud ? `
   <div class="section-title">Database</div>
