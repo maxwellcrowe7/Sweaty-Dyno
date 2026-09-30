@@ -325,6 +325,7 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 .tile.gold{--tint:245,196,81}
 .tile.violet{--tint:156,140,250}
 .tile.red{--tint:255,77,94}
+.tile.blue{--tint:90,200,250}
 .tile:not(.accent):not(.mint):not(.gold):not(.violet):not(.red){--tint:132,166,214}
 .tile .k{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
 .tile .v{font-family:var(--f-display);font-size:30px;font-weight:700;line-height:1.05;margin-top:5px;letter-spacing:.005em}
@@ -365,7 +366,8 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
   font-weight:400;line-height:1.1;color:var(--ink-3);opacity:.7}
 .tile.accent .v{color:var(--heat)} .tile.mint .v{color:var(--mint)}
 .tile.gold .v{color:var(--gold)} .tile.violet .v{color:var(--violet)}
-.tile.red .v{color:var(--red)}
+/* best is green and worst red; a margin is neither, so blowout is blue */
+.tile.red .v{color:var(--red)} .tile.blue .v{color:var(--blue)}
 
 /* data rows */
 .rows{display:flex;flex-direction:column}

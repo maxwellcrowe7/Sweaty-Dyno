@@ -226,10 +226,10 @@ function allTime(db) {
 
   return `
   <div class="tiles hl-tiles">
-    <div class="tile accent"><div class="k">Best record</div>
+    <div class="tile mint"><div class="k">Best record</div>
       <div class="v">${lead ? rec(lead.wins, lead.losses, lead.ties) : '&mdash;'}</div>
       <div class="m">${lead ? `${nm(lead.number)} &middot; ${(lead.winPct * 100).toFixed(0)}%` : ''}</div></div>
-    <button class="tile mint hl-game" ${game(hl.blowout)} ${hl.blowout ? '' : 'disabled'}>
+    <button class="tile blue hl-game" ${game(hl.blowout)} ${hl.blowout ? '' : 'disabled'}>
       <div class="k">Biggest blowout</div>
       <div class="v">${hl.blowout ? '+' + pts(hl.blowout.margin) : '&mdash;'}</div>
       <div class="m">${hl.blowout ? `${nm(hl.blowout.team)} over ${nm(hl.blowout.opponent)} &middot; ${hl.blowout.season} Wk ${hl.blowout.week}` : 'needs matchups'}</div></button>
@@ -433,10 +433,10 @@ export function render(db, state = {}) {
      so the header carries the things nothing below spells out. */
   return bar + `
   <div class="tiles hl-tiles">
-    <div class="tile accent"><div class="k">Top week</div>
+    <div class="tile mint"><div class="k">Top week</div>
       <div class="v">${hl.top ? pts(hl.top.points) : '&mdash;'}</div>
       <div class="m">${hl.top ? `${nm(hl.top.team)} &middot; Wk ${hl.top.week}` : 'no scores yet'}</div></div>
-    <button class="tile mint hl-game" ${game(hl.blowout)} ${hl.blowout ? '' : 'disabled'}>
+    <button class="tile blue hl-game" ${game(hl.blowout)} ${hl.blowout ? '' : 'disabled'}>
       <div class="k">Biggest blowout</div>
       <div class="v">${hl.blowout ? '+' + pts(hl.blowout.margin) : '&mdash;'}</div>
       <div class="m">${hl.blowout ? `${nm(hl.blowout.team)} over ${nm(hl.blowout.opponent)} &middot; Wk ${hl.blowout.week}` : 'needs matchups'}</div></button>

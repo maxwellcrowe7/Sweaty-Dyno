@@ -44,11 +44,11 @@ export function render(db) {
   const recap = !h ? '' : `
   ${hd(`Week ${wk}`, 'stats', 'Stats', 'chart', 'results')}
   <div class="tiles hl-tiles">
-    <div class="tile accent"><div class="k">Top score</div>
+    <div class="tile mint"><div class="k">Top score</div>
       <div class="v">${pts(h.top.points)}</div><div class="m">${nm(h.top.team)}</div></div>
     <div class="tile red"><div class="k">Low score</div>
       <div class="v">${pts(low.points)}</div><div class="m">${nm(low.team)}</div></div>
-    <div class="tile mint"><div class="k">Blowout</div>
+    <div class="tile blue"><div class="k">Blowout</div>
       <div class="v">${h.blowout ? '+' + pts(h.blowout.margin) : '&mdash;'}</div>
       <div class="m">${h.blowout ? `${nm(h.blowout.team)} over ${nm(h.blowout.opponent)}` : ''}</div></div>
     <div class="tile gold"><div class="k">Closest</div>
