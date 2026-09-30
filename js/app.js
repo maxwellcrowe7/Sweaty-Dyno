@@ -185,8 +185,10 @@ function showInfo(btn) {
   infoPop = pop;
 
   const r = btn.getBoundingClientRect();
-  const w = Math.min(280, window.innerWidth - 24);
-  pop.style.width = `${w}px`;
+  // as wide as its words need, up to a cap: a two-line list of players
+  // should not sit in a box sized for a paragraph
+  pop.style.maxWidth = `${Math.min(280, window.innerWidth - 24)}px`;
+  const w = pop.offsetWidth;
   let left = r.left + r.width / 2 - w / 2;
   left = Math.max(12, Math.min(left, window.innerWidth - w - 12));
   pop.style.left = `${left}px`;

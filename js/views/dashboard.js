@@ -147,16 +147,22 @@ export function render(db) {
      side's headline asset -- a player before a pick, a pick before FAAB -- and
      a count of the rest. The whole deal is one tap away on Transactions. */
   const kindOf = (a) => a.pick || isPickText(a.label) ? 1 : a.faab != null || /\bFAAB\b/i.test(a.label) ? 2 : 0;
-  const lead = (rs) => rs.map(normalize).map((a, i) => ({ a, i, k: kindOf(a) }))
-    .sort((x, y) => x.k - y.k || x.i - y.i)[0];
+  const ranked = (rs) => rs.map(normalize).map((a, i) => ({ a, i, k: kindOf(a) }))
+    .sort((x, y) => x.k - y.k || x.i - y.i);
+  // the count opens the rest where you are, rather than sending you away for it
+  const more = (rest) => !rest.length ? '' : `<button class="hm-more" type="button"
+    data-info="${esc(rest.map((x) => x.a.label).join('\n'))}" aria-label="${rest.length} more: ${
+    esc(rest.map((x) => x.a.label).join(', '))}">+${rest.length}</button>`;
   const asset = ({ a, k }) => `${k === 0 ? posChip(db.position(a.label)) + ' ' : ''}${esc(a.label)}`;
   const moveRow = (m) => {
     if (m.kind === 'trade') {
       return `<div class="row hm-mv hm-tr" role="link" tabindex="0" data-go="trades" data-at="trade-${esc(m.t.id)}">
         <span class="hm-ic">${icon('swap')}</span>
         <div class="grow hm-sides">${m.t.sides.map((sd) => `<div class="hm-side">
-          <b>${nm(sd.team)}</b><span>${sd.receives.length ? asset(lead(sd.receives)) : ''}${
-            sd.receives.length > 1 ? ` <em>+${sd.receives.length - 1}</em>` : ''}</span></div>`).join('')}</div>
+          <b>${nm(sd.team)}</b><span>${(() => {
+            const [first, ...rest] = ranked(sd.receives);
+            return first ? `${asset(first)} ${more(rest)}` : '';
+          })()}</span></div>`).join('')}</div>
         <span class="hm-date">${fmtDate(m.date)}</span></div>`;
     }
     // as on the Transactions page: who and when under the player, what it

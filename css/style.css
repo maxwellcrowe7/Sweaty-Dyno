@@ -2040,6 +2040,7 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
   box-shadow:var(--shadow);pointer-events:none;
   opacity:0;transform:translateY(-3px);transition:opacity .14s,transform .14s;
   text-align:left;font-weight:400;letter-spacing:0;text-transform:none;
+  white-space:pre-line;width:max-content;
 }
 .info-pop.show{opacity:1;transform:translateY(0)}
 
@@ -2336,9 +2337,13 @@ table.dt.h2h td.wk{padding:4px 4px}
 /* direct child only: the position chip inside is a span too, and a
    descendant rule would repaint it in the row's grey */
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
-/* the rest of a side, counted: a quiet pill, never a second line */
-.hm-side em{font-style:normal;flex:none;color:var(--ink-2);font-size:10.5px;font-weight:700;
-  padding:1px 6px;border-radius:99px;background:var(--surface-3)}
+/* the rest of a side, counted: a quiet pill, never a second line. Hover or
+   tap it and the rest shows in place */
+.hm-more{flex:none;color:var(--ink-2);font-size:10.5px;font-weight:700;line-height:1.5;
+  padding:0 6px;border-radius:99px;background:var(--surface-3);cursor:help}
+.hm-more:hover,.hm-more:focus-visible{background:var(--line);color:var(--ink)}
+/* the trade's icon sits in the middle of its sides, not on the first */
+.hm-tr .hm-ic{align-self:center}
 /* a trade row is a link through to the whole deal */
 .hm-tr{cursor:pointer}
 .hm-tr:hover{background:var(--surface-2)}
