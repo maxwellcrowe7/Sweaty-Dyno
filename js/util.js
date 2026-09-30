@@ -430,3 +430,9 @@ export const formatBar = () => `<div class="fmt-bar" role="toolbar" aria-label="
 export const teamOptions = (teams, sel = '', blank = '— none —') =>
   `<option value="">${esc(blank)}</option>` + teams.map((t) =>
     `<option value="${t.number}" ${String(sel) === String(t.number) ? 'selected' : ''}>T${t.number} · ${esc(t.manager)}</option>`).join('');
+
+/* ---------- trade assets ---------- */
+export const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
+
+/** An asset is either a plain string (hand-entered) or a pulled object. */
+export const normalize = (a) => (typeof a === 'string' ? { label: a } : a);

@@ -2354,7 +2354,13 @@ table.dt.h2h td.wk{padding:4px 4px}
 /* direct child only: the position chip inside is a span too, and a
    descendant rule would repaint it in the row's grey */
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
-.hm-side em{font-style:normal;color:var(--ink-3);font-size:11px}
+/* the rest of a side, counted: a quiet pill, never a second line */
+.hm-side em{font-style:normal;flex:none;color:var(--ink-2);font-size:10.5px;font-weight:700;
+  padding:1px 6px;border-radius:99px;background:var(--surface-3)}
+/* a trade row is a link through to the whole deal */
+.hm-tr{cursor:pointer}
+.hm-tr:hover{background:var(--surface-2)}
+.hm-tr:focus-visible{outline:2px solid var(--heat);outline-offset:-2px}
 .hm-mv .t{min-height:20px}
 /* pickups and trades: two cards, closer together than any two blocks */
 .hm-moves .card + .card{margin-top:6px}
@@ -3180,7 +3186,13 @@ const teamOptions = (teams, sel = '', blank = '— none —') =>
   `<option value="">${esc(blank)}</option>` + teams.map((t) =>
     `<option value="${t.number}" ${String(sel) === String(t.number) ? 'selected' : ''}>T${t.number} · ${esc(t.manager)}</option>`).join('');
 
-return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, gauge, seasonPicker, fmt, unfmt, wireRichBar, wireFormatBar, formatBar, teamOptions };
+/* ---------- trade assets ---------- */
+const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
+
+/** An asset is either a plain string (hand-entered) or a pulled object. */
+const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
+
+return { $, $$, esc, el, money, pts, num, fmtDate, ordinal, teamHue, teamColor, teamTag, posChip, icon, toast, info, empty, sum, by, openModal, gauge, seasonPicker, fmt, unfmt, wireRichBar, wireFormatBar, formatBar, teamOptions, isPickText, normalize };
 })();
 
 /* ===== js/db.js ===== */
@@ -5190,7 +5202,7 @@ return { shouldConsider, run, pullTransactions, pullSeason };
 
 /* ===== js/views/dashboard.js ===== */
 __M["js/views/dashboard.js"] = (function () {
-const { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip } = __M["js/util.js"];
+const { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip, normalize, isPickText } = __M["js/util.js"];
 
 /* ============================================================
    HOME
@@ -5326,17 +5338,27 @@ function render(db) {
   const { trades, waivers } = db.trades(S);
   const newest = (xs) => [...xs].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 3);
   const pickups = newest(waivers.map((w) => ({ kind: 'move', date: w.date, w })));
-  const deals = newest(trades.map((t) => ({ kind: 'trade', date: t.date, t })));
+  // a trade that settles a condition rides inside the deal it completes, as on
+  // the Transactions page, rather than showing up as a trade of its own
+  const settlers = new Set(db.conditions(null).map((c) => c.settledBy).filter(Boolean));
+  const deals = newest(trades.filter((t) => !settlers.has(t.id)).map((t) => ({ kind: 'trade', date: t.date, t })));
   const openCond = db.conditions().filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key)).length;
   /* One shape for every move: an icon on the first line, the move itself, and
      the date on the right. A trade lists each side with what it received, so
      the card says who got what rather than a pile of assets under two names. */
-  const asset = (r) => `${r.player ? posChip(db.position(r.label)) + ' ' : ''}${esc(r.label)}`;
+  /* A trade on Home is one line per side, however many assets it moved: the
+     side's headline asset -- a player before a pick, a pick before FAAB -- and
+     a count of the rest. The whole deal is one tap away on Transactions. */
+  const kindOf = (a) => a.pick || isPickText(a.label) ? 1 : a.faab != null || /\bFAAB\b/i.test(a.label) ? 2 : 0;
+  const lead = (rs) => rs.map(normalize).map((a, i) => ({ a, i, k: kindOf(a) }))
+    .sort((x, y) => x.k - y.k || x.i - y.i)[0];
+  const asset = ({ a, k }) => `${k === 0 ? posChip(db.position(a.label)) + ' ' : ''}${esc(a.label)}`;
   const moveRow = (m) => {
     if (m.kind === 'trade') {
-      return `<div class="row hm-mv"><span class="hm-ic">${icon('swap')}</span>
+      return `<div class="row hm-mv hm-tr" role="link" tabindex="0" data-go="trades" data-at="trade-${esc(m.t.id)}">
+        <span class="hm-ic">${icon('swap')}</span>
         <div class="grow hm-sides">${m.t.sides.map((sd) => `<div class="hm-side">
-          <b>${nm(sd.team)}</b><span>${sd.receives.slice(0, 1).map(asset).join('')}${
+          <b>${nm(sd.team)}</b><span>${sd.receives.length ? asset(lead(sd.receives)) : ''}${
             sd.receives.length > 1 ? ` <em>+${sd.receives.length - 1}</em>` : ''}</span></div>`).join('')}</div>
         <span class="hm-date">${fmtDate(m.date)}</span></div>`;
     }
@@ -5430,6 +5452,10 @@ const mount = (root, db, go) => {
       if (db.season !== S) db.season = S;
       go(b.dataset.go, { at: b.dataset.at, tab: b.dataset.tab });
     }));
+  // a trade row is a link to that trade; Enter follows it like one
+  root.querySelectorAll('.hm-tr').forEach((r) => r.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') r.click();
+  }));
 };
 
 return { rulesSignature, markRulesSeen, render, mount };
@@ -6634,16 +6660,12 @@ return { render, mount };
 
 /* ===== js/views/transactions.js ===== */
 __M["js/views/transactions.js"] = (function () {
-const { esc, icon, teamTag, fmtDate, posChip, seasonPicker, openModal, toast, money } = __M["js/util.js"];
+const { esc, icon, teamTag, fmtDate, posChip, seasonPicker, openModal, toast, money, isPickText, normalize } = __M["js/util.js"];
 
 /* Everything on this page comes from Sleeper. The only thing a commissioner
    adds by hand is the condition on a conditional trade, because Sleeper has no
    idea such a thing exists — see the pencil on a trade header. */
 
-const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
-
-/** An asset is either a plain string (hand-entered) or a pulled object. */
-const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
 
 const assetRow = (db, raw, showFrom, locked = false) => {
   const a = normalize(raw);
@@ -6721,7 +6743,7 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, marks = null
     <span class="arrow">gets</span></div>`;
 
   return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
-      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}">
+      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}" data-anchor="trade-${esc(t.id)}">
     <div class="trade-hd">
       <div class="trade-meta">
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
@@ -6813,6 +6835,10 @@ const mgrPicker = (db, S, sel) => `<div class="season-pick">
   </select>
 </div>`;
 function render(db, state = {}) {
+  // arriving at one trade: show it, whatever tab and filters were left set
+  if (state.arrive && state.params?.at?.startsWith('trade-')) {
+    Object.assign(state, { tradeTab: 'trades', tradeKind: 'all', tradeMgr: null });
+  }
   const tab = state.tradeTab === 'waivers' ? 'waivers' : 'trades';
   const kind = state.tradeKind || 'all';
   // ?mgr=6 arrives from the Managers tab; the picker takes over from there

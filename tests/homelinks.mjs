@@ -39,6 +39,8 @@ const home = (await import('../js/views/dashboard.js')).render(db, {});
 const pages = {
   stats: (await import('../js/views/stats.js')).render(db, { arrive: true, params: { at: 'x' }, statTab: 'all' }),
   minigames: (await import('../js/views/minigames.js')).render(db, {}),
+  // arriving at a trade must show the Trades tab, whichever was left open
+  trades: (await import('../js/views/transactions.js')).render(db, { arrive: true, params: { at: 'trade-x' }, tradeTab: 'waivers' }),
 };
 let fails = 0, n = 0;
 for (const [, to, at] of home.matchAll(/data-go="(\w+)" data-at="([^"]+)"/g)) {

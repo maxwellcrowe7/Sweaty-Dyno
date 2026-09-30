@@ -1,13 +1,9 @@
-import { esc, icon, teamTag, fmtDate, posChip, seasonPicker, openModal, toast, money } from '../util.js';
+import { esc, icon, teamTag, fmtDate, posChip, seasonPicker, openModal, toast, money, isPickText, normalize } from '../util.js';
 
 /* Everything on this page comes from Sleeper. The only thing a commissioner
    adds by hand is the condition on a conditional trade, because Sleeper has no
    idea such a thing exists — see the pencil on a trade header. */
 
-export const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
-
-/** An asset is either a plain string (hand-entered) or a pulled object. */
-export const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
 
 const assetRow = (db, raw, showFrom, locked = false) => {
   const a = normalize(raw);

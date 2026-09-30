@@ -1,5 +1,4 @@
-import { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip } from '../util.js';
-import { normalize, isPickText } from './transactions.js';
+import { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip, normalize, isPickText } from '../util.js';
 
 /* ============================================================
    HOME
