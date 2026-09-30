@@ -2471,15 +2471,13 @@ table.dt.h2h td.wk{padding:4px 4px}
 .card-hd:last-child{border-bottom:none;border-radius:var(--r-lg)}
 
 /* a league ID: the box, then a Test button -- or, once Sleeper has confirmed
-   it, a tick and the league's name */
-/* the slot after the box is one fixed width, so every box ends on the same line
-   whether it carries a Test button or a league name */
-.lid-in{display:grid;grid-template-columns:minmax(0,1fr) 150px;align-items:center;gap:8px}
+   it, a tick. The slot is one fixed width, so every box ends on the same line */
+.lid-in{display:grid;grid-template-columns:minmax(0,1fr) 52px;align-items:center;gap:8px}
 .lid-in input{min-width:0}
-.lid-in .btn{justify-self:start}
-.lid-ok{min-width:0;display:flex;align-items:center;gap:5px;
-  font-size:12px;font-weight:600;color:var(--mint);white-space:nowrap}
-.lid-ok span{overflow:hidden;text-overflow:ellipsis}
-.lid-ok .ic{width:15px;height:15px;flex:none;stroke-width:2.4}
-/* a phone: the whole 19-digit ID comes first; a long league name gives way */
-@media (max-width:620px){ .lid-in{grid-template-columns:minmax(0,1fr) 92px} }
+.lid-in .btn{justify-self:center}
+/* the tick sits where the Test button's middle would be */
+.lid-ok{display:flex;align-items:center;justify-content:center;color:var(--mint)}
+.lid-ok .ic{width:17px;height:17px;flex:none;stroke-width:2.6}
+/* Pull, with when it last ran beside it */
+.adm-pull{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+.adm-pull .s{font-size:11.5px}

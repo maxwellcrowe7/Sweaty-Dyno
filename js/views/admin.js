@@ -150,8 +150,8 @@ export function render(db) {
       <span class="chip ${Object.values(ids).some(Boolean) ? 'mint' : ''}">${Object.values(ids).filter(Boolean).length} linked</span></div>
     <div class="card-bd">
       ${/* An ID saves the moment you leave the box and is checked against Sleeper
-           there and then. One that checked out wears a tick and its league's
-           name; an empty or unchecked one keeps its Test button. */''}
+           there and then. One that checked out wears a tick (its league's name
+           on hover); an empty or unchecked one keeps its Test button. */''}
       ${db.seasons.map((s) => {
         const id = ids[String(s)] || '';
         const ok = id && L.sleeper.verified?.[String(s)]?.id === id ? L.sleeper.verified[String(s)] : null;
@@ -161,27 +161,16 @@ export function render(db) {
           <div class="lid-in">
             <input data-lid="${s}" value="${esc(id)}" placeholder="Not set yet"
               inputmode="numeric" style="flex:1">
-            ${ok ? `<span class="lid-ok" title="Checked against Sleeper">${icon('check')}<span>${esc(ok.name)}</span></span>`
+            ${ok ? `<span class="lid-ok" title="${esc(ok.name)} on Sleeper" aria-label="Linked: ${esc(ok.name)}">${icon('check')}</span>`
               : `<button class="btn sm" data-test="${s}">Test</button>`}
           </div>
         </div>`;
       }).join('')}
-      <div class="s dim" style="font-size:12px;margin:4px 0 14px;line-height:1.6">
-        One button, because it is all one league. <b>Pull</b> brings in weekly scores and matchups
-        (records, points against, everything the Stats tab counts), the final standings that drive
-        placement payouts and empire points once the playoffs are done, every trade and claim filed
-        by the season windows below, and each team's best possible lineup. It downloads a large
-        player file the first time, so run it on wifi.<br><br>
-        Open your league on sleeper.com &mdash; the ID is the long number in the URL
-        (<span class="dimmer">sleeper.com/leagues/<b style="color:var(--heat)">1124…</b>/team</span>).
-        Sleeper's read API is public, so nothing here needs a password.
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div class="adm-pull">
         <button class="btn primary" data-pull="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Pull ${S} from Sleeper</button>
-        <button class="btn danger" data-tx-clear="${S}">${icon('x')} Clear ${S} transactions</button>
+        ${st.lastSleeperSync ? `<span class="s dimmer">Last sync ${esc(st.lastSleeperSync)}</span>` : ''}
       </div>
-      <div data-syncout class="s dim" style="font-size:12px;margin-top:12px"></div>
-      ${st.lastSleeperSync ? `<div class="s dimmer" style="font-size:11.5px;margin-top:6px">Last sync ${esc(st.lastSleeperSync)}</div>` : ''}
+      <div data-syncout class="s dim" style="font-size:12px;margin-top:10px"></div>
     </div>
   </div>
 
@@ -456,33 +445,6 @@ export function mount(root, db) {
       });
     });
     toast('Season windows saved');
-  });
-
-  /* Start a season over: wipes its transactions and the conditions hanging off
-     them, so a pull can rebuild it from Sleeper alone. */
-  root.querySelector('[data-tx-clear]')?.addEventListener('click', (ev) => {
-    const S = Number(ev.currentTarget.dataset.txClear);
-    const { trades, waivers, conditional } = db.trades(S);
-    if (!trades.length && !waivers.length) return toast(`Nothing stored for ${S}`);
-    openModal({
-      title: `Clear ${S} transactions`,
-      confirm: 'Clear them',
-      danger: true,
-      body: `<p class="s">This deletes <b>${trades.length} trade${trades.length === 1 ? '' : 's'}</b>,
-        <b>${waivers.length} pickup${waivers.length === 1 ? '' : 's'}</b>${
-        conditional.length ? ` and <b>${conditional.length} condition${conditional.length === 1 ? '' : 's'}</b>` : ''}
-        from ${S}, hand-entered ones included.</p>
-        <p class="s dim">Pull ${S} again afterwards and Sleeper rebuilds it.</p>`,
-      onConfirm: async () => {
-        await db.update('trades', (t) => {
-          const mine = (x) => (x.date ? db.seasonOf(x.date) : x.season) === S;
-          t.trades = t.trades.filter((x) => !mine(x));
-          t.waivers = t.waivers.filter((x) => !mine(x));
-          t.conditions = (t.conditions || []).filter((c) => c.season !== S);
-        });
-        toast(`${S} transactions cleared`);
-      },
-    });
   });
 
   /* One errand, one roster map, one download of the player file. */
