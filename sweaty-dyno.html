@@ -2356,11 +2356,8 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
 .hm-side em{font-style:normal;color:var(--ink-3);font-size:11px}
 .hm-mv .t{min-height:20px}
-/* the label over each group of moves; the second one also draws the line
-   between the groups */
-.hm-grp{padding:9px 16px 5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;
-  color:var(--ink-3);border-bottom:1px solid var(--line-soft)}
-.rows + .hm-grp{border-top:1px solid var(--line)}
+/* pickups and trades: two cards, closer together than any two blocks */
+.hm-moves .card + .card{margin-top:6px}
 /* a pickup's cost sits on the right, centred on its two lines */
 .row.hm-pk{align-items:center}
 .hm-pk .hm-ic{align-self:flex-start}
@@ -5353,13 +5350,16 @@ function render(db) {
   const movesCard = `
   <div class="hm-moves">
     ${hd('Latest moves', 'trades', 'Transactions', 'swap')}
-    <div class="card"><div class="card-bd flush">
-      ${[['Pickups', pickups], ['Trades', deals]].filter(([, xs]) => xs.length).map(([k, xs]) => `
-        <div class="hm-grp">${k}</div>
-        <div class="rows">${xs.map(moveRow).join('')}</div>`).join('')
-        || '<div class="card-bd hm-sub">Nothing yet this season</div>'}
+    ${/* two cards a small step apart, not two labelled groups in one: the split
+         reads without headers costing the column their height */''}
+    ${pickups.length ? `<div class="card"><div class="card-bd flush">
+      <div class="rows">${pickups.map(moveRow).join('')}</div></div></div>` : ''}
+    ${deals.length || openCond ? `<div class="card"><div class="card-bd flush">
+      <div class="rows">${deals.map(moveRow).join('')}</div>
       ${openCond ? `<div class="hm-cond">${icon('lock')} ${openCond} open conditional trade${openCond === 1 ? '' : 's'}</div>` : ''}
-    </div></div>
+    </div></div>` : ''}
+    ${pickups.length || deals.length || openCond ? ''
+      : '<div class="card"><div class="card-bd hm-sub">Nothing yet this season</div></div>'}
   </div>`;
 
   /* ---- empire race ---- */

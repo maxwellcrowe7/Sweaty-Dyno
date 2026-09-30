@@ -161,13 +161,16 @@ export function render(db) {
   const movesCard = `
   <div class="hm-moves">
     ${hd('Latest moves', 'trades', 'Transactions', 'swap')}
-    <div class="card"><div class="card-bd flush">
-      ${[['Pickups', pickups], ['Trades', deals]].filter(([, xs]) => xs.length).map(([k, xs]) => `
-        <div class="hm-grp">${k}</div>
-        <div class="rows">${xs.map(moveRow).join('')}</div>`).join('')
-        || '<div class="card-bd hm-sub">Nothing yet this season</div>'}
+    ${/* two cards a small step apart, not two labelled groups in one: the split
+         reads without headers costing the column their height */''}
+    ${pickups.length ? `<div class="card"><div class="card-bd flush">
+      <div class="rows">${pickups.map(moveRow).join('')}</div></div></div>` : ''}
+    ${deals.length || openCond ? `<div class="card"><div class="card-bd flush">
+      <div class="rows">${deals.map(moveRow).join('')}</div>
       ${openCond ? `<div class="hm-cond">${icon('lock')} ${openCond} open conditional trade${openCond === 1 ? '' : 's'}</div>` : ''}
-    </div></div>
+    </div></div>` : ''}
+    ${pickups.length || deals.length || openCond ? ''
+      : '<div class="card"><div class="card-bd hm-sub">Nothing yet this season</div></div>'}
   </div>`;
 
   /* ---- empire race ---- */
