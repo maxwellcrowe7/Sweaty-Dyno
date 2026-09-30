@@ -23,38 +23,44 @@ export function render(db) {
   const cloudErr = db.cloudError;
   const user = db.auth?.user ?? null;
 
-  const signIn = `
-  ${cloud ? `
-  <div class="card">
-    <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>${admin ? 'Commissioner' : 'Commissioner sign-in'}</h3></div>
-    <div class="card-bd">
-      ${admin && !cloudErr && db.missingInCloud?.length ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+  // what only a signed-in commissioner is told: storage trouble, and the
+  // one-off publish of local data. With neither, the card is just its header.
+  const notes = !admin ? '' : `
+      ${!cloudErr && db.missingInCloud?.length ? `<div class="banner">${icon('alert')}
         <div><b>${db.missingInCloud.length} file${db.missingInCloud.length === 1 ? '' : 's'} not in the database yet.</b><br>
         <span class="dim">${esc(db.missingInCloud.join(', '))}</span><br><br>
-        Showing the built-in copy. Sign in and hit <b>Publish</b> to upload.</div></div>` : ''}
-      ${admin && cloudErr ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
+        Showing the built-in copy. Hit <b>Publish</b> to upload.</div></div>` : ''}
+      ${cloudErr ? `<div class="banner">${icon('alert')}
         <div><b>Not reading from Supabase yet.</b><br>
         <span style="font-family:ui-monospace,monospace;font-size:11.5px">${esc(cloudErr)}</span><br><br>
-        Showing the built-in data meanwhile. Sign in below and hit <b>Publish</b> to upload it.</div></div>` : ''}
-      ${admin ? `
-        <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Signed in as <b style="color:var(--ink)">${esc(user?.email ?? 'commissioner')}</b></div>
-        ${!live ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
-          ${icon('down')} Publish local data to Supabase</button>
-          <div data-pubout class="s dim" style="font-size:12px;margin-bottom:11px"></div>` : ''}
-        <button class="btn" data-signout>${icon('lock')} Sign out</button>
-      ` : `
-        <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Anyone can view the league without signing in.</div>
-        <form data-signin>
-          <div class="field"><label>Email</label>
-            <input name="email" type="email" autocomplete="username" required placeholder="you@example.com"></div>
-          <div class="field"><label>Password</label>
-            <input name="password" type="password" autocomplete="current-password" required></div>
-          <button class="btn primary" type="submit" style="width:100%">${icon('check')} Sign in</button>
-          <div data-autherr class="s" style="font-size:12.5px;margin-top:10px;color:var(--red)"></div>
-        </form>
-      `}
+        Showing the built-in data meanwhile. Hit <b>Publish</b> to upload it.</div></div>` : ''}
+      ${!live ? `<button class="btn primary" data-publish style="width:100%">
+        ${icon('down')} Publish local data to Supabase</button>
+        <div data-pubout class="s dim" style="font-size:12px"></div>` : ''}`.trim();
+
+  const signIn = `
+  ${cloud ? admin ? `
+  <div class="card">
+    ${/* who you are and the way out, on the header line itself */''}
+    <div class="card-hd">${icon('check')}
+      <div class="adm-id"><h3>Commissioner</h3>
+        <span class="adm-who"><span class="adm-pre">Signed in as </span><b>${esc(user?.email ?? 'commissioner')}</b></span></div>
+      <button class="btn sm" data-signout>${icon('lock')} Sign out</button></div>
+    ${notes ? `<div class="card-bd adm-notes">${notes}</div>` : ''}
+  </div>` : `
+  <div class="card">
+    <div class="card-hd">${icon('lock')}<h3>Commissioner sign-in</h3></div>
+    <div class="card-bd">
+      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
+        Anyone can view the league without signing in.</div>
+      <form data-signin>
+        <div class="field"><label>Email</label>
+          <input name="email" type="email" autocomplete="username" required placeholder="you@example.com"></div>
+        <div class="field"><label>Password</label>
+          <input name="password" type="password" autocomplete="current-password" required></div>
+        <button class="btn primary" type="submit" style="width:100%">${icon('check')} Sign in</button>
+        <div data-autherr class="s" style="font-size:12.5px;margin-top:10px;color:var(--red)"></div>
+      </form>
     </div>
   </div>` : `
   <div class="card">
@@ -78,15 +84,9 @@ export function render(db) {
   <div class="section-title">View as</div>
   <div class="card">
     <div class="card-hd">${icon('users')}<h3>Guest preview</h3><div class="spacer"></div>
-      <span class="chip ${db.asGuest ? 'heat' : 'mint'}">${db.asGuest ? 'Guest' : 'Commissioner'}</span></div>
-    <div class="card-bd">
-      <label class="toggle"><input type="checkbox" id="guestToggle" ${db.asGuest ? 'checked' : ''}>
-        <span class="tr"></span><span style="font-size:12.5px">See the app as the league sees it</span></label>
-      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-top:11px">
-        Hides every edit control without signing you out. Nothing is saved either way,
-        and a reload puts you back.
-      </div>
-    </div>
+      <label class="toggle"><input type="checkbox" id="guestToggle" aria-label="See the app as the league sees it">
+        <span class="tr"></span></label></div>
+    <div class="card-bd s dim adm-line">See the app as the league sees it</div>
   </div>` : ''}`;
 
   // Until you are signed in, Admin is the sign-in and nothing else: no issues
