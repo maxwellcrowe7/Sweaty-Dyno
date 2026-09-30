@@ -1,7 +1,7 @@
 // The guest preview: a commissioner can look at the app as the league sees it
-// without signing out. The invariant worth guarding is that the way OUT of the
-// preview is drawn from hasAdminRights, not isAdmin -- gate it on isAdmin and
-// the control hides itself the moment you use it.
+// without signing out. The invariant worth guarding is that there is always a
+// way OUT: the guest bar, drawn from asGuest on every page. Admin itself shows
+// what the league sees, so its switch into the preview goes while you are in it.
 const F=['league','managers','bank','minigames','drafts','trades','stats','players','rules'];
 const store={}; for(const f of F) store[f]=JSON.parse(readFile(`data/${f}.json`));
 globalThis.localStorage={getItem:()=>null,setItem(){},removeItem(){}};
@@ -43,9 +43,15 @@ print('\n— previewing as a guest —');
 db.setAsGuest(true);
 eq('rights kept, admin view off', [db.hasAdminRights, db.isAdmin, db.asGuest], [true,false,true]);
 eq('edit pencils gone', editable(), 0);
-eq('the way back is still rendered', ad.render(db).includes('guestToggle'), true);
-eq('and nothing else of Admin is', /Sleeper|Needs a look/.test(ad.render(db)), false);
-eq('and it shows as checked', /id="guestToggle" checked/.test(ad.render(db)), true);
+// Admin looks as it does to the league; the way back is the guest bar app.js
+// draws on every page -- keyed on asGuest, so the preview can never strand you
+eq('Admin shows the league\'s view: no switch, nothing else',
+   [ad.render(db).includes('guestToggle'), /Sleeper|Needs a look/.test(ad.render(db))], [false, false]);
+{
+  const app = readFile('js/app.js');
+  eq('the guest bar is the way back, drawn from asGuest',
+     [/if \(!db\.asGuest\)/.test(app), /data-exit-guest/.test(app), /setAsGuest\(false\)/.test(app)], [true, true, true]);
+}
 
 print('\n— back out —');
 db.setAsGuest(false);

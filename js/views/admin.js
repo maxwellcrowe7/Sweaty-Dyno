@@ -78,8 +78,8 @@ export function render(db) {
     </div>
   </div>`}`;
 
-  // The guest preview's own switch: the way back out, so it is offered to anyone
-  // with the rights, previewing or not (asking isAdmin would strand you).
+  // The switch into the guest preview. The way back out is the guest bar, which
+  // app.js draws on every page while previewing, so this only shows beforehand.
   const guestCard = `
   ${db.hasAdminRights ? `
   <div class="section-title">View as</div>
@@ -97,9 +97,8 @@ export function render(db) {
   </div>` : ''}`;
 
   // Until you are signed in, Admin is the sign-in and nothing else: no issues
-  // list, no data, no Sleeper controls. Previewing as a guest shows the same,
-  // plus the switch back.
-  if (!admin) return signIn + guestCard;
+  // list, no data, no Sleeper controls. Previewing as a guest shows exactly that.
+  if (!admin) return signIn;
 
   return `${signIn}
   ${guestCard}
