@@ -210,11 +210,14 @@ export function render(db) {
   <div class="section-title">Buy-ins</div>
   <div class="card"><div class="card-bd flush">
     <div class="bi-grid">
-      <span class="bi-k">Season</span><span class="bi-k">Buy-in</span><span class="bi-k">To the empire</span>
+      ${/* per team, then what that makes across the league, then the share of
+           it set aside -- so the empire figure reads as part of a whole */''}
+      <span class="bi-k">Season</span><span class="bi-k">Per team</span><span class="bi-k">Total</span><span class="bi-k"><span class="bi-long">To the </span>empire</span>
       ${db.seasons.map((y) => `
         <span class="bi-y">${y}${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}</span>
         <input class="bi-in" type="text" inputmode="decimal" data-buyin="${y}"
           value="${money(db.buyIn(y))}" aria-label="${y} buy-in per team">
+        <span class="bi-tot" title="${db.teams(y).length} teams">${money(db.buyIn(y) * db.teams(y).length)}</span>
         <input class="bi-in" type="text" inputmode="decimal" data-setaside="${y}"
           value="${money(Number(L.empireContribution[String(y)]) || 0)}" aria-label="${y} empire set-aside">`).join('')}
     </div>

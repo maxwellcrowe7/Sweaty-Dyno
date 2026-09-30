@@ -2484,11 +2484,20 @@ table.dt.h2h td.wk{padding:4px 4px}
 
 /* ---------- admin: buy-ins ---------- */
 /* one row a season: what it costs a team, and what of it goes to the empire */
-.bi-grid{display:grid;grid-template-columns:minmax(0,1fr) 120px 120px;align-items:center;gap:8px 12px;padding:12px 16px 14px}
+.bi-grid{display:grid;grid-template-columns:minmax(0,1fr) 110px 80px 110px;align-items:center;gap:8px 12px;padding:12px 16px 14px}
 .bi-k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--ink-3)}
 .bi-y{font-family:var(--f-display);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
 .bi-in{text-align:right;font-variant-numeric:tabular-nums;padding:7px 12px;font-size:14px}
-@media (max-width:620px){ .bi-grid{grid-template-columns:minmax(0,1fr) 88px 88px} }
+/* the league-wide figure: worked out, not typed, so plain text in line with the boxes */
+.bi-tot{text-align:right;font-family:var(--f-display);font-size:15px;font-weight:700;color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+.bi-grid .bi-k:nth-child(n+2){text-align:right}
+@media (max-width:620px){
+  .bi-grid{grid-template-columns:minmax(0,1fr) 64px 54px 64px;gap:8px 7px;padding:12px 12px 14px}
+  .bi-grid .bi-in{padding:7px 8px}
+  .bi-grid .bi-k{letter-spacing:.08em}
+  .bi-long{display:none}   /* 'Empire' alone, on one line */
+}
 /* the season going on now */
 .now-tag{font-size:8.5px;padding:1px 6px;letter-spacing:.12em}
 
