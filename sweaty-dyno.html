@@ -443,11 +443,12 @@ main{flex:1; padding:18px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) +
 /* One line per manager, no rules between them -- ten of them read as a block. */
 .race{display:flex;flex-direction:column}
 .race-row{display:flex;align-items:center;gap:12px;padding:4px 16px}
+/* the team tag and name, as on Home */
 .race-row .who{
-  flex:none;width:76px;font-size:13.5px;font-weight:600;color:var(--ink);
+  flex:none;width:128px;display:flex;font-size:13.5px;font-weight:600;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.race-row.out .who{color:var(--ink-3);font-weight:500}
+.race-row.out .who{color:var(--ink-3)} .race-row.out .who b{font-weight:500}
 .race-row .meter{flex:1;height:10px}
 .race-row .pts{
   flex:none;min-width:28px;text-align:right;font-variant-numeric:tabular-nums;
@@ -2362,9 +2363,10 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-cond .ic{width:14px;height:14px}
 
 /* empire */
-.hm-pot{display:flex;align-items:baseline;gap:10px;padding:14px 16px 6px}
+.hm-pot{display:flex;align-items:baseline;gap:10px;padding:14px 16px 12px}
 /* no rules between: the bars are the rhythm, as on the Empire page itself */
 .row.hm-er{padding:7px 16px;gap:12px;border-bottom:none}
+.hm-emp .rows{padding-bottom:8px}
 .hm-er .tname{width:96px;flex:none}
 .hm-pts{font-family:var(--f-display);font-size:15px;color:var(--violet);min-width:24px;text-align:right}
 .hm-crowns{flex:none;display:flex;gap:3px}
@@ -8681,7 +8683,7 @@ function render(db) {
   <div class="race">
     ${e.board.map((t) => `
       <div class="race-row${t.total ? '' : ' out'}">
-        <span class="who">${esc(t.manager)}</span>
+        <span class="who">${teamTag(t)}</span>
         <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
         <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
         ${/* every crown the pot demands: earned in gold, the rest a grey

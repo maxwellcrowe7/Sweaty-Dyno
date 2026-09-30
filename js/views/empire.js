@@ -57,7 +57,7 @@ export function render(db) {
   <div class="race">
     ${e.board.map((t) => `
       <div class="race-row${t.total ? '' : ' out'}">
-        <span class="who">${esc(t.manager)}</span>
+        <span class="who">${teamTag(t)}</span>
         <span class="meter violet"><i style="width:${(barPct(t) * 100).toFixed(1)}%"></i></span>
         <span class="pts${t.total ? '' : ' zero'}">${t.total}</span>
         ${/* every crown the pot demands: earned in gold, the rest a grey
