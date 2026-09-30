@@ -9177,7 +9177,7 @@ function render(db) {
     <div class="card-hd">${icon('sync')}
       <div class="adm-id"><h3>Seed &amp; repair</h3><span class="adm-who" data-diffline>Checking&hellip;</span></div>
       <button class="btn sm primary" data-seed hidden>${icon('down')} Add missing</button>
-      <button class="btn sm ghost" data-repair hidden>Repair&hellip;</button></div>
+      <button class="btn sm ghost" data-repair hidden>Repair</button></div>
   </div>
   <div data-pushout class="s dim" style="font-size:12px;margin:-6px 2px 0"></div>` : ''}
 
@@ -9368,12 +9368,18 @@ function mount(root, db) {
           title: 'Repair the database?',
           confirm: `Overwrite ${differs.length} file${differs.length === 1 ? '' : 's'}`,
           danger: true,
-          body: `<p style="margin:0 0 10px;font-size:13.5px;line-height:1.6">This replaces the database copy of
-              these files with the one the site ships:</p>
+          body: `<p style="margin:0 0 10px;font-size:13.5px;line-height:1.6">
+              <b>Nothing is wrong.</b> The league's data lives in two places: the database, which is the
+              live copy every edit in the app saves to, and a copy that ships with the site, a snapshot
+              from when it was last updated. As the season goes on the two drift apart &mdash; every buy-in
+              marked paid, minigame result and chop lands in the database only. That is how it is meant
+              to work.</p>
+            <p style="margin:0 0 10px;font-size:13.5px;line-height:1.6">Repair replaces the database copy of
+              these files with the site's snapshot:</p>
             <p style="margin:0 0 12px">${fileChips(differs)}</p>
             <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--red)">
-              Every edit made in the app since &mdash; buy-ins marked paid, minigame results, chops &mdash;
-              is lost from these files. Only for recovering from something broken.</p>
+              Anything edited in the app since that snapshot is lost from these files. Only use it if the
+              database has been broken and you want the snapshot back.</p>
             <p style="margin:8px 0 0;font-size:12px;color:var(--ink-3)">The previous version of each file is kept in the history table.</p>`,
           onConfirm: () => push(differs),
         }));
