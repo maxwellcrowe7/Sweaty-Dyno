@@ -9,6 +9,10 @@ const LEVEL = { warn: 'red', info: '', edit: 'heat' };
    not slam every other year shut. */
 const WIN_OPEN = new Set();
 
+/* League IDs already checked quietly this session, so a repaint (or an offline
+   Sleeper) does not set the same check off again and again. */
+const ID_TRIED = new Set();
+
 export function render(db) {
   const admin = db.isAdmin;
   const issues = db.issues();
@@ -145,15 +149,23 @@ export function render(db) {
     <div class="card-hd">${icon('sync')}<h3>League sync</h3><div class="spacer"></div>
       <span class="chip ${Object.values(ids).some(Boolean) ? 'mint' : ''}">${Object.values(ids).filter(Boolean).length} linked</span></div>
     <div class="card-bd">
-      ${db.seasons.map((s) => `
+      ${/* An ID saves the moment you leave the box and is checked against Sleeper
+           there and then. One that checked out wears a tick and its league's
+           name; an empty or unchecked one keeps its Test button. */''}
+      ${db.seasons.map((s) => {
+        const id = ids[String(s)] || '';
+        const ok = id && L.sleeper.verified?.[String(s)]?.id === id ? L.sleeper.verified[String(s)] : null;
+        return `
         <div class="field" style="margin-bottom:9px">
           <label>${s} league ID</label>
-          <div style="display:flex;gap:8px">
-            <input data-lid="${s}" value="${esc(ids[String(s)] || '')}" placeholder="e.g. 1124800000000000000"
+          <div class="lid-in">
+            <input data-lid="${s}" value="${esc(id)}" placeholder="Not set yet"
               inputmode="numeric" style="flex:1">
-            <button class="btn sm" data-test="${s}">Test</button>
+            ${ok ? `<span class="lid-ok" title="Checked against Sleeper">${icon('check')}<span>${esc(ok.name)}</span></span>`
+              : `<button class="btn sm" data-test="${s}">Test</button>`}
           </div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
       <div class="s dim" style="font-size:12px;margin:4px 0 14px;line-height:1.6">
         One button, because it is all one league. <b>Pull</b> brings in weekly scores and matchups
         (records, points against, everything the Stats tab counts), the final standings that drive
@@ -165,7 +177,6 @@ export function render(db) {
         Sleeper's read API is public, so nothing here needs a password.
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" data-save-ids>${icon('check')} Save IDs</button>
         <button class="btn primary" data-pull="${S}" ${ids[String(S)] ? '' : 'disabled'}>${icon('down')} Pull ${S} from Sleeper</button>
         <button class="btn danger" data-tx-clear="${S}">${icon('x')} Clear ${S} transactions</button>
       </div>
@@ -376,25 +387,43 @@ export function mount(root, db) {
   });
 
   /* ---- sleeper ---- */
-  root.querySelector('[data-save-ids]')?.addEventListener('click', async () => {
-    await db.update('league', (L) => {
-      root.querySelectorAll('[data-lid]').forEach((i) => { L.sleeper.leagueIds[i.dataset.lid] = i.value.trim(); });
-    });
-    toast('League IDs saved');
-  });
-
-  root.querySelectorAll('[data-test]').forEach((b) => b.addEventListener('click', async () => {
-    const id = root.querySelector(`[data-lid="${b.dataset.test}"]`).value.trim();
-    if (!id) return toast('Enter an ID first');
-    b.disabled = true; say('Checking…');
+  /* League IDs: saved on leaving the box, then checked. A check that passes is
+     remembered against that exact ID, so the tick survives a reload and goes
+     the moment the ID changes. A league from another season does not pass. */
+  const check = async (season, id, { quiet = false } = {}) => {
+    if (!quiet) say('Checking…');
     try {
       const lg = await SL.league(id);
-      const us = await SL.users(id);
-      say(`Connected: "${lg.name}" · ${lg.season} · ${lg.total_rosters} teams · ${us.length} users`);
-      toast('Sleeper reachable');
-    } catch (e) { say(`Could not reach that league — ${e.message}`); toast('Connection failed'); }
-    b.disabled = false;
+      if (String(lg.season) !== String(season)) throw new Error(`that league is the ${lg.season} season`);
+      await db.update('league', (L) => {
+        L.sleeper.verified = { ...(L.sleeper.verified || {}), [season]: { id, name: lg.name } };
+      });
+      if (!quiet) toast(`${season} linked: ${lg.name}`);
+    } catch (e) {
+      if (!quiet) { say(`Could not use that ${season} ID — ${e.message}`); toast('Connection failed'); }
+    }
+  };
+  root.querySelectorAll('[data-lid]').forEach((i) => i.addEventListener('change', async () => {
+    const season = i.dataset.lid, id = i.value.trim();
+    await db.update('league', (L) => {
+      L.sleeper.leagueIds[season] = id;
+      if (L.sleeper.verified?.[season] && L.sleeper.verified[season].id !== id) delete L.sleeper.verified[season];
+    });
+    if (id) check(season, id);
   }));
+  root.querySelectorAll('[data-test]').forEach((b) => b.addEventListener('click', () => {
+    const id = root.querySelector(`[data-lid="${b.dataset.test}"]`).value.trim();
+    if (!id) return toast('Enter an ID first');
+    b.disabled = true;
+    check(b.dataset.test, id).finally(() => { b.disabled = false; });
+  }));
+  // saved IDs that were never checked get checked quietly, once, on opening
+  if (db.isAdmin) for (const [season, id] of Object.entries(db.league.sleeper.leagueIds || {})) {
+    if (id && db.league.sleeper.verified?.[season]?.id !== id && !ID_TRIED.has(`${season}:${id}`)) {
+      ID_TRIED.add(`${season}:${id}`);
+      check(season, id, { quiet: true });
+    }
+  }
 
   /* toggled in place rather than through a repaint: a half-typed date in another
      year would not survive one */
