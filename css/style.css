@@ -2458,6 +2458,8 @@ table.dt.h2h td.wk{padding:4px 4px}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .adm-who b{color:var(--ink);font-weight:600}
 .card-hd .btn.sm{flex:none}
+/* .btn's display out-ranks the browser's [hidden]; the diff reveals these */
+.card-hd .btn[hidden]{display:none}
 .adm-notes{display:flex;flex-direction:column;gap:10px}
 /* a phone: the address drops under the title, so it has the room */
 @media (max-width:620px){

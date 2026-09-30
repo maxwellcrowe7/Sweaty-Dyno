@@ -126,24 +126,19 @@ export function render(db) {
     </div>
   </div>`}
 
+  ${/* The database is the live copy; the site ships a copy of its own. This
+       compares them and stays one quiet line: a missing file can be added
+       (safe -- the database has nothing there to lose), and a repair that
+       overwrites live edits is on purpose only, behind a warning. */''}
   ${cloud ? `
   <div class="section-title">Database</div>
   <div class="card">
-    <div class="card-hd">${icon('sync')}<h3>Seed &amp; repair</h3><div class="spacer"></div>
-      <span class="chip" data-diffchip>checking&hellip;</span></div>
-    <div class="card-bd">
-      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:12px">
-        The database is the source of truth &mdash; your edits already save there and nothing needs pushing.
-        This is for seeding and repair: the site also ships a copy of the data, and pushing overwrites the
-        database with it. Use it to fill an empty database, or to recover after something went wrong.
-      </div>
-      <div data-diff class="s dim" style="font-size:12.5px;margin-bottom:12px">Comparing&hellip;</div>
-      ${admin
-        ? `<button class="btn primary" data-push disabled style="width:100%">${icon('down')} Push to database</button>`
-        : `<div class="banner">${icon('lock')}<div>Sign in above to push changes.</div></div>`}
-      <div data-pushout class="s dim" style="font-size:12px;margin-top:10px"></div>
-    </div>
-  </div>` : ''}
+    <div class="card-hd">${icon('sync')}
+      <div class="adm-id"><h3>Seed &amp; repair</h3><span class="adm-who" data-diffline>Checking&hellip;</span></div>
+      <button class="btn sm primary" data-seed hidden>${icon('down')} Add missing</button>
+      <button class="btn sm ghost" data-repair hidden>Repair&hellip;</button></div>
+  </div>
+  <div data-pushout class="s dim" style="font-size:12px;margin:-6px 2px 0"></div>` : ''}
 
   <div class="section-title">Sleeper</div>
   <div class="card">
@@ -302,53 +297,49 @@ export function mount(root, db) {
   });
 
   /* Database sync: compare, then push what differs. */
-  const chip = root.querySelector('[data-diffchip]');
-  const diffBox = root.querySelector('[data-diff]');
-  const pushBtn = root.querySelector('[data-push]');
-  let pending = [];
-  if (chip) {
+  const line = root.querySelector('[data-diffline]');
+  const seedBtn = root.querySelector('[data-seed]');
+  const repairBtn = root.querySelector('[data-repair]');
+  const pushOut = root.querySelector('[data-pushout]');
+  const fileChips = (keys) => keys.map((k) => `<span class="chip heat" style="margin:0 4px 4px 0">${esc(k)}.json</span>`).join('');
+  const push = async (keys) => {
+    try {
+      await db.publishToCloud(keys, (f) => { pushOut.textContent = `Pushing ${f}.json…`; });
+      pushOut.innerHTML = `<span style="color:var(--mint)">Updated ${keys.length} file${keys.length === 1 ? '' : 's'}. The league sees it on their next refresh.</span>`;
+      toast('Database updated');
+    } catch (ex) {
+      pushOut.innerHTML = `<span style="color:var(--red)">${esc(ex.message)}</span>`;
+    }
+  };
+  if (line) {
     db.cloudDiff().then((diff) => {
-      pending = diff.map((d) => d.key);
-      if (!diff.length) {
-        chip.className = 'chip mint'; chip.textContent = 'in sync';
-        diffBox.innerHTML = 'The database matches the site copy. Nothing to push.';
-        return;
+      const missing = diff.filter((d) => d.missing).map((d) => d.key);
+      const differs = diff.filter((d) => !d.missing).map((d) => d.key);
+      line.textContent = missing.length
+        ? `${missing.length} file${missing.length === 1 ? '' : 's'} not in the database yet`
+        : differs.length ? 'Live edits since the site copy' : 'Matches the site copy';
+      if (missing.length && seedBtn) {
+        seedBtn.hidden = false;
+        seedBtn.addEventListener('click', () => { seedBtn.disabled = true; push(missing); });
       }
-      chip.className = 'chip heat';
-      chip.textContent = `${diff.length} to push`;
-      diffBox.innerHTML = diff.map((d) =>
-        `<span class="chip heat" style="margin:0 4px 4px 0">${esc(d.key)}.json${d.missing ? ' · new' : ''}</span>`).join('')
-        + '<div style="margin-top:8px">Pushing replaces the database copy of these files.</div>';
-      if (pushBtn) pushBtn.disabled = false;
-    }).catch((e) => {
-      chip.className = 'chip red'; chip.textContent = 'check failed';
-      diffBox.textContent = e.message;
-    });
+      if (differs.length && repairBtn) {
+        repairBtn.hidden = false;
+        repairBtn.addEventListener('click', () => openModal({
+          title: 'Repair the database?',
+          confirm: `Overwrite ${differs.length} file${differs.length === 1 ? '' : 's'}`,
+          danger: true,
+          body: `<p style="margin:0 0 10px;font-size:13.5px;line-height:1.6">This replaces the database copy of
+              these files with the one the site ships:</p>
+            <p style="margin:0 0 12px">${fileChips(differs)}</p>
+            <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--red)">
+              Every edit made in the app since &mdash; buy-ins marked paid, minigame results, chops &mdash;
+              is lost from these files. Only for recovering from something broken.</p>
+            <p style="margin:8px 0 0;font-size:12px;color:var(--ink-3)">The previous version of each file is kept in the history table.</p>`,
+          onConfirm: () => push(differs),
+        }));
+      }
+    }).catch((e) => { line.textContent = `Check failed: ${e.message}`; });
   }
-
-  pushBtn?.addEventListener('click', () => {
-    const out = root.querySelector('[data-pushout]');
-    openModal({
-      title: 'Push to database?',
-      confirm: `Push ${pending.length} file${pending.length === 1 ? '' : 's'}`,
-      body: `<p style="margin:0 0 10px;font-size:13.5px;line-height:1.6">This replaces the database copy of:</p>
-        <p style="margin:0 0 12px">${pending.map((k) => `<span class="chip heat" style="margin:0 4px 4px 0">${esc(k)}.json</span>`).join('')}</p>
-        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--ink-3)">
-          Any edit made in the app that is not also in the site copy will be overwritten.
-          The previous version of each file is kept in the history table.</p>`,
-      onConfirm: async () => {
-        pushBtn.disabled = true;
-        try {
-          await db.publishToCloud(pending, (f) => { out.textContent = `Pushing ${f}.json…`; });
-          out.innerHTML = `<span style="color:var(--mint)">Pushed ${pending.length} file(s). The league sees it on their next refresh.</span>`;
-          toast('Database updated');
-        } catch (ex) {
-          out.innerHTML = `<span style="color:var(--red)">${esc(ex.message)}</span>`;
-          pushBtn.disabled = false;
-        }
-      },
-    });
-  });
 
   root.querySelector('[data-publish]')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
