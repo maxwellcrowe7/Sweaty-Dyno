@@ -141,7 +141,7 @@ export function render(db) {
   <div class="card">
     <div class="card-hd">${icon('down')}
       <div class="adm-id"><h3>Backup</h3><span class="adm-who">Download the live data</span></div>
-      <button class="btn sm adm-act" data-export-every>${icon('down')} Download all</button></div>
+      <button class="btn sm adm-act" data-export-every>${icon('down')} Download</button></div>
   </div>` : `
   <div class="card">
     <div class="card-hd">${icon('down')}<h3>${live ? 'Export a snapshot' : 'Export'}</h3><div class="spacer"></div>
