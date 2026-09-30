@@ -9047,8 +9047,7 @@ function render(db) {
   const signIn = `
   ${cloud ? `
   <div class="card">
-    <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>Commissioner</h3><div class="spacer"></div>
-      <span class="chip ${admin ? 'mint' : ''}">${admin ? 'Signed in' : 'Viewing'}</span></div>
+    <div class="card-hd">${icon(admin ? 'check' : 'lock')}<h3>${admin ? 'Commissioner' : 'Commissioner sign-in'}</h3></div>
     <div class="card-bd">
       ${admin && !cloudErr && db.missingInCloud?.length ? `<div class="banner" style="margin-bottom:14px">${icon('alert')}
         <div><b>${db.missingInCloud.length} file${db.missingInCloud.length === 1 ? '' : 's'} not in the database yet.</b><br>
@@ -9060,20 +9059,14 @@ function render(db) {
         Showing the built-in data meanwhile. Sign in below and hit <b>Publish</b> to upload it.</div></div>` : ''}
       ${admin ? `
         <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Signed in as <b style="color:var(--ink)">${esc(user?.email ?? 'commissioner')}</b>.
-          ${live ? `Edit controls are on across the app and every change saves to the database immediately &mdash;
-                    the league sees it on their next refresh.`
-                 : `Editing is still local until the data is published.`}
-        </div>
+          Signed in as <b style="color:var(--ink)">${esc(user?.email ?? 'commissioner')}</b></div>
         ${!live ? `<button class="btn primary" data-publish style="width:100%;margin-bottom:9px">
           ${icon('down')} Publish local data to Supabase</button>
           <div data-pubout class="s dim" style="font-size:12px;margin-bottom:11px"></div>` : ''}
         <button class="btn" data-signout>${icon('lock')} Sign out</button>
       ` : `
         <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-          Anyone can read the league without signing in. Sign in to edit &mdash; the database itself
-          refuses writes from anyone who hasn't.
-        </div>
+          Anyone can view the league without signing in.</div>
         <form data-signin>
           <div class="field"><label>Email</label>
             <input name="email" type="email" autocomplete="username" required placeholder="you@example.com"></div>
