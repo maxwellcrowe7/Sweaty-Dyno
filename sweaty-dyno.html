@@ -9380,7 +9380,7 @@ function mount(root, db) {
             <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--red)">
               Anything edited in the app since that snapshot is lost from these files. Only use it if the
               database has been broken and you want the snapshot back.</p>
-            <p style="margin:8px 0 0;font-size:12px;color:var(--ink-3)">The previous version of each file is kept in the history table.</p>`,
+            <p style="margin:8px 0 0;font-size:12px;color:var(--ink-3)">Supabase keeps every earlier version, so this can be undone from the database if needed.</p>`,
           onConfirm: () => push(differs),
         }));
       }
