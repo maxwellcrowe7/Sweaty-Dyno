@@ -131,12 +131,46 @@ export function render(db) {
     </div>
   </div>`}
 
-  ${/* The database is the live copy; the site ships a copy of its own. This
-       compares them and stays one quiet line: a missing file can be added
-       (safe -- the database has nothing there to lose), and a repair that
-       overwrites live edits is on purpose only, behind a warning. */''}
+  ${/* Data in and out of the database, together. Backup takes what is live out
+       to your computer; Seed & repair puts the site's own copy in. Live, the
+       backup is one row and one button -- everything already saves, so there is
+       nothing to pick. Not live, edits wait in this browser, and the full export
+       below is how they get saved. */''}
+  <div class="section-title">Data</div>
+  ${live ? `
+  <div class="card">
+    <div class="card-hd">${icon('down')}
+      <div class="adm-id"><h3>Backup</h3><span class="adm-who">Download the live data</span></div>
+      <button class="btn sm" data-export-every>${icon('down')} Download all</button></div>
+  </div>` : `
+  <div class="card">
+    <div class="card-hd">${icon('down')}<h3>${live ? 'Export a snapshot' : 'Export'}</h3><div class="spacer"></div>
+      ${live ? '<span class="chip mint">saved live</span>'
+             : dirty.length ? `<span class="chip heat">${dirty.length} changed</span>` : '<span class="chip">in sync</span>'}</div>
+    <div class="card-bd">
+      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
+        ${live
+          ? `Changes save to Supabase as you make them &mdash; there is nothing to commit. Downloading is
+             still worth doing occasionally as an offline backup, and the files drop straight back into
+             <code>/data</code> if you ever want to run without a backend.`
+          : `Download the changed files and drop them into <code>/data</code> in the repo, then commit.
+             That's what turns your local edits into what everyone else sees.`}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" data-export-all ${dirty.length ? '' : 'disabled'}>
+          ${icon('down')} Download changed (${dirty.length})</button>
+        <button class="btn" data-export-every>${icon('down')} Download all 8</button>
+        <button class="btn" data-copy>${icon('pencil')} Copy changed to clipboard</button>
+      </div>
+      ${dirty.length ? `<div style="margin-top:14px">
+        <div class="s dimmer" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:7px">Changed</div>
+        ${dirty.map((k) => `<span class="chip heat" style="margin:0 4px 4px 0">${esc(k)}.json</span>`).join('')}
+        <div style="margin-top:12px"><button class="btn sm ghost" data-revert style="color:var(--red)">Discard local changes</button></div>
+      </div>` : ''}
+    </div>
+  </div>
+  `}
   ${cloud ? `
-  <div class="section-title">Database</div>
   <div class="card">
     <div class="card-hd">${icon('sync')}
       <div class="adm-id"><h3>Seed &amp; repair</h3><span class="adm-who" data-diffline>Checking&hellip;</span></div>
@@ -172,34 +206,6 @@ export function render(db) {
         ${st.lastSleeperSync ? `<span class="s dimmer">Last sync ${esc(st.lastSleeperSync)}</span>` : ''}
       </div>
       <div data-syncout class="s dim" style="font-size:12px;margin-top:10px"></div>
-    </div>
-  </div>
-
-  <div class="section-title">${live ? 'Backup' : 'Save your work'}</div>
-  <div class="card">
-    <div class="card-hd">${icon('down')}<h3>${live ? 'Export a snapshot' : 'Export'}</h3><div class="spacer"></div>
-      ${live ? '<span class="chip mint">saved live</span>'
-             : dirty.length ? `<span class="chip heat">${dirty.length} changed</span>` : '<span class="chip">in sync</span>'}</div>
-    <div class="card-bd">
-      <div class="s dim" style="font-size:12.5px;line-height:1.6;margin-bottom:13px">
-        ${live
-          ? `Changes save to Supabase as you make them &mdash; there is nothing to commit. Downloading is
-             still worth doing occasionally as an offline backup, and the files drop straight back into
-             <code>/data</code> if you ever want to run without a backend.`
-          : `Download the changed files and drop them into <code>/data</code> in the repo, then commit.
-             That's what turns your local edits into what everyone else sees.`}
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn primary" data-export-all ${dirty.length ? '' : 'disabled'}>
-          ${icon('down')} Download changed (${dirty.length})</button>
-        <button class="btn" data-export-every>${icon('down')} Download all 8</button>
-        <button class="btn" data-copy>${icon('pencil')} Copy changed to clipboard</button>
-      </div>
-      ${dirty.length ? `<div style="margin-top:14px">
-        <div class="s dimmer" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:7px">Changed</div>
-        ${dirty.map((k) => `<span class="chip heat" style="margin:0 4px 4px 0">${esc(k)}.json</span>`).join('')}
-        <div style="margin-top:12px"><button class="btn sm ghost" data-revert style="color:var(--red)">Discard local changes</button></div>
-      </div>` : ''}
     </div>
   </div>
 
