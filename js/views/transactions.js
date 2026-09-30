@@ -4,10 +4,10 @@ import { esc, icon, teamTag, fmtDate, posChip, seasonPicker, openModal, toast, m
    adds by hand is the condition on a conditional trade, because Sleeper has no
    idea such a thing exists — see the pencil on a trade header. */
 
-const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
+export const isPickText = (s) => /\b(1st|2nd|3rd|4th|5th|\d\.\d\d|pick)\b/i.test(s) || /^\d{4}\s/.test(s);
 
 /** An asset is either a plain string (hand-entered) or a pulled object. */
-const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
+export const normalize = (a) => (typeof a === 'string' ? { label: a } : a);
 
 const assetRow = (db, raw, showFrom, locked = false) => {
   const a = normalize(raw);
@@ -85,7 +85,7 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, marks = null
     <span class="arrow">gets</span></div>`;
 
   return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
-      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}">
+      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}" data-anchor="trade-${esc(t.id)}">
     <div class="trade-hd">
       <div class="trade-meta">
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
@@ -178,6 +178,10 @@ const mgrPicker = (db, S, sel) => `<div class="season-pick">
 </div>`;
 
 export function render(db, state = {}) {
+  // arriving at one trade: show it, whatever tab and filters were left set
+  if (state.arrive && state.params?.at?.startsWith('trade-')) {
+    Object.assign(state, { tradeTab: 'trades', tradeKind: 'all', tradeMgr: null });
+  }
   const tab = state.tradeTab === 'waivers' ? 'waivers' : 'trades';
   const kind = state.tradeKind || 'all';
   // ?mgr=6 arrives from the Managers tab; the picker takes over from there

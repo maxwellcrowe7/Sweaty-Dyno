@@ -2336,7 +2336,13 @@ table.dt.h2h td.wk{padding:4px 4px}
 /* direct child only: the position chip inside is a span too, and a
    descendant rule would repaint it in the row's grey */
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
-.hm-side em{font-style:normal;color:var(--ink-3);font-size:11px}
+/* the rest of a side, counted: a quiet pill, never a second line */
+.hm-side em{font-style:normal;flex:none;color:var(--ink-2);font-size:10.5px;font-weight:700;
+  padding:1px 6px;border-radius:99px;background:var(--surface-3)}
+/* a trade row is a link through to the whole deal */
+.hm-tr{cursor:pointer}
+.hm-tr:hover{background:var(--surface-2)}
+.hm-tr:focus-visible{outline:2px solid var(--heat);outline-offset:-2px}
 .hm-mv .t{min-height:20px}
 /* pickups and trades: two cards, closer together than any two blocks */
 .hm-moves .card + .card{margin-top:6px}

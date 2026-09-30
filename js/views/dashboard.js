@@ -1,4 +1,5 @@
 import { money, esc, icon, teamTag, fmtDate, pts, gauge, posChip } from '../util.js';
+import { normalize, isPickText } from './transactions.js';
 
 /* ============================================================
    HOME
@@ -135,17 +136,27 @@ export function render(db) {
   const { trades, waivers } = db.trades(S);
   const newest = (xs) => [...xs].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 3);
   const pickups = newest(waivers.map((w) => ({ kind: 'move', date: w.date, w })));
-  const deals = newest(trades.map((t) => ({ kind: 'trade', date: t.date, t })));
+  // a trade that settles a condition rides inside the deal it completes, as on
+  // the Transactions page, rather than showing up as a trade of its own
+  const settlers = new Set(db.conditions(null).map((c) => c.settledBy).filter(Boolean));
+  const deals = newest(trades.filter((t) => !settlers.has(t.id)).map((t) => ({ kind: 'trade', date: t.date, t })));
   const openCond = db.conditions().filter((c) => ['open', 'due'].includes(db.conditionStatus(c).key)).length;
   /* One shape for every move: an icon on the first line, the move itself, and
      the date on the right. A trade lists each side with what it received, so
      the card says who got what rather than a pile of assets under two names. */
-  const asset = (r) => `${r.player ? posChip(db.position(r.label)) + ' ' : ''}${esc(r.label)}`;
+  /* A trade on Home is one line per side, however many assets it moved: the
+     side's headline asset -- a player before a pick, a pick before FAAB -- and
+     a count of the rest. The whole deal is one tap away on Transactions. */
+  const kindOf = (a) => a.pick || isPickText(a.label) ? 1 : a.faab != null || /\bFAAB\b/i.test(a.label) ? 2 : 0;
+  const lead = (rs) => rs.map(normalize).map((a, i) => ({ a, i, k: kindOf(a) }))
+    .sort((x, y) => x.k - y.k || x.i - y.i)[0];
+  const asset = ({ a, k }) => `${k === 0 ? posChip(db.position(a.label)) + ' ' : ''}${esc(a.label)}`;
   const moveRow = (m) => {
     if (m.kind === 'trade') {
-      return `<div class="row hm-mv"><span class="hm-ic">${icon('swap')}</span>
+      return `<div class="row hm-mv hm-tr" role="link" tabindex="0" data-go="trades" data-at="trade-${esc(m.t.id)}">
+        <span class="hm-ic">${icon('swap')}</span>
         <div class="grow hm-sides">${m.t.sides.map((sd) => `<div class="hm-side">
-          <b>${nm(sd.team)}</b><span>${sd.receives.slice(0, 1).map(asset).join('')}${
+          <b>${nm(sd.team)}</b><span>${sd.receives.length ? asset(lead(sd.receives)) : ''}${
             sd.receives.length > 1 ? ` <em>+${sd.receives.length - 1}</em>` : ''}</span></div>`).join('')}</div>
         <span class="hm-date">${fmtDate(m.date)}</span></div>`;
     }
@@ -240,4 +251,8 @@ export const mount = (root, db, go) => {
       if (db.season !== S) db.season = S;
       go(b.dataset.go, { at: b.dataset.at, tab: b.dataset.tab });
     }));
+  // a trade row is a link to that trade; Enter follows it like one
+  root.querySelectorAll('.hm-tr').forEach((r) => r.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') r.click();
+  }));
 };
