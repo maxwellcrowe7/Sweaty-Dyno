@@ -9557,6 +9557,7 @@ const VIEWS = {
   // `primary` is the phone's bottom bar, the three that change every week
   home:      { label: 'Home',      icon: 'home',   mod: Dashboard, primary: true },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats,     primary: true },
+  // `short` is its name everywhere on a phone: the bar and the More sheet
   trades:    { label: 'Transactions', short: 'Moves', icon: 'swap', mod: Trades, primary: true },
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
   bank:      { label: 'Bank',      icon: 'wallet', mod: Bank },
@@ -9627,10 +9628,10 @@ function shell() {
   <div class="sheet" id="sheet" role="dialog" aria-label="More sections">
     <div class="grab"></div>
     ${/* every tab, the bar's four first: the rest -- the ones you open More
-         for -- land at the bottom, nearest the thumb */''}
+         for -- land at the bottom, nearest the thumb. Phone names, as on the bar */''}
     ${[...PRIMARY, ...Object.keys(VIEWS).filter((k) => !VIEWS[k].primary)]
       .map((k) => `<button class="sheet-item" data-view="${k}"
-        ${state.view === k ? 'aria-current="page"' : ''}>${icon(VIEWS[k].icon)}${VIEWS[k].label}</button>`).join('')}
+        ${state.view === k ? 'aria-current="page"' : ''}>${icon(VIEWS[k].icon)}${VIEWS[k].short || VIEWS[k].label}</button>`).join('')}
   </div>`;
 
   document.body.addEventListener('click', (e) => {
