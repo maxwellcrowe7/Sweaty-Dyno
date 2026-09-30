@@ -2501,9 +2501,3 @@ table.dt.h2h td.wk{padding:4px 4px}
 /* the season going on now */
 .now-tag{font-size:8.5px;padding:1px 6px;letter-spacing:.12em}
 
-/* ---------- admin: season windows, folded until needed ---------- */
-.win-card-hd{width:100%;text-align:left;cursor:pointer}
-.win-card-hd .acc-caret{margin-left:auto;flex:none;color:var(--ink-3);transition:transform .18s}
-.win-card.open .win-card-hd .acc-caret{transform:rotate(90deg)}
-.win-card:not(.open) > .card-bd{display:none}
-.win-card:not(.open) > .win-card-hd{border-bottom:none;border-radius:var(--r-lg)}

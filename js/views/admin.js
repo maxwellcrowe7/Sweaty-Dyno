@@ -8,8 +8,6 @@ const LEVEL = { warn: 'red', info: '', edit: 'heat' };
 /* Which season windows are open. Survives a repaint, so saving one year does
    not slam every other year shut. */
 const WIN_OPEN = new Set();
-/* Whether the Season windows card itself is unfolded. */
-const WIN_CARD = { open: false };
 
 /* League IDs already checked quietly this session, so a repaint (or an offline
    Sleeper) does not set the same check off again and again. */
@@ -223,30 +221,10 @@ export function render(db) {
     </div>
   </div></div>
 
-  <div class="section-title">League settings</div>
-  <div class="card"><div class="card-bd">
-    <div class="fgrid">
-      <div class="field"><label>Empire threshold (pts)</label>
-        <input data-cfg="empireThreshold" type="number" value="${L.empireThreshold}"></div>
-      ${/* a role, marked on the Managers tab -- not a permission, which the
-           database decides */''}
-      <div class="field"><label>Commissioner</label>
-        <select data-cfg="commissioner">
-          <option value="">&mdash;</option>
-          ${db.get('managers').managers.slice()
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((m) => `<option value="${esc(m.id)}" ${
-              m.id === L.commissioner ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}
-        </select></div>
-    </div>
-  </div></div>
-
   ${/* the dates each season's transactions are filed by -- and so which season
-       is current. Folded away until you come to move one. */''}
-  <div class="card win-card${WIN_CARD.open ? ' open' : ''}">
-    <button class="card-hd win-card-hd" data-wincard aria-expanded="${WIN_CARD.open}">${icon('clock')}
-      <h3>Season windows</h3>
-      ${icon('chev', 'acc-caret')}</button>
+       is current. Its own section, so it folds away like the others. */''}
+  <div class="section-title">Season windows</div>
+  <div class="card">
     <div class="card-bd">
       <div class="s dim" style="font-size:12px;margin-bottom:10px;line-height:1.6">
         Transactions count toward the season whose window they fall in. Today's window sets the current season.
@@ -447,13 +425,8 @@ export function mount(root, db) {
     out.value = d.toISOString().slice(0, 10);
   }));
 
-  /* windows, buy-ins and settings save the moment a value is committed --
-     no Save buttons, as with the league IDs */
-  root.querySelector('[data-wincard]')?.addEventListener('click', (e) => {
-    WIN_CARD.open = !WIN_CARD.open;
-    e.currentTarget.closest('.win-card').classList.toggle('open', WIN_CARD.open);
-    e.currentTarget.setAttribute('aria-expanded', String(WIN_CARD.open));
-  });
+  /* windows and buy-ins save the moment a value is committed -- no Save
+     buttons, as with the league IDs */
   root.querySelectorAll('[data-win]').forEach((i) => i.addEventListener('change', async () => {
     if (!i.value) return;
     const y = i.dataset.win;
@@ -517,13 +490,4 @@ export function mount(root, db) {
       onConfirm: async () => { await db.revert(); toast('Back to the committed data'); },
     });
   });
-
-  /* ---- settings ---- */
-  root.querySelectorAll('[data-cfg]').forEach((i) => i.addEventListener('change', async () => {
-    const k = i.dataset.cfg;
-    await db.update('league', (L) => {
-      L[k] = k === 'commissioner' ? (i.value || null) : (+i.value || 0);
-    });
-    toast('Saved');
-  }));
 }
