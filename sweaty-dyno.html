@@ -2356,8 +2356,11 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
 .hm-side em{font-style:normal;color:var(--ink-3);font-size:11px}
 .hm-mv .t{min-height:20px}
-.hm-bid{font-weight:700;color:var(--mint)}
-.hm-bid.fa{color:var(--ink-3)}
+/* a pickup's cost sits on the right, centred on its two lines */
+.row.hm-pk{align-items:center}
+.hm-pk .hm-ic{align-self:flex-start}
+.hm-cost{flex:none}
+.hm-bid{font-family:var(--f-display);font-size:17px;font-weight:700;color:var(--mint)}
 .hm-cond{display:flex;align-items:center;gap:7px;padding:9px 16px;border-top:1px solid var(--line-soft);
   font-size:12px;color:var(--violet)}
 .hm-cond .ic{width:14px;height:14px}
@@ -5332,12 +5335,14 @@ function render(db) {
             sd.receives.length > 1 ? ` <em>+${sd.receives.length - 1}</em>` : ''}</span></div>`).join('')}</div>
         <span class="hm-date">${fmtDate(m.date)}</span></div>`;
     }
+    // as on the Transactions page: who and when under the player, what it
+    // cost on the right
     const w = m.w;
-    return `<div class="row hm-mv"><span class="hm-ic plus">+</span>
+    return `<div class="row hm-mv hm-pk"><span class="hm-ic plus">+</span>
       <div class="grow"><div class="t">${posChip(db.position(w.player))} ${esc(w.player)}</div>
-        <div class="s">${nm(w.team)} &middot; <span class="hm-bid${w.type === 'free_agent' ? ' fa' : ''}">${
-          w.type === 'free_agent' ? 'FA' : money(w.faab || 0)}</span>${w.dropped ? ` &middot; drops ${esc(w.dropped)}` : ''}</div></div>
-      <span class="hm-date">${fmtDate(m.date)}</span></div>`;
+        <div class="s">${nm(w.team)} &ndash; ${fmtDate(m.date)}</div></div>
+      ${w.type === 'free_agent' ? '<span class="chip ghost hm-cost">FA</span>'
+        : `<b class="hm-cost hm-bid">${money(w.faab || 0)}</b>`}</div>`;
   };
   const movesCard = `
   <div class="hm-moves">

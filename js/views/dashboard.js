@@ -148,12 +148,14 @@ export function render(db) {
             sd.receives.length > 1 ? ` <em>+${sd.receives.length - 1}</em>` : ''}</span></div>`).join('')}</div>
         <span class="hm-date">${fmtDate(m.date)}</span></div>`;
     }
+    // as on the Transactions page: who and when under the player, what it
+    // cost on the right
     const w = m.w;
-    return `<div class="row hm-mv"><span class="hm-ic plus">+</span>
+    return `<div class="row hm-mv hm-pk"><span class="hm-ic plus">+</span>
       <div class="grow"><div class="t">${posChip(db.position(w.player))} ${esc(w.player)}</div>
-        <div class="s">${nm(w.team)} &middot; <span class="hm-bid${w.type === 'free_agent' ? ' fa' : ''}">${
-          w.type === 'free_agent' ? 'FA' : money(w.faab || 0)}</span>${w.dropped ? ` &middot; drops ${esc(w.dropped)}` : ''}</div></div>
-      <span class="hm-date">${fmtDate(m.date)}</span></div>`;
+        <div class="s">${nm(w.team)} &ndash; ${fmtDate(m.date)}</div></div>
+      ${w.type === 'free_agent' ? '<span class="chip ghost hm-cost">FA</span>'
+        : `<b class="hm-cost hm-bid">${money(w.faab || 0)}</b>`}</div>`;
   };
   const movesCard = `
   <div class="hm-moves">

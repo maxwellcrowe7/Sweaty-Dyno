@@ -2338,8 +2338,11 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-side > span{color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
 .hm-side em{font-style:normal;color:var(--ink-3);font-size:11px}
 .hm-mv .t{min-height:20px}
-.hm-bid{font-weight:700;color:var(--mint)}
-.hm-bid.fa{color:var(--ink-3)}
+/* a pickup's cost sits on the right, centred on its two lines */
+.row.hm-pk{align-items:center}
+.hm-pk .hm-ic{align-self:flex-start}
+.hm-cost{flex:none}
+.hm-bid{font-family:var(--f-display);font-size:17px;font-weight:700;color:var(--mint)}
 .hm-cond{display:flex;align-items:center;gap:7px;padding:9px 16px;border-top:1px solid var(--line-soft);
   font-size:12px;color:var(--violet)}
 .hm-cond .ic{width:14px;height:14px}
