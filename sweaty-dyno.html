@@ -762,10 +762,10 @@ table.dt th.sticky{width:1%}
   .in-side .chip{font-size:9px;padding:2px 6px;letter-spacing:.06em}
   .in-side .d{font-size:12px}
   .trade-side,.trade.nested .trade-side{padding:0 0 11px}
-  .trade-side .who{min-height:41px;padding:9px 13px 8px;margin-bottom:9px;
-    background:var(--surface-2);border-bottom:1px solid var(--line-soft)}
+  /* no header tint: on a one-for-one deal it striped the card like a zebra */
+  .trade-side .who{min-height:38px;padding:9px 13px 2px;margin-bottom:5px}
   .trade.nested .trade-side{padding-bottom:8px}
-  .trade.nested .trade-side .who{min-height:36px;padding:7px 11px 6px;margin-bottom:7px;background:transparent}
+  .trade.nested .trade-side .who{min-height:34px;padding:7px 11px 2px;margin-bottom:4px}
 }
 /* a second, quieter row of pills for filtering inside a tab */
 /* A waiver line: manager, who came in, who went out, what it cost. In and out
