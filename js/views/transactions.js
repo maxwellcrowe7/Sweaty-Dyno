@@ -77,27 +77,29 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, marks = null
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
   const banded = t.sides.length > 2;
-  const who = (s) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
-    <span class="arrow">gets</span></div>`;
-
-  return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
-      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}" data-anchor="trade-${esc(t.id)}">
-    <div class="trade-hd">
-      <div class="trade-meta">
+  /* The status, the pencil and the date. On a desktop they ride the header
+     row; on a phone each side is its own header row, so they ride the top
+     one instead -- written twice, and CSS keeps one, as with the names. */
+  const meta = `
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
-        <div style="flex:1"></div>
         ${/* the same affordance either way, but it says which one it is */''}
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
           aria-label="${cond ? 'Edit the condition' : 'Make this conditional'}"
           title="${cond ? 'Edit the condition' : 'Make this conditional'}">${icon('pencil')}</button>` : ''}
         ${/* a trade that has not happened has no date, and the colour already
              says it is a promise rather than a record */''}
-        ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}
-      </div>
-      ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
+        ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}`;
+  const who = (s, i = -1) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
+    <span class="arrow">gets</span>${i === 0 ? `<div class="trade-meta in-side">${meta}</div>` : ''}</div>`;
+
+  return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
+      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}" data-anchor="trade-${esc(t.id)}">
+    <div class="trade-hd">
+      <div class="trade-meta">${meta}</div>
+      ${banded ? '' : `<div class="trade-names">${t.sides.map((s) => who(s)).join('')}</div>`}
     </div>
-    <div class="trade-body">${t.sides.map((s) =>
-      side(db, s, showFrom, banded, who, marks)).join('')}</div>
+    <div class="trade-body">${t.sides.map((s, i) =>
+      side(db, s, showFrom, banded, (x) => who(x, i), marks)).join('')}</div>
     ${cond ? `<div class="cond">
       <p class="cond-line"><span class="lbl">Condition</span>${esc(cond.text)}</p>
       ${/* a resolved condition freezes nothing: the chips go with it */''}
@@ -233,12 +235,11 @@ export function render(db, state = {}) {
   const bare = (what) => `<div class="card"><div class="card-bd lock-none">
     ${icon(tab === 'trades' ? 'swap' : 'inbox')} No ${what}${esc(who)}</div></div>`;
   const group = (p) => (tab === 'trades'
-    ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
+    ? `<div class="section-title">${p.title}</div>
        ${p.rows.length
          ? p.rows.map((t) => tradeCard(db, facing(t), condFor(t), breaks)).join('')
          : bare('trades')}`
-    : `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span>
-         <span class="sub-n">${money(spent(p.key))} spent</span></div>
+    : `<div class="section-title">${p.title}</div>
        ${p.rows.length
          ? `<div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`
          : bare('pickups')}`);
@@ -246,7 +247,7 @@ export function render(db, state = {}) {
   const list = phases.map(group).join('');
 
   return `
-  <div class="view-hd"><h2>Transactions</h2>
+  <div class="view-hd mv-hd"><h2>Moves</h2>
     ${/* the picker shows the filter that is actually in force, however it got
          there -- a link from Managers arrives as ?mgr= and used to filter the
          list while the control still read All */''}
@@ -255,7 +256,7 @@ export function render(db, state = {}) {
   ${/* the sub-filter shares the tabs' line, a rule's width away: near enough to
        read as attached to them, separate enough not to be mistaken for more of
        them */''}
-  <div class="pill-bar">
+  <div class="pill-bar mv-bar">
     <div class="pills">
       ${/* the counts live in the summary below, said once and split by phase */''}
       <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades</button>
@@ -306,7 +307,7 @@ export function render(db, state = {}) {
          and each row carries only what differs -- the asset and who holds it.
          The arrow jumps to the trade, which is the question this list is
          usually being asked. */''}
-    <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
+    <div class="section-title">Locked assets</div>
     ${!locked.length ? `<div class="card"><div class="card-bd lock-none">
       ${icon('lock')} Nothing is locked right now</div></div>`
     : [...new Map(locked.map((l) => [l.condition.id, l.condition])).values()].map((c) => {

@@ -218,7 +218,7 @@ export function render(db) {
            it set aside -- so the empire figure reads as part of a whole */''}
       <span class="bi-k">Season</span><span class="bi-k">Per team</span><span class="bi-k">Total</span><span class="bi-k"><span class="bi-long">To the </span>empire</span>
       ${db.seasons.map((y) => `
-        <span class="bi-y">${y}${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}</span>
+        <span class="bi-y">${y}${y === cur ? '<i class="now-dot" title="Current season" aria-label="Current season"></i>' : ''}</span>
         <input class="bi-in" type="text" inputmode="decimal" data-buyin="${y}"
           value="${money(db.buyIn(y))}" aria-label="${y} buy-in per team">
         <span class="bi-tot" title="${db.teams(y).length} teams">${money(db.buyIn(y) * db.teams(y).length)}</span>
@@ -233,7 +233,7 @@ export function render(db) {
   <div class="card">
     <div class="card-bd">
       <div class="s dim" style="font-size:12px;margin-bottom:10px;line-height:1.6">
-        Transactions count toward the season whose window they fall in. Today's window sets the current season.
+        Moves count toward the season whose window they fall in. Today's window sets the current season.
       </div>
       ${/* one year at a time: six seasons of four dates is a wall of boxes, and
            you only ever come here to move one boundary. */''}
@@ -242,7 +242,7 @@ export function render(db) {
           <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
             ${icon('chev', 'acc-caret')}
             <span class="win-y">${y}</span>
-            ${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}
+            ${y === cur ? '<i class="now-dot" title="Current season" aria-label="Current season"></i>' : ''}
             <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
           </button>
           <div class="win-bd">

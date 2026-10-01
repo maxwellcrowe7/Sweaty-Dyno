@@ -29,7 +29,7 @@ export function render(db) {
     <div><b>Team numbers are provisional.</b> Confirm the mapping in <code>tools/remap_teams.py</code>
     and re-run it — the whole app follows.</div></div>` : ''}
 
-  <div class="section-title">Franchises<span class="sub-n dim">${teams.length}</span></div>
+  <div class="section-title">Franchises</div>
   <div class="fr-list">
     ${teams.map((t) => {
       /* A title belongs to the franchise -- empire points ride with the team,
@@ -70,9 +70,8 @@ export function render(db) {
             aria-label="Hand this franchise over" title="Hand this franchise over">${
             icon('user')}</button>` : ''}
           ${/* named and marked for the tab they land on */''}
-          <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
+          <button data-go-trades="${t.number}">${icon('swap')}Moves</button>
           <button data-go-drafts="${t.number}">${icon('board')}Drafts</button>
-          <button data-go-stats="${t.number}">${icon('chart')}Stats</button>
         </div>
         ${past.length ? `<div class="fr-hist">${past.map((o) => {
           const m = db.managerById(o.managerId);
@@ -191,6 +190,4 @@ export function mount(root, db, go) {
     go('trades', { mgr: b.dataset.goTrades })));
   root.querySelectorAll('[data-go-drafts]').forEach((b) => b.addEventListener('click', () =>
     go('drafts', { team: b.dataset.goDrafts })));
-  root.querySelectorAll('[data-go-stats]').forEach((b) => b.addEventListener('click', () =>
-    go('stats', { team: b.dataset.goStats })));
 }

@@ -176,7 +176,7 @@ export function render(db) {
   };
   const movesCard = `
   <div class="hm-moves">
-    ${hd('Latest moves', 'trades', 'Transactions', 'swap')}
+    ${hd('Latest moves', 'trades', 'Moves', 'swap')}
     ${/* two cards a small step apart, not two labelled groups in one: the split
          reads without headers costing the column their height */''}
     ${pickups.length ? `<div class="card"><div class="card-bd flush">

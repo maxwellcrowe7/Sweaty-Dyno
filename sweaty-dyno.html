@@ -14,7 +14,7 @@
 <link rel="manifest" href="site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 /* ============================================================
    SWEATY DYNO — visual system
@@ -612,6 +612,10 @@ table.dt th.sticky{width:1%}
 .board-grid{
   display:grid;gap:6px;padding:0 14px 4px;
   grid-template-columns:repeat(var(--cols),minmax(78px,1fr));
+  /* at least as wide as its narrowest columns: otherwise the tracks overflow
+     the grid's own box, its right padding stays behind at the card's edge, and
+     scrolled to the end the last column sits hard against the border */
+  min-width:calc(var(--cols) * 78px + (var(--cols) - 1) * 6px + 28px);
 }
 /* the board is the whole card -- no rule under the header, nothing under the grid */
 .draft-card .card-hd{border-bottom:none}
@@ -719,7 +723,7 @@ table.dt th.sticky{width:1%}
 }
 /* one name per column, mirroring the body grid so each sits over its own haul */
 .trade-names{display:none;flex:1;grid-template-columns:1fr;gap:1px}
-.trade-hd .d{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+.trade-meta .d{font-family:var(--f-display);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
 .trade-body{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line-soft)}
 .trade-side{background:var(--surface);padding:11px 0}
 /* "gets" is a third the size of the name beside it. At 13.5px the name's line
@@ -744,6 +748,25 @@ table.dt th.sticky{width:1%}
 /* who an asset came from, which only a 3+ team deal needs spelling out */
 .trade-side li .from{font-size:11px;color:var(--ink-3);white-space:nowrap}
 .trade.is-cond{border-color:color-mix(in oklab,var(--violet) 45%,var(--line))}
+/* Below the two-column width each side is its own header row -- the manager
+   over his haul -- and the status, pencil and date ride the top one, so the
+   card spends no row on them alone. */
+.trade-meta.in-side{display:none}
+@media (max-width:899px){
+  .trade-hd{display:none}
+  .trade-meta.in-side{display:flex;position:static;transform:none;margin-left:auto;align-self:center;
+    gap:7px;white-space:nowrap}
+  /* a status, a name and a date share the line: the name keeps its width,
+     and the chip and date come down a step to make room */
+  .trade-side .who .tname{flex:none}
+  .in-side .chip{font-size:9px;padding:2px 6px;letter-spacing:.06em}
+  .in-side .d{font-size:12px}
+  .trade-side,.trade.nested .trade-side{padding:0 0 11px}
+  .trade-side .who{min-height:41px;padding:9px 13px 8px;margin-bottom:9px;
+    background:var(--surface-2);border-bottom:1px solid var(--line-soft)}
+  .trade.nested .trade-side{padding-bottom:8px}
+  .trade.nested .trade-side .who{min-height:36px;padding:7px 11px 6px;margin-bottom:7px;background:transparent}
+}
 /* a second, quieter row of pills for filtering inside a tab */
 /* A waiver line: manager, who came in, who went out, what it cost. In and out
    are the same size and shape so the drop is read, not skimmed past. */
@@ -798,9 +821,6 @@ table.dt th.sticky{width:1%}
   .wv-val{grid-column:5;justify-self:center;margin-right:6px}
 }
 
-/* the spend against that budget, said next to the heading it belongs to */
-.section-title .sub-n{margin-left:9px;color:var(--mint);letter-spacing:.04em}
-.section-title .sub-n.dim{color:var(--ink-3)}
 /* season and manager narrow the same page, so they travel together */
 .hd-picks{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-left:auto}
 /* a season's dates, grouped so the year is said once and shown one at a time */
@@ -857,6 +877,25 @@ table.dt th.sticky{width:1%}
   .sum-row.hd span{letter-spacing:.06em}
   /* wrapped onto its own line, the rule above it means nothing */
   .pill-sep{display:none}
+}
+/* Moves on a phone: the title and both pickers on one line, and the sub-filter
+   on the tabs' line, a step smaller, the rule kept between them */
+@media (max-width:620px){
+  .mv-hd{flex-wrap:nowrap}
+  .mv-hd .hd-picks{flex-wrap:nowrap;gap:8px;min-width:0}
+  .mv-hd .hd-picks .season-pick{gap:6px}
+  /* "2025" says what it is; "All" needs its label more */
+  .mv-hd .hd-picks .season-pick:last-child > span{display:none}
+  .mv-bar{flex-wrap:nowrap;gap:9px}
+  .mv-bar .pill-sep{display:block}
+  .mv-bar > .pills:first-child{flex:none}
+  .mv-bar .pills button{padding:7px 11px}
+  .mv-bar .pills.sub{min-width:0;gap:4px}
+  .mv-bar .pills.sub button{font-size:11px;padding:4px 8px}
+  /* one label width for every row, the header's empty one included -- sized
+     per row, "Trades" sat its counts further left than "Conditional" did, and
+     the header's blank label let the column names slide over both */
+  .sum-row{grid-template-columns:74px repeat(3,minmax(0,1fr))}
 }
 .cond{padding:10px 13px 11px;background:rgba(156,140,250,.06);border-top:1px solid var(--line-soft);font-size:12.5px;line-height:1.5}
 /* the label sits inline with the text it introduces rather than above it */
@@ -1956,7 +1995,16 @@ table.dt tbody tr.total.sub td{background:var(--surface);font-weight:500;border-
 
 @media (max-width:420px){
   .mg-bd{padding-left:14px}
-  .mg-win{max-width:88px}
+  /* seven tracks make six gaps, so the gap is where the name's room comes
+     from: "National Tight End Day" and "League Favorite Manager" fit whole
+     beside a winner and a prize */
+  .mg-hd{column-gap:5px;padding:9px 11px}
+  .mg-title{font-size:13.5px}
+  .mg-win{max-width:76px;font-size:12px;margin-left:3px}
+  .mg-prize{min-width:30px;font-size:14px}
+  .mg-wk{min-width:36px;padding:2px 4px}
+  .mg-hd > .acc-caret{width:15px;height:15px}
+  .mg-nochev{width:15px}
   /* no room for it alongside a winner and a prize — it is in the detail anyway */
   .mg-sum{display:none}
   .mg-places .pl{min-width:52px}
@@ -2117,7 +2165,11 @@ table.dt.seeds .back{color:var(--ink-3);font-variant-numeric:tabular-nums}
 table.dt.seeds tr.in .seed{color:var(--ink-2)}
 /* the line across the table IS the cut -- brighter than the row rules, and the
    only thing on the page drawn in the accent */
-table.dt.seeds tr.cut td{border-bottom:2px solid var(--heat)}
+/* A shadow, not a border: in a collapsed table Safari paints the frozen cells'
+   backgrounds over the row's border, which left a gap in the line under the
+   name on a phone. A shadow belongs to its cell and rides with it. */
+table.dt.seeds tr.cut td{border-bottom:none;box-shadow:inset 0 -2px 0 var(--heat)}
+table.dt.seeds tr.cut td.sticky.t{box-shadow:1px 0 0 var(--line),inset 0 -2px 0 var(--heat)}
 /* A missed season is drawn with a recessed background and quieter ink, never
    with opacity: these cells are the frozen columns, and a translucent cell
    shows the rest of the table sliding along underneath it. */
@@ -2201,13 +2253,14 @@ table.dt.seeds tr.out td.sticky.t b{color:var(--ink-2)}
 }
 
 /* ---------- stats: results grid ---------- */
-/* Won in green, lost in grey: half the grid is losses, so losses have to be
-   the quiet state, and red across fifty cells would shout. */
+/* Won in green, lost in red, a tie in grey -- both colours muted a step
+   toward the ink, since together they cover the whole grid and at full
+   strength fifty cells would shout. The week's top score is a real 800. */
 table.dt.res td.wk{padding:4px 4px}
 .res-cell{padding:6px 8px;border-radius:6px;font:inherit;font-variant-numeric:tabular-nums;
-  color:var(--ink);background:none;cursor:pointer;width:100%;text-align:right}
-.res-cell.won{color:var(--mint)}
-.res-cell.lost{color:var(--ink-3)}
+  color:var(--ink-3);background:none;cursor:pointer;width:100%;text-align:right}
+.res-cell.won{color:color-mix(in srgb,var(--mint) 78%,var(--ink-2))}
+.res-cell.lost{color:color-mix(in srgb,var(--red) 74%,var(--ink-2))}
 .res-cell.top{font-weight:800}
 .res-cell:hover,.res-cell.on{background:var(--surface-3)}
 
@@ -2335,7 +2388,7 @@ table.dt.h2h td.wk{padding:4px 4px}
 .hm-rec{font-family:var(--f-display);font-size:15px;font-weight:700;margin-left:auto;padding-left:6px}
 .hm-rc.out .hm-nm,.hm-rc.out .hm-rec{color:var(--ink-3)}
 .hm-back{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;margin-left:auto}
-.hm-back + .hm-rec{margin-left:0}
+.hm-back + .hm-rec{margin-left:0;padding-left:16px}
 .hm-seed .seed-tag{margin-left:0;font-size:8.5px;padding:1px 4px}
 
 /* minigame */
@@ -2457,11 +2510,10 @@ table.dt.h2h td.wk{padding:4px 4px}
 /* a long name gives way before its week does */
 .hm-pool b{font-weight:inherit;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .hm-pool i{flex:none}
-/* a phone-width card: tighter chips, and each column as wide as its own names
-   -- Matt and Sam lend room to Damon and Tanner -- so five fit a row whole */
+/* a phone-width card: tighter chips, still an even grid as on the desktop */
 .hm-guil{container-type:inline-size}
 @container (max-width:440px){
-  .hm-pool{gap:4px;padding:10px 10px 12px;grid-template-columns:repeat(var(--cols,5),auto)}
+  .hm-pool{gap:4px;padding:10px 10px 12px}
   .hm-pool span{padding:2px 3px;font-size:10.5px;letter-spacing:-.01em}
   .hm-pool i{margin-left:3px}
 }
@@ -2518,8 +2570,9 @@ table.dt.h2h td.wk{padding:4px 4px}
   .bi-grid .bi-k{letter-spacing:.08em}
   .bi-long{display:none}   /* 'Empire' alone, on one line */
 }
-/* the season going on now */
-.now-tag{font-size:8.5px;padding:1px 6px;letter-spacing:.12em}
+/* the current season: a green dot is all the marking it needs */
+.now-dot{display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;
+  vertical-align:middle;background:var(--mint);box-shadow:0 0 6px rgba(61,220,151,.55)}
 
 
 </style>
@@ -3074,14 +3127,20 @@ const gauge = (segments, label = '') => {
       ${Object.entries(GAUGE_INK).map(([k, [a, b]]) =>
         `<linearGradient id="g-${k}" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stop-color="${a}"/><stop offset="100%" stop-color="${b}"/>
-        </linearGradient>`).join('')}
+        </linearGradient>
+        ${/* an SVG filter, not the CSS drop-shadow() the attribute also accepts:
+             iOS Safari ignores a CSS filter on an SVG child, so the phone lost
+             the glow the desktop had */''}
+        <filter id="gl-${k}" filterUnits="userSpaceOnUse" x="-20" y="-20" width="240" height="240">
+          <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="${GAUGE_INK[k][2]}"/>
+        </filter>`).join('')}
     </defs>
     <path d="${arc(100, 100, 78, A0, A0 + SPAN)}" stroke="#303B4A" stroke-width="13" fill="none" stroke-linecap="round"/>
     ${drawn.map((s) => {
       const glow = GAUGE_INK[s.key]?.[2];
       return `<path d="${arc(100, 100, 78, s.from, s.from + s.span)}"
         stroke="url(#g-${s.key})" stroke-width="13" fill="none" stroke-linecap="round"${
-        glow ? ` filter="drop-shadow(0 0 6px ${glow})"` : ''}/>`;
+        glow ? ` filter="url(#gl-${s.key})"` : ''}/>`;
     }).join('')}
     ${Array.from({ length: 11 }, (_, i) => {
       const a = A0 + (SPAN / 10) * i;
@@ -5503,7 +5562,7 @@ function render(db) {
   };
   const movesCard = `
   <div class="hm-moves">
-    ${hd('Latest moves', 'trades', 'Transactions', 'swap')}
+    ${hd('Latest moves', 'trades', 'Moves', 'swap')}
     ${/* two cards a small step apart, not two labelled groups in one: the split
          reads without headers costing the column their height */''}
     ${pickups.length ? `<div class="card"><div class="card-bd flush">
@@ -6519,7 +6578,7 @@ function mount(root, db) {
       confirm: 'Save',
       body: `
         <div class="field"><label>Minigame</label>
-          <input name="name" value="${esc(g.name || '')}" placeholder="e.g. Closest to the Number"></div>
+          <input name="name" maxlength="24" value="${esc(g.name || '')}" placeholder="e.g. Closest to the Number"></div>
         ${summaryField(g.summary, 'e.g. Highest scoring manager off the bat')}
         <div class="field"><label>Rules / notes</label>
           <textarea name="rules" placeholder="How it's won${
@@ -6835,27 +6894,29 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, marks = null
   // deals are not, so every asset says who it came from.
   const showFrom = t.sides.length > 2;
   const banded = t.sides.length > 2;
-  const who = (s) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
-    <span class="arrow">gets</span></div>`;
-
-  return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
-      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}" data-anchor="trade-${esc(t.id)}">
-    <div class="trade-hd">
-      <div class="trade-meta">
+  /* The status, the pencil and the date. On a desktop they ride the header
+     row; on a phone each side is its own header row, so they ride the top
+     one instead -- written twice, and CSS keeps one, as with the names. */
+  const meta = `
         ${st ? `<span class="chip ${st.chip}">${st.label}</span>` : ''}
-        <div style="flex:1"></div>
         ${/* the same affordance either way, but it says which one it is */''}
         ${db.isAdmin && !nested ? `<button class="edit-pencil" data-cond-edit="${esc(t.id)}"
           aria-label="${cond ? 'Edit the condition' : 'Make this conditional'}"
           title="${cond ? 'Edit the condition' : 'Make this conditional'}">${icon('pencil')}</button>` : ''}
         ${/* a trade that has not happened has no date, and the colour already
              says it is a promise rather than a record */''}
-        ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}
-      </div>
-      ${banded ? '' : `<div class="trade-names">${t.sides.map(who).join('')}</div>`}
+        ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}`;
+  const who = (s, i = -1) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
+    <span class="arrow">gets</span>${i === 0 ? `<div class="trade-meta in-side">${meta}</div>` : ''}</div>`;
+
+  return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
+      nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}" data-anchor="trade-${esc(t.id)}">
+    <div class="trade-hd">
+      <div class="trade-meta">${meta}</div>
+      ${banded ? '' : `<div class="trade-names">${t.sides.map((s) => who(s)).join('')}</div>`}
     </div>
-    <div class="trade-body">${t.sides.map((s) =>
-      side(db, s, showFrom, banded, who, marks)).join('')}</div>
+    <div class="trade-body">${t.sides.map((s, i) =>
+      side(db, s, showFrom, banded, (x) => who(x, i), marks)).join('')}</div>
     ${cond ? `<div class="cond">
       <p class="cond-line"><span class="lbl">Condition</span>${esc(cond.text)}</p>
       ${/* a resolved condition freezes nothing: the chips go with it */''}
@@ -6990,12 +7051,11 @@ function render(db, state = {}) {
   const bare = (what) => `<div class="card"><div class="card-bd lock-none">
     ${icon(tab === 'trades' ? 'swap' : 'inbox')} No ${what}${esc(who)}</div></div>`;
   const group = (p) => (tab === 'trades'
-    ? `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span></div>
+    ? `<div class="section-title">${p.title}</div>
        ${p.rows.length
          ? p.rows.map((t) => tradeCard(db, facing(t), condFor(t), breaks)).join('')
          : bare('trades')}`
-    : `<div class="section-title">${p.title}<span class="sub-n dim">${p.rows.length}</span>
-         <span class="sub-n">${money(spent(p.key))} spent</span></div>
+    : `<div class="section-title">${p.title}</div>
        ${p.rows.length
          ? `<div class="wv-list">${p.rows.map((w) => moveRow(db, w)).join('')}</div>`
          : bare('pickups')}`);
@@ -7003,7 +7063,7 @@ function render(db, state = {}) {
   const list = phases.map(group).join('');
 
   return `
-  <div class="view-hd"><h2>Transactions</h2>
+  <div class="view-hd mv-hd"><h2>Moves</h2>
     ${/* the picker shows the filter that is actually in force, however it got
          there -- a link from Managers arrives as ?mgr= and used to filter the
          list while the control still read All */''}
@@ -7012,7 +7072,7 @@ function render(db, state = {}) {
   ${/* the sub-filter shares the tabs' line, a rule's width away: near enough to
        read as attached to them, separate enough not to be mistaken for more of
        them */''}
-  <div class="pill-bar">
+  <div class="pill-bar mv-bar">
     <div class="pills">
       ${/* the counts live in the summary below, said once and split by phase */''}
       <button data-tab="trades" aria-pressed="${tab === 'trades'}">Trades</button>
@@ -7063,7 +7123,7 @@ function render(db, state = {}) {
          and each row carries only what differs -- the asset and who holds it.
          The arrow jumps to the trade, which is the question this list is
          usually being asked. */''}
-    <div class="section-title">Locked assets<span class="sub-n dim">${locked.length}</span></div>
+    <div class="section-title">Locked assets</div>
     ${!locked.length ? `<div class="card"><div class="card-bd lock-none">
       ${icon('lock')} Nothing is locked right now</div></div>`
     : [...new Map(locked.map((l) => [l.condition.id, l.condition])).values()].map((c) => {
@@ -7378,8 +7438,10 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   /* Axis labels are drawn in viewBox units, and a phone shrinks the whole
      drawing to a little over half size -- 10 units came out near 5.5px. So the
      phone drawing gets bigger labels and a deeper bottom margin to hold them. */
-  const FS = wide ? 10 : 16;
-  const PB = wide ? PAD.b : 32;
+  const FS = wide ? 10 : 19;
+  const PB = wide ? PAD.b : 36;
+  // a wider gutter on a phone, so the bigger y figures stay inside the drawing
+  const PL = wide ? PAD.l : 54;
   /* Both: one manager against his own best lineup. The league's lines go --
      the question is no longer how he compares with everyone else -- and the
      scale is fitted to his two lines alone, so the gap between them reads. */
@@ -7390,7 +7452,7 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   if (!vals.length) return '';
   const lo = Math.floor(Math.min(...vals) / 20) * 20 - 10;
   const hi = Math.ceil(Math.max(...vals) / 20) * 20 + 10;
-  const x = (w) => PAD.l + ((w - weeks[0]) / Math.max(1, weeks.at(-1) - weeks[0])) * (W - PAD.l - PAD.r);
+  const x = (w) => PL + ((w - weeks[0]) / Math.max(1, weeks.at(-1) - weeks[0])) * (W - PL - PAD.r);
   const y = (v) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PB);
   const path = (r, k = key) => weeks.filter((w) => r[k][w] != null)
     .map((w, i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(r[k][w]).toFixed(1)}`).join(' ');
@@ -7403,21 +7465,27 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
     return `${top.join(' ')} ${bot.join(' ')} Z`;
   };
 
+  /* A phone has the room for fewer, bigger figures: three or four gridlines at a
+     round step rather than five at whatever the range divides into. */
   const ticks = [];
-  for (let i = 0; i <= 4; i++) ticks.push(lo + ((hi - lo) / 4) * i);
+  if (wide) for (let i = 0; i <= 4; i++) ticks.push(lo + ((hi - lo) / 4) * i);
+  else {
+    const step = [20, 25, 40, 50, 100, 200].find((v) => (hi - lo) / v <= 4) || 500;
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
+  }
   const f = rows.find((r) => r.number === focus);
 
   return `
   <div style="position:relative">
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;touch-action:pan-y"
          role="img" aria-label="Weekly points by week; ${esc(f?.manager ?? '')} highlighted"
-         data-chart data-w="${W}" data-lo="${lo}" data-hi="${hi}" data-wide="${wide ? 1 : 0}">
+         data-chart data-w="${W}" data-pl="${PL}" data-lo="${lo}" data-hi="${hi}" data-wide="${wide ? 1 : 0}">
       ${ticks.map((t) => `
-        <line x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"
+        <line x1="${PL}" x2="${W - PAD.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"
               stroke="#28323F" stroke-width="1"/>
-        <text x="${PAD.l - 8}" y="${(y(t) + FS * 0.35).toFixed(1)}" text-anchor="end"
+        <text x="${PL - 8}" y="${(y(t) + FS * 0.35).toFixed(1)}" text-anchor="end"
               fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${Math.round(t)}</text>`).join('')}
-      ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - 8}" text-anchor="middle"
+      ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - (wide ? 8 : 9)}" text-anchor="middle"
               fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${w}</text>`).join('')}
       ${both ? '' : rows.filter((r) => r.number !== focus).map((r) =>
         `<path class="ln" data-line="${r.number}" d="${path(r)}" fill="none" stroke="#3A4657"
@@ -7477,20 +7545,24 @@ function lineupBars(st, key) {
   if (!rows.length) return '';
   const [, , get, dir, fmt] = LU.find(([k]) => k === key) || LU[0];
   rows.sort((a, b) => (dir === 'asc' ? get(a) - get(b) : get(b) - get(a)));
-  const lo = luFloor(rows);
   const hi = Math.max(...rows.map((r) => r.max));
+  /* The floor is snapped down onto the axis step, so every tick -- the floor
+     included -- is the same distance from the next: 200, 400, 600, not 100,
+     200, 400. */
+  const base = luFloor(rows);
+  const step = [50, 100, 200, 250, 500, 1000, 2000].find((v) => (hi - base) / v <= 5) || 5000;
+  const lo = Math.floor(base / step) * step;
   const w = (v) => ((v / (hi - lo)) * 100).toFixed(2);
 
   /* A proper axis along the bottom, ticked at round figures, rather than two
      loose numbers over the top. The floor is always labelled -- it is the one
-     thing about the scale nobody would guess -- and a tick too close to it or
-     to the end is dropped rather than printed on top of its neighbour. */
+     thing about the scale nobody would guess -- and a tick too close to the
+     end is dropped rather than printed on top of its neighbour. */
   const range = hi - lo;
-  const step = [50, 100, 200, 250, 500, 1000, 2000].find((v) => range / v <= 5) || 5000;
   const at = (v) => ((v - lo) / range) * 100;
   const ticks = [{ v: lo, p: 0 }];
-  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step)
-    if (at(v) > 15 && at(v) < 96) ticks.push({ v, p: at(v) });
+  for (let v = lo + step; v <= hi; v += step)
+    if (at(v) < 96) ticks.push({ v, p: at(v) });
 
   return `
     <div class="rows">${rows.map((r) => `
@@ -7722,10 +7794,10 @@ function streakTile(db, streaks, { title, withYear }) {
     <div class="st-pair">${row('W', streaks.W)}${row('L', streaks.L)}</div></div>`;
 }
 
-/** "2 seasons · 16 weeks": how much history the all-time figures stand on. */
+/** "2 seasons": how much history the all-time figures stand on. */
 const allSpan = (db) => {
-  const { seasons, weeks } = db.allTimeHighlights();
-  return `${seasons} season${seasons === 1 ? '' : 's'} \u00b7 ${weeks} weeks`;
+  const { seasons } = db.allTimeHighlights();
+  return `${seasons} season${seasons === 1 ? '' : 's'}`;
 };
 function render(db, state = {}) {
   // a link to a spot on this page is a spot on the Season side
@@ -7970,8 +8042,9 @@ function mount(root, db, go, setState) {
     const p = ev.touches?.[0] ?? ev;
     const box = svg.getBoundingClientRect();
     const vx = ((p.clientX - box.left) / box.width) * W;
-    const span = W - PAD.l - PAD.r;
-    const t = Math.max(0, Math.min(1, (vx - PAD.l) / span));
+    const PL = +svg.dataset.pl || PAD.l;
+    const span = W - PL - PAD.r;
+    const t = Math.max(0, Math.min(1, (vx - PL) / span));
     const wk = st.weeks[Math.round(t * (st.weeks.length - 1))];
     if (wk == null) return;
     const ranked = rows.filter((r) => r[mKey][wk] != null).sort((a, b) => b[mKey][wk] - a[mKey][wk]);
@@ -8908,7 +8981,7 @@ function render(db) {
     <div><b>Team numbers are provisional.</b> Confirm the mapping in <code>tools/remap_teams.py</code>
     and re-run it — the whole app follows.</div></div>` : ''}
 
-  <div class="section-title">Franchises<span class="sub-n dim">${teams.length}</span></div>
+  <div class="section-title">Franchises</div>
   <div class="fr-list">
     ${teams.map((t) => {
       /* A title belongs to the franchise -- empire points ride with the team,
@@ -8949,9 +9022,8 @@ function render(db) {
             aria-label="Hand this franchise over" title="Hand this franchise over">${
             icon('user')}</button>` : ''}
           ${/* named and marked for the tab they land on */''}
-          <button data-go-trades="${t.number}">${icon('swap')}Transactions</button>
+          <button data-go-trades="${t.number}">${icon('swap')}Moves</button>
           <button data-go-drafts="${t.number}">${icon('board')}Drafts</button>
-          <button data-go-stats="${t.number}">${icon('chart')}Stats</button>
         </div>
         ${past.length ? `<div class="fr-hist">${past.map((o) => {
           const m = db.managerById(o.managerId);
@@ -9069,8 +9141,6 @@ function mount(root, db, go) {
     go('trades', { mgr: b.dataset.goTrades })));
   root.querySelectorAll('[data-go-drafts]').forEach((b) => b.addEventListener('click', () =>
     go('drafts', { team: b.dataset.goDrafts })));
-  root.querySelectorAll('[data-go-stats]').forEach((b) => b.addEventListener('click', () =>
-    go('stats', { team: b.dataset.goStats })));
 }
 
 return { render, mount };
@@ -9297,7 +9367,7 @@ function render(db) {
            it set aside -- so the empire figure reads as part of a whole */''}
       <span class="bi-k">Season</span><span class="bi-k">Per team</span><span class="bi-k">Total</span><span class="bi-k"><span class="bi-long">To the </span>empire</span>
       ${db.seasons.map((y) => `
-        <span class="bi-y">${y}${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}</span>
+        <span class="bi-y">${y}${y === cur ? '<i class="now-dot" title="Current season" aria-label="Current season"></i>' : ''}</span>
         <input class="bi-in" type="text" inputmode="decimal" data-buyin="${y}"
           value="${money(db.buyIn(y))}" aria-label="${y} buy-in per team">
         <span class="bi-tot" title="${db.teams(y).length} teams">${money(db.buyIn(y) * db.teams(y).length)}</span>
@@ -9312,7 +9382,7 @@ function render(db) {
   <div class="card">
     <div class="card-bd">
       <div class="s dim" style="font-size:12px;margin-bottom:10px;line-height:1.6">
-        Transactions count toward the season whose window they fall in. Today's window sets the current season.
+        Moves count toward the season whose window they fall in. Today's window sets the current season.
       </div>
       ${/* one year at a time: six seasons of four dates is a wall of boxes, and
            you only ever come here to move one boundary. */''}
@@ -9321,7 +9391,7 @@ function render(db) {
           <button class="win-hd" data-winyear="${y}" aria-expanded="${open}">
             ${icon('chev', 'acc-caret')}
             <span class="win-y">${y}</span>
-            ${y === cur ? '<span class="chip mint now-tag">Current</span>' : ''}
+            ${y === cur ? '<i class="now-dot" title="Current season" aria-label="Current season"></i>' : ''}
             <span class="win-sum">${esc(fmtDate(w.start))} &rarr; ${esc(fmtDate(w.end))}</span>
           </button>
           <div class="win-bd">
@@ -9601,8 +9671,7 @@ const VIEWS = {
   // `primary` is the phone's bottom bar, the three that change every week
   home:      { label: 'Home',      icon: 'home',   mod: Dashboard, primary: true },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats,     primary: true },
-  // `short` is its name everywhere on a phone: the bar and the More sheet
-  trades:    { label: 'Transactions', short: 'Moves', icon: 'swap', mod: Trades, primary: true },
+  trades:    { label: 'Moves',     icon: 'swap',   mod: Trades,    primary: true },
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
   bank:      { label: 'Bank',      icon: 'wallet', mod: Bank },
   drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts },

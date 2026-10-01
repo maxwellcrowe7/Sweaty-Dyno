@@ -18,8 +18,7 @@ const VIEWS = {
   // `primary` is the phone's bottom bar, the three that change every week
   home:      { label: 'Home',      icon: 'home',   mod: Dashboard, primary: true },
   stats:     { label: 'Stats',     icon: 'chart',  mod: Stats,     primary: true },
-  // `short` is its name everywhere on a phone: the bar and the More sheet
-  trades:    { label: 'Transactions', short: 'Moves', icon: 'swap', mod: Trades, primary: true },
+  trades:    { label: 'Moves',     icon: 'swap',   mod: Trades,    primary: true },
   minigames: { label: 'Games',     icon: 'dice',   mod: Minigames, primary: true },
   bank:      { label: 'Bank',      icon: 'wallet', mod: Bank },
   drafts:    { label: 'Drafts',    icon: 'board',  mod: Drafts },

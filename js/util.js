@@ -247,14 +247,20 @@ export const gauge = (segments, label = '') => {
       ${Object.entries(GAUGE_INK).map(([k, [a, b]]) =>
         `<linearGradient id="g-${k}" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stop-color="${a}"/><stop offset="100%" stop-color="${b}"/>
-        </linearGradient>`).join('')}
+        </linearGradient>
+        ${/* an SVG filter, not the CSS drop-shadow() the attribute also accepts:
+             iOS Safari ignores a CSS filter on an SVG child, so the phone lost
+             the glow the desktop had */''}
+        <filter id="gl-${k}" filterUnits="userSpaceOnUse" x="-20" y="-20" width="240" height="240">
+          <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="${GAUGE_INK[k][2]}"/>
+        </filter>`).join('')}
     </defs>
     <path d="${arc(100, 100, 78, A0, A0 + SPAN)}" stroke="#303B4A" stroke-width="13" fill="none" stroke-linecap="round"/>
     ${drawn.map((s) => {
       const glow = GAUGE_INK[s.key]?.[2];
       return `<path d="${arc(100, 100, 78, s.from, s.from + s.span)}"
         stroke="url(#g-${s.key})" stroke-width="13" fill="none" stroke-linecap="round"${
-        glow ? ` filter="drop-shadow(0 0 6px ${glow})"` : ''}/>`;
+        glow ? ` filter="url(#gl-${s.key})"` : ''}/>`;
     }).join('')}
     ${Array.from({ length: 11 }, (_, i) => {
       const a = A0 + (SPAN / 10) * i;

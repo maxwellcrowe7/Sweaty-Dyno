@@ -23,8 +23,10 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   /* Axis labels are drawn in viewBox units, and a phone shrinks the whole
      drawing to a little over half size -- 10 units came out near 5.5px. So the
      phone drawing gets bigger labels and a deeper bottom margin to hold them. */
-  const FS = wide ? 10 : 16;
-  const PB = wide ? PAD.b : 32;
+  const FS = wide ? 10 : 19;
+  const PB = wide ? PAD.b : 36;
+  // a wider gutter on a phone, so the bigger y figures stay inside the drawing
+  const PL = wide ? PAD.l : 54;
   /* Both: one manager against his own best lineup. The league's lines go --
      the question is no longer how he compares with everyone else -- and the
      scale is fitted to his two lines alone, so the gap between them reads. */
@@ -35,7 +37,7 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
   if (!vals.length) return '';
   const lo = Math.floor(Math.min(...vals) / 20) * 20 - 10;
   const hi = Math.ceil(Math.max(...vals) / 20) * 20 + 10;
-  const x = (w) => PAD.l + ((w - weeks[0]) / Math.max(1, weeks.at(-1) - weeks[0])) * (W - PAD.l - PAD.r);
+  const x = (w) => PL + ((w - weeks[0]) / Math.max(1, weeks.at(-1) - weeks[0])) * (W - PL - PAD.r);
   const y = (v) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PB);
   const path = (r, k = key) => weeks.filter((w) => r[k][w] != null)
     .map((w, i) => `${i ? 'L' : 'M'}${x(w).toFixed(1)} ${y(r[k][w]).toFixed(1)}`).join(' ');
@@ -48,21 +50,27 @@ function lineChart(rows, weeks, focus, key = 'byWeek', both = false) {
     return `${top.join(' ')} ${bot.join(' ')} Z`;
   };
 
+  /* A phone has the room for fewer, bigger figures: three or four gridlines at a
+     round step rather than five at whatever the range divides into. */
   const ticks = [];
-  for (let i = 0; i <= 4; i++) ticks.push(lo + ((hi - lo) / 4) * i);
+  if (wide) for (let i = 0; i <= 4; i++) ticks.push(lo + ((hi - lo) / 4) * i);
+  else {
+    const step = [20, 25, 40, 50, 100, 200].find((v) => (hi - lo) / v <= 4) || 500;
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) ticks.push(v);
+  }
   const f = rows.find((r) => r.number === focus);
 
   return `
   <div style="position:relative">
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;touch-action:pan-y"
          role="img" aria-label="Weekly points by week; ${esc(f?.manager ?? '')} highlighted"
-         data-chart data-w="${W}" data-lo="${lo}" data-hi="${hi}" data-wide="${wide ? 1 : 0}">
+         data-chart data-w="${W}" data-pl="${PL}" data-lo="${lo}" data-hi="${hi}" data-wide="${wide ? 1 : 0}">
       ${ticks.map((t) => `
-        <line x1="${PAD.l}" x2="${W - PAD.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"
+        <line x1="${PL}" x2="${W - PAD.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"
               stroke="#28323F" stroke-width="1"/>
-        <text x="${PAD.l - 8}" y="${(y(t) + FS * 0.35).toFixed(1)}" text-anchor="end"
+        <text x="${PL - 8}" y="${(y(t) + FS * 0.35).toFixed(1)}" text-anchor="end"
               fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${Math.round(t)}</text>`).join('')}
-      ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - 8}" text-anchor="middle"
+      ${weeks.map((w) => `<text x="${x(w).toFixed(1)}" y="${H - (wide ? 8 : 9)}" text-anchor="middle"
               fill="#7C8BA0" font-size="${FS}" font-family="Inter,sans-serif">${w}</text>`).join('')}
       ${both ? '' : rows.filter((r) => r.number !== focus).map((r) =>
         `<path class="ln" data-line="${r.number}" d="${path(r)}" fill="none" stroke="#3A4657"
@@ -122,20 +130,24 @@ function lineupBars(st, key) {
   if (!rows.length) return '';
   const [, , get, dir, fmt] = LU.find(([k]) => k === key) || LU[0];
   rows.sort((a, b) => (dir === 'asc' ? get(a) - get(b) : get(b) - get(a)));
-  const lo = luFloor(rows);
   const hi = Math.max(...rows.map((r) => r.max));
+  /* The floor is snapped down onto the axis step, so every tick -- the floor
+     included -- is the same distance from the next: 200, 400, 600, not 100,
+     200, 400. */
+  const base = luFloor(rows);
+  const step = [50, 100, 200, 250, 500, 1000, 2000].find((v) => (hi - base) / v <= 5) || 5000;
+  const lo = Math.floor(base / step) * step;
   const w = (v) => ((v / (hi - lo)) * 100).toFixed(2);
 
   /* A proper axis along the bottom, ticked at round figures, rather than two
      loose numbers over the top. The floor is always labelled -- it is the one
-     thing about the scale nobody would guess -- and a tick too close to it or
-     to the end is dropped rather than printed on top of its neighbour. */
+     thing about the scale nobody would guess -- and a tick too close to the
+     end is dropped rather than printed on top of its neighbour. */
   const range = hi - lo;
-  const step = [50, 100, 200, 250, 500, 1000, 2000].find((v) => range / v <= 5) || 5000;
   const at = (v) => ((v - lo) / range) * 100;
   const ticks = [{ v: lo, p: 0 }];
-  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step)
-    if (at(v) > 15 && at(v) < 96) ticks.push({ v, p: at(v) });
+  for (let v = lo + step; v <= hi; v += step)
+    if (at(v) < 96) ticks.push({ v, p: at(v) });
 
   return `
     <div class="rows">${rows.map((r) => `
@@ -367,10 +379,10 @@ function streakTile(db, streaks, { title, withYear }) {
     <div class="st-pair">${row('W', streaks.W)}${row('L', streaks.L)}</div></div>`;
 }
 
-/** "2 seasons · 16 weeks": how much history the all-time figures stand on. */
+/** "2 seasons": how much history the all-time figures stand on. */
 const allSpan = (db) => {
-  const { seasons, weeks } = db.allTimeHighlights();
-  return `${seasons} season${seasons === 1 ? '' : 's'} \u00b7 ${weeks} weeks`;
+  const { seasons } = db.allTimeHighlights();
+  return `${seasons} season${seasons === 1 ? '' : 's'}`;
 };
 
 export function render(db, state = {}) {
@@ -617,8 +629,9 @@ export function mount(root, db, go, setState) {
     const p = ev.touches?.[0] ?? ev;
     const box = svg.getBoundingClientRect();
     const vx = ((p.clientX - box.left) / box.width) * W;
-    const span = W - PAD.l - PAD.r;
-    const t = Math.max(0, Math.min(1, (vx - PAD.l) / span));
+    const PL = +svg.dataset.pl || PAD.l;
+    const span = W - PL - PAD.r;
+    const t = Math.max(0, Math.min(1, (vx - PL) / span));
     const wk = st.weeks[Math.round(t * (st.weeks.length - 1))];
     if (wk == null) return;
     const ranked = rows.filter((r) => r[mKey][wk] != null).sort((a, b) => b[mKey][wk] - a[mKey][wk]);

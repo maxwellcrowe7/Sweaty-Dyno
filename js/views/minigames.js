@@ -495,7 +495,7 @@ export function mount(root, db) {
       confirm: 'Save',
       body: `
         <div class="field"><label>Minigame</label>
-          <input name="name" value="${esc(g.name || '')}" placeholder="e.g. Closest to the Number"></div>
+          <input name="name" maxlength="24" value="${esc(g.name || '')}" placeholder="e.g. Closest to the Number"></div>
         ${summaryField(g.summary, 'e.g. Highest scoring manager off the bat')}
         <div class="field"><label>Rules / notes</label>
           <textarea name="rules" placeholder="How it's won${
