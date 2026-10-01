@@ -89,8 +89,10 @@ const tradeCard = (db, t, cond = null, breaks = [], nested = false, marks = null
         ${/* a trade that has not happened has no date, and the colour already
              says it is a promise rather than a record */''}
         ${t.date ? `<span class="d">${esc(fmtDate(t.date, { year: true }))}</span>` : ''}`;
-  const who = (s, i = -1) => `<div class="who">${teamTag(s.team ? db.team(s.team) : null, { alias: s.alias })}
-    <span class="arrow">gets</span>${i === 0 ? `<div class="trade-meta in-side">${meta}</div>` : ''}</div>`;
+  // just the manager: the team number says nothing a trade needs
+  const who = (s, i = -1) => `<div class="who"><span class="who-chip">${teamTag(s.team ? db.team(s.team) : null,
+    { alias: s.alias, num: false })}
+    <span class="arrow">gets</span></span>${i === 0 ? `<div class="trade-meta in-side">${meta}</div>` : ''}</div>`;
 
   return `<div class="trade${cond ? ' is-cond' : ''}${banded ? ' banded' : ''}${
       nested ? ` nested is-${nested}` : ''}" data-trade="${esc(t.id)}" data-anchor="trade-${esc(t.id)}">
@@ -383,7 +385,7 @@ export function mount(root, db, go, setState) {
        round -- and the row that appears carries only the field that choice
        still leaves open. */
     const colHtml = (team) => `<div class="ab-col" data-col data-team="${team}">
-      <div class="ab-who">${teamTag(db.team(team))}<span class="arrow">gets</span></div>
+      <div class="ab-who">${teamTag(db.team(team), { num: false })}<span class="arrow">gets</span></div>
       <div class="ab-list" data-list></div>
       ${/* Closed it is a plus; open it is the same strip of chips in the same
            one-line space -- so the palette can hide without the modal changing
