@@ -22,15 +22,15 @@ League site for the Sweaty Dyno dynasty fantasy football league: bank and buy-in
 - `js/db.js` — the data layer. **All reads and writes go through it.** Adapters: static JSON + localStorage overlay (no Supabase configured) or Supabase. Derived numbers (balances, standings, payouts) are selectors here, not stored values.
 - `js/supabase.js` — hand-rolled auth (GoTrue) + data (PostgREST) client, no SDK. `js/config.js` — blank = JSON mode, filled = Supabase.
 - `js/migrate.js` — upgrades older data shapes. Shape changes need a migration here, not an assumption that data is already new-shape.
-- `js/sleeper.js` — Sleeper API client (public, keyless, called from the browser).
+- `js/sleeper.js` — Sleeper API client (public, keyless, called from the browser). `js/autosync.js` — pulls completed weeks of the current season when the commissioner opens the app signed in. `js/util.js` — shared helpers.
 - `tools/*.py` — build, team remapping, Sleeper sync, rulebook copy-forward, Supabase seeding.
 
 ## Data rules that must not break
 
 - **Team number is the permanent key.** Ownership changes are appended to a team's `ownership` array. Never edit or rewrite old entries; history must stay attached to the team.
 - **Rule ids are stable across seasons.** The changed/new/removed tracking in the rulebook depends on it. New seasons are copied forward (`tools/new_rulebook.py`), never re-pasted.
-- Empire payouts are `team: null, paid: false` on purpose (earmarked, not disbursed). Don't "fix" them.
-- Minigame results write their own bank payout lines. Keep that link, so the bank never drifts from results.
+- **Payout amounts are never stored.** Minigame, placement and empire payouts are derived in `js/db.js` from whatever produced them (game results, `league.placementPayouts`, finishes), so a corrected result moves the money and the bank can't drift. `bank.settled` (`{season, category, team, date}`) records only who has been paid. Don't reintroduce stored payout rows (`bank.payouts` was migrated away in `js/migrate.js`).
+- **The empire pot is an earmark, not a payout row.** Its balance is `league.empireContribution` for started seasons, less the claim in `bank.empirePot` once that claim is settled. It's held back from spendable cash until then.
 
 ## Supabase
 
